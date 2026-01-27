@@ -4,24 +4,22 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ## ✨ Features
 
-**Lüftungsmodi (Logik geplant):**
+**Lüftungsmodi:**
 
-- 🔄 **Wärmerückgewinnung**: Alternierender Betrieb (70s Rein / 70s Raus) zur Nutzung des Keramik-Wärmespeichers.
-- 💨 **Durchlüften**: Permanenter Abluftbetrieb (z.B. im Sommer oder bei schlechten Gerüchen).
+- 🔄 **Wärmerückgewinnung**: Alternierender Betrieb (Standard 70s Rein / 70s Raus). Synchronisiert über ESP-NOW.
+- 💨 **Durchlüften**: Permanenter Abluftbetrieb (z.B. im Sommer). Timer-gesteuert oder Dauerhaft (0 Min).
+- 🔗 **Dezentrale Gruppe**: Geräte kommunizieren direkt miteinander (ESP-NOW). Kein zentraler WLAN-Broker nötig.
 
 **Sensorik & Überwachung:**
 
-- 🌡️ **Temperatur & Feuchte**: Präzise Messung (via BME680). *NTC-Sensoren im Luftstrom geplant.*
-- 🍃 **Luftqualität (IAQ)**: Bosch BME680 mit BSEC2-Algorithmus zur Erkennung von VOCs und IAQ-Qualität.
+- 🌡️ **Temperatur & Feuchte**: Präzise Messung (via BME680).
+- 🍃 **Luftqualität (IAQ)**: Bosch BME680 mit BSEC2-Algorithmus.
 - 🏎️ **Drehzahlüberwachung**: Echtes Tacho-Signal-Feedback vom Lüfter.
-- 📈 **Effizienz-Berechnung**: Ermittlung des Wirkungsgrads live in % *(Geplant)*.
 
 ## Modernes UI
 
 - 📟 **OLED Display**: Zeigt Status, IAQ und Drehzahl an.
-- 🌈 **LED Ring**: Visualisiert Luftqualität (Grün->Gelb->Rot) durch Animationen.
 - 👋 **Annäherung**: Display wacht automatisch auf, wenn man sich nähert (APDS-9960).
-- 👆 **Bedienung**: Ein Touch-Button für Display-Toggle. *Erweiterte Bedienung geplant.*
 
 Home Assistant Integration: Volle Kontrolle und Visualisierung über Home Assistant.
 
@@ -49,20 +47,18 @@ Home Assistant Integration: Volle Kontrolle und Visualisierung über Home Assist
 | Komponente | Beschreibung |
 | :--- | :--- |
 | **Display** | 0.91" OLED (SSD1306, 128x32 I2C) |
-| **LEDs** | LED Ring mit 7x WS2812B (Neopixel) |
 | **Touch** | 1x Kapazitiv (Implementiert) + 1x *(Geplant)* |
 
 🔌 Pinbelegung & Verkabelung
 
 Das System basiert auf dem Seeed XIAO ESP32C6.
 
-⚠️ WICHTIG: Der Lüfter läuft mit 12V, die Logik mit 3.3V. Achte auf die korrekten Spannungsteiler und Schutzbeschaltungen (siehe Schaltplan).
+⚠️ WICHTIG: Der Lüfter läuft mit 12V, die Logik mit 3.3V. Achte auf die korrekten Spannungsteiler und Schutzbeschaltungen.
 
 | XIAO Pin | GPIO | Funktion | Anschluss / Bemerkung |
 | :--- | :--- | :--- | :--- |
 | **D0** | GPIO0 | PWM Lüfter | Via NPN-Transistor (Inverted Logic) |
 | **D1** | GPIO1 | Tacho Signal | Lüfter RPM Signal |
-| **D2** | GPIO2 | LED Ring | Data In (WS2812) |
 | **D3** | GPIO21 | Touch Button | Display ON/OFF Toggle |
 | **D4** | GPIO22 | I2C SDA | BME680, OLED, APDS-9960 |
 | **D5** | GPIO23 | I2C SCL | BME680, OLED, APDS-9960 |
@@ -76,7 +72,6 @@ graph TD
     PSU[12V Netzteil] --> FAN[Lüfter Motor]
     PSU --> TRACO[Traco 5V Wandler]
     TRACO --> XIAO[ESP32C6]
-    TRACO --> LED[LED Ring 5V]
 
     subgraph I2C_Bus
     XIAO -->|D4/D5| OLED

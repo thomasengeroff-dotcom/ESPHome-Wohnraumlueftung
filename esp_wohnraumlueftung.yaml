@@ -2,6 +2,14 @@ substitutions:
   device_name: esptest
   friendly_name: "ESPTest"
   min_fan_threshold: "10"
+  
+  # VENTILATION CONFIG
+  floor_id: "1"
+  room_id: "1" 
+  device_id: "1"
+  # Phase A = Starts with INTAKE (Rein). Phase B = Starts with EXHAUST (Raus).
+  # Devices on same wall should have same phase.
+  is_phase_a: "true" 
 
 # ---------------------------------------------------------
 # PACKAGES & INCLUDES
@@ -16,6 +24,7 @@ esphome:
     - led_effects.h      # Custom C++ code for LED patterns (Plasma Ring)
     - display_render.h   # Custom C++ code for drawing the OLED interface
     - automation_helpers.h # Helper functions logic
+    - ventilation_group.h # NEW: Decentralized Ventilation Logic
   on_boot:
     priority: 600
     then:
@@ -38,12 +47,33 @@ globals:
     initial_value: 'false'
 
 # ---------------------------------------------------------
+# CUSTOM VENTILATION CONTROLLER
+# ---------------------------------------------------------
+custom_component:
+  - lambda: |-
+      auto *v = new esphome::VentilationController();
+      v->floor_id = ${floor_id};
+      v->room_id = ${room_id};
+      v->device_id = ${device_id};
+      v->is_phase_a = ${is_phase_a};
+      v->main_fan = id(lueftung_fan);
+      v->direction_switch = id(fan_direction); 
+      return {v};
+    components:
+      - id: ventilation_ctrl
+
+# ---------------------------------------------------------
 # ESP-NOW COMMUNICATION
 # ---------------------------------------------------------
 # Configures peer-to-peer communication with the Slave/Consumer device
 espnow:
   peers:
     - "98:A3:16:85:96:70"  # Target MAC Address (Slave)
+    - "FF:FF:FF:FF:FF:FF"  # Broadcast for Discovery/Sync
+  on_receive:
+    then:
+      - lambda: |-
+          ((esphome::VentilationController*)id(ventilation_ctrl))->on_packet_received(x);
 
 packet_transport:
   - platform: espnow
@@ -234,6 +264,11 @@ number:
 # AUTOMATIONS & SWITCHES
 # ---------------------------------------------------------
 switch:
+  - platform: template
+    name: "Lüfter Richtung A"
+    id: fan_direction
+    optimistic: true
+
   # Automatic Fan Cycle (Ramp Up -> Hold -> Ramp Down -> Off)
   - platform: template
     name: "Fan Automatic Cycle"
@@ -356,23 +391,89 @@ binary_sensor:
         - logger.log: "Touch Button: RELEASED"
         
 # ---------------------------------------------------------
-# ADDRESSABLE LEDS (WS2812B)
+# VENTILATION CONTROL
 # ---------------------------------------------------------
-light:
-  - platform: esp32_rmt_led_strip
-    rgb_order: GRB
-    chipset: ws2812
-    pin: GPIO2 # Pin D2
-    num_leds: 7
-    name: "DEBO LED RING 7"
-    id: led_ring_physical
-    internal: false
-    restore_mode: RESTORE_DEFAULT_OFF
-    effects:
-      - addressable_lambda:
-          name: "Plasma Ring"
-          update_interval: 33ms
-          lambda: |-
-            // Pass the current IAQ value to the effect generator
-            float current_iaq = id(iaq).has_state() ? id(iaq).state : 25.0f;
-            iaq_plasma_ring_effect(it, current_iaq);
+
+# Select for Mode
+select:
+  - platform: template
+    name: "Lüftungsmodus"
+    id: selected_mode
+    options:
+      - "Wärmerückgewinnung"
+      - "Durchlüften"
+      - "Aus"
+    initial_option: "Wärmerückgewinnung"
+    set_action:
+      - lambda: |-
+          auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
+          if (x == "Wärmerückgewinnung") v->set_mode(esphome::MODE_ECO_RECOVERY);
+          else if (x == "Durchlüften") {
+            // Use the configured timer duration (0 = Infinite)
+            uint32_t duration = (uint32_t)(id(vent_timer).state * 60 * 1000);
+            v->set_mode(esphome::MODE_VENTILATION, duration);
+          }
+          else v->set_mode(esphome::MODE_OFF);
+
+# Number for Timer
+number:
+  - platform: template
+    name: "Durchlüften Dauer (min)"
+    id: vent_timer
+    min_value: 0
+    max_value: 120
+    step: 5
+    initial_value: 30
+    optimistic: true
+    set_action:
+      then:
+        - logger.log: "Timer updated"
+        - lambda: |-
+            auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
+            uint32_t ms = (uint32_t)x * 60 * 1000;
+            // Update the duration but keep current mode
+            v->ventilation_duration_ms = ms;
+
+  - platform: template
+    name: "Zyklusdauer (eine Richtung)"
+    id: cycle_duration_config
+    icon: "mdi:timer-sand"
+    unit_of_measurement: "s"
+    min_value: 10
+    max_value: 300
+    step: 5
+    initial_value: 70
+    optimistic: true
+    set_action:
+      then:
+        - lambda: |-
+            auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
+            v->set_cycle_duration((uint32_t)x * 1000);
+
+  - platform: template
+    name: "Sync Intervall"
+    id: sync_interval_config
+    icon: "mdi:sync"
+    unit_of_measurement: "min"
+    min_value: 1
+    max_value: 360 # 6 hours
+    step: 10
+    initial_value: 180 # 3 hours
+    optimistic: true
+    set_action:
+      then:
+        - lambda: |-
+            auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
+            v->set_sync_interval((uint32_t)x * 60 * 1000);
+
+# Interval to check for pending broadcasts
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: 'return ((esphome::VentilationController*)id(ventilation_ctrl))->pending_broadcast;'
+          then:
+            - espnow.send:
+                address: "FF:FF:FF:FF:FF:FF"
+                data: !lambda 'return ((esphome::VentilationController*)id(ventilation_ctrl))->build_packet(esphome::MSG_SYNC);'
