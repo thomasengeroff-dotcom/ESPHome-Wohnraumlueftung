@@ -268,7 +268,7 @@ Grundkenntnisse in YAML.
 
 Konfiguration:
 
-1. Kopiere den Inhalt von `esptest.yaml` in deine ESPHome Instanz.
+1. Kopiere den Inhalt von `esp_wohnraumlueftung.yaml` in deine ESPHome Instanz.
 2. Erstelle eine `secrets.yaml` mit deinen WLAN-Daten:
 
 wifi_ssid: "DeinWLAN"
@@ -286,47 +286,314 @@ Verbinde den XIAO per USB.
 
 Klicke auf "Install".
 
-🎮 Bedienung
+## 🎮 Bedienung & Steuerung
 
-Am Gerät
+Das System bietet drei Steuerungsmöglichkeiten: **Direkt am Gerät**, **über Home Assistant** und **automatisch** durch Sensoren.
 
-Touch Links (Kurz): Lüfterstufe erhöhen (1-10, rotiert).
+---
 
-Touch Links (Lang): Wechsel zwischen Modus "Wärmerückgewinnung" und "Durchlüften".
+### 🖐️ Bedienung am Gerät
 
-Touch Rechts (Lang > 5s): Gerät Ein/Aus schalten.
+#### Touch-Button (GPIO21)
 
-Annäherung: Hand vor den Sensor halten (< 10cm) aktiviert das Display und den LED-Ring für 10 Sekunden.
+Der kapazitive Touch-Button dient zur Display-Steuerung:
 
-Visualisierung (OLED)
+| Aktion | Funktion | Feedback |
+|--------|----------|----------|
+| **Kurzer Touch** | Display Ein/Aus | Display aktiviert/deaktiviert |
 
-Links: Drehzahlbalken & Pfeil für Luftrichtung (-> Raus, <- Rein).
+> 💡 **Tipp:** Das Display schaltet sich automatisch nach 5 Sekunden ab, um die OLED-Lebensdauer zu schonen.
 
-Rechts: Temperatur, Feuchte, IAQ (rotiert alle 3 Sek. durch Details).
+#### Annäherungssensor (APDS9960)
 
-Unten Rechts: Aktuelle Effizienz der Wärmerückgewinnung in %.
+Das System reagiert intelligent auf deine Anwesenheit:
 
-LED Ring Status
+```
+     👋 Hand nähert sich
+         ↓
+    [APDS9960 Sensor]
+         ↓
+   Proximity > 15%
+         ↓
+    ✨ Display aktiviert
+         ↓
+    ⏱️ 5 Sekunden Timeout
+         ↓
+    🌙 Display deaktiviert
+```
 
-Farbe: Zeigt die Luftqualität (Grün = Super, Gelb = OK, Rot = Schlecht).
+**Funktionsweise:**
 
-Helligkeit: Korrespondiert mit der Lüftergeschwindigkeit.
+- **Erkennungsbereich:** < 20cm vor dem Sensor
+- **Reaktionszeit:** < 500ms
+- **Auto-Helligkeit:** Passt sich an Umgebungslicht an
+  - 🌞 Heller Raum → Volle Helligkeit
+  - 🌙 Dunkler Raum → Reduzierte Helligkeit
 
-🧠 Logik der Wärmerückgewinnung
+---
 
-Da die Sensoren abwechselnd kalte Außenluft und warme Innenluft messen, ist eine direkte Delta-Messung schwierig. Der Algorithmus arbeitet wie folgt:
+### 🏠 Steuerung über Home Assistant
 
-Phase Rausblasen (70s): Der Keramikspeicher lädt sich auf. Am Ende der Phase misst NTC Innen die wahre Raumtemperatur.
+Alle Funktionen sind vollständig in Home Assistant integriert:
 
-Phase Reinblasen (70s): Kalte Außenluft wird durch den Speicher erwärmt.
+#### Betriebsmodi
 
-NTC Außen misst die Außentemperatur.
+| Modus | Beschreibung | Anwendungsfall |
+|-------|--------------|----------------|
+| 🔄 **Wärmerückgewinnung** | Alternierender Betrieb (70s Rein/Raus) | Standard-Betrieb im Winter |
+| 💨 **Durchlüften** | Permanenter Abluftbetrieb | Schnelle Lüftung, Sommer |
+| ⏸️ **Aus** | Lüfter gestoppt | Wartung, Nachtruhe |
 
-NTC Innen misst die vorgewärmte Zuluft.
+#### Steuerbare Parameter
 
-Berechnung: Am Ende der "Rein"-Phase wird die Effizienz ermittelt (Konzept):
+**Lüftergeschwindigkeit:**
 
-$$ \text{Effizienz} = \frac{T_{\text{Zuluft}} - T_{\text{Außen}}}{T_{\text{Raum}} - T_{\text{Außen}}} \times 100 $$
+- Slider: 0-100%
+- Mindestdrehzahl: 10% (konfigurierbar)
+- Echtzeit-RPM-Anzeige
+
+**Durchlüften-Timer:**
+
+- Einstellbar: 0-120 Minuten (5-Min-Schritte)
+- 0 Min = Dauerbetrieb
+- Standard: 30 Minuten
+
+**Zyklusdauer (Wärmerückgewinnung):**
+
+- Einstellbar: 10-300 Sekunden
+- Standard: 70 Sekunden pro Richtung
+- Synchronisiert über ESP-NOW
+
+**Sync-Intervall:**
+
+- Einstellbar: 1-360 Minuten
+- Standard: 180 Minuten (3 Stunden)
+- Hält Geräte synchron
+
+---
+
+### 📺 OLED Display (128x32)
+
+Das Display zeigt alle wichtigen Informationen auf einen Blick:
+
+```
+┌──────────────────────────────────────┐
+│ ↗ ████████░░  72%   🌡️ 21.5°C  IAQ 45│
+│                     💧 55%    ⚡ 850rpm│
+└──────────────────────────────────────┘
+```
+
+#### Display-Layout
+
+**Linke Seite:**
+
+- **Richtungspfeil:**
+  - `↗` = Zuluft (Rein)
+  - `↘` = Abluft (Raus)
+- **Drehzahlbalken:** Visuelle Darstellung 0-100%
+- **Prozentanzeige:** Aktuelle Lüftergeschwindigkeit
+
+**Rechte Seite (rotiert alle 3 Sekunden):**
+
+| Ansicht | Anzeige | Icon |
+|---------|---------|------|
+| **Temperatur** | 21.5°C | 🌡️ |
+| **Luftfeuchtigkeit** | 55% | 💧 |
+| **Luftqualität (IAQ)** | 0-500 | 🍃 |
+| **Drehzahl** | RPM | ⚡ |
+| **Luftdruck** | hPa | 🔽 |
+| **VOC** | ppm | 💨 |
+
+#### Luftqualitäts-Anzeige (IAQ)
+
+Das System verwendet eine intuitive Farbcodierung:
+
+| IAQ-Wert | Bewertung | Farbe | Empfehlung |
+|----------|-----------|-------|------------|
+| **0-50** | Ausgezeichnet | 🟢 Grün | Alles perfekt |
+| **51-100** | Gut | 🟡 Gelb | Weiter so |
+| **101-150** | Mäßig | 🟠 Orange | Lüften empfohlen |
+| **151-200** | Schlecht | 🔴 Rot | Sofort lüften! |
+| **201+** | Sehr schlecht | 🔴 Dunkelrot | Dringend handeln! |
+
+> 📡 **ESP-NOW:** IAQ-Werte werden automatisch an gekoppelte Geräte gesendet.
+
+---
+
+### 🔄 Automatische Funktionen
+
+#### Smart Display Management
+
+1. **Proximity Wake-Up:**
+   - Hand vor Sensor → Display an
+   - Automatische Helligkeitsanpassung
+   - 5s Auto-Off Timer
+
+2. **Adaptive Helligkeit:**
+
+   ```yaml
+   Umgebungslicht > 100 → Helligkeit 255 (100%)
+   Umgebungslicht ≤ 100 → Helligkeit 128 (50%)
+   ```
+
+3. **OLED-Schutz:**
+   - Auto-Off nach Inaktivität
+   - Verhindert Einbrennen
+   - Verlängert Lebensdauer
+
+#### Automatische Lüftersteuerung
+
+**Fan Auto Cycle Script:**
+
+```
+1. Ramp Up:   0% → 100% in 5s (sanfter Start)
+2. Hold:      100% für 20s (volle Leistung)
+3. Ramp Down: 100% → 0% in 5s (sanfter Stopp)
+4. Pause:     100ms
+5. Wiederholen
+```
+
+**Vorteile:**
+
+- ✅ Reduziert mechanischen Verschleiß
+- ✅ Leiser Betrieb
+- ✅ Energieeffizient
+
+---
+
+### 🧠 Wärmerückgewinnung - So funktioniert's
+
+#### Grundprinzip
+
+Das System nutzt einen **Keramikspeicher** zur Wärmerückgewinnung. Dieser speichert Wärme aus der Abluft und gibt sie an die Zuluft ab.
+
+#### Betriebszyklus (Standard: 70s pro Phase)
+
+```mermaid
+graph LR
+    A[Phase 1: ABLUFT 70s] -->|Keramik lädt sich auf| B[Phase 2: ZULUFT 70s]
+    B -->|Keramik gibt Wärme ab| A
+    
+    style A fill:#ff6b6b
+    style B fill:#4ecdc4
+```
+
+#### Phase 1: Abluft (Rausblasen) - 70 Sekunden
+
+```
+Innenraum (warm) → Keramikspeicher → Außen
+    21°C              ↓ Wärme         5°C
+                  speichern
+```
+
+**Was passiert:**
+
+- 🔥 Warme Raumluft (21°C) strömt durch den Keramikspeicher
+- 📈 Keramik erwärmt sich und speichert Energie
+- 🌡️ **NTC Innen** misst am Ende die wahre Raumtemperatur
+- 💨 Abgekühlte Luft (~10°C) wird nach außen geblasen
+
+#### Phase 2: Zuluft (Reinblasen) - 70 Sekunden
+
+```
+Außen → Keramikspeicher → Innenraum (vorgewärmt)
+ 5°C     ↑ Wärme           ~16°C
+        abgeben
+```
+
+**Was passiert:**
+
+- ❄️ Kalte Außenluft (5°C) strömt durch den warmen Keramikspeicher
+- 🔄 Keramik gibt gespeicherte Wärme ab
+- 🌡️ **NTC Außen** misst Außentemperatur
+- 🌡️ **NTC Innen** misst vorgewärmte Zuluft (~16°C)
+- 🏠 Vorgewärmte Luft strömt in den Raum
+
+#### Effizienzberechnung
+
+Am Ende der Zuluft-Phase wird die Wärmerückgewinnung berechnet:
+
+$$
+\text{Effizienz} = \frac{T_{\text{Zuluft}} - T_{\text{Außen}}}{T_{\text{Raum}} - T_{\text{Außen}}} \times 100\%
+$$
+
+**Beispielrechnung:**
+
+- Raumtemperatur: 21°C
+- Außentemperatur: 5°C
+- Zulufttemperatur: 16°C
+
+$$
+\text{Effizienz} = \frac{16°C - 5°C}{21°C - 5°C} \times 100\% = \frac{11°C}{16°C} \times 100\% = 68.75\%
+$$
+
+**Interpretation:**
+
+- **> 70%:** Ausgezeichnete Wärmerückgewinnung
+- **50-70%:** Gute Wärmerückgewinnung
+- **< 50%:** Keramik zu kalt oder Zyklus zu kurz
+
+#### Optimierung der Effizienz
+
+| Parameter | Auswirkung | Empfehlung |
+|-----------|------------|------------|
+| **Zyklusdauer** | Längere Zyklen = bessere Speicherung | 70-90s optimal |
+| **Lüftergeschwindigkeit** | Langsamer = mehr Wärmeübertragung | 60-80% |
+| **Keramikvolumen** | Mehr Masse = mehr Speicher | Größer ist besser |
+| **Außentemperatur** | Kälter = höhere Effizienz möglich | - |
+
+#### Visualisierung im Display
+
+```
+┌──────────────────────────────────────┐
+│ ↗ ████████░░  72%   🌡️ 21.5°C  IAQ 45│
+│                     💧 55%    ⚙️ 68% │ ← Effizienz
+└──────────────────────────────────────┘
+```
+
+> ⚙️ **Effizienz-Anzeige:** Wird unten rechts im Display angezeigt (geplant)
+
+#### Synchronisation mehrerer Geräte
+
+Bei Verwendung mehrerer Geräte im gleichen Raum:
+
+**Paar-Betrieb (2 Geräte):**
+
+```
+Gerät A: Phase A (Zuluft)  ←→  Gerät B: Phase B (Abluft)
+         ↓ 70s wechseln ↓
+Gerät A: Phase B (Abluft) ←→  Gerät B: Phase A (Zuluft)
+```
+
+**Vorteile:**
+
+- ✅ Kontinuierlicher Luftaustausch
+- ✅ Keine Druckschwankungen
+- ✅ Optimale Wärmerückgewinnung
+- ✅ Synchronisiert über ESP-NOW
+
+---
+
+### 💡 Tipps für optimale Nutzung
+
+#### Allgemein
+
+- 🌡️ **Winter:** Wärmerückgewinnung-Modus für Energieeffizienz
+- ☀️ **Sommer:** Durchlüften-Modus für schnelle Kühlung
+- 🌙 **Nacht:** Reduzierte Geschwindigkeit (30-40%) für leisen Betrieb
+- 🏃 **Schnelllüftung:** Durchlüften-Modus mit Timer (15-30 Min)
+
+#### Display-Nutzung
+
+- 👋 Hand vor Sensor statt Touch-Button (schont Hardware)
+- 🌙 Display bleibt nachts aus (Auto-Off)
+- 📊 IAQ-Werte regelmäßig prüfen
+
+#### Wartung
+
+- 🧹 Keramikspeicher alle 6 Monate reinigen
+- 🔧 Lüfter alle 12 Monate entstauben
+- 📈 Effizienz-Werte monitoren (Verschlechterung = Reinigung nötig)
 
 ⚠️ Sicherheitshinweise
 

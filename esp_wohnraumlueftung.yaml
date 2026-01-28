@@ -3,7 +3,9 @@ substitutions:
   friendly_name: "ESPTest"
   min_fan_threshold: "10"
 
-  # VENTILATION CONFIG
+  # VENTILATION CONFIG - Default Values
+  # These are initial values. The actual configuration can be changed
+  # via Home Assistant and is stored persistently in flash memory.
   floor_id: "1"
   room_id: "1"
   device_id: "1"
@@ -18,6 +20,7 @@ substitutions:
 packages:
   common: !include esp32c6_common.yaml
   apds9960_pkg: !include apds9960_config.yaml
+  device_config_pkg: !include device_config.yaml
 
 external_components:
   - source:
@@ -75,15 +78,15 @@ espnow:
           std::vector<uint8_t> packet(data, data + size);
           ((esphome::VentilationController*)id(ventilation_ctrl))->on_packet_received(packet);
 
-packet_transport:
-  - platform: espnow
-    # Encryption is currently disabled/commented out
-    # encryption: "HubSecret123"
-    peer_address: "98:A3:16:85:96:70"
-    sensors:
-      # Data sent over ESP-NOW to the other device
-      - iaq
-      - temperature
+# packet_transport:
+#   - platform: espnow
+#     # Encryption is currently disabled/commented out
+#     # encryption: "HubSecret123"
+#     peer_address: "98:A3:16:85:96:70"
+#     sensors:
+#       # Data sent over ESP-NOW to the other device
+#       - iaq
+#       - temperature
 
 # ---------------------------------------------------------
 # I2C BUS CONFIGURATION
@@ -325,6 +328,30 @@ number:
             v->set_sync_interval((uint32_t)x * 60 * 1000);
 
 # ---------------------------------------------------------
+# VENTILATION MODE SELECTION
+# ---------------------------------------------------------
+select:
+  # Lüftungsmodus (existing)
+  - platform: template
+    name: "Lüftungsmodus"
+    id: selected_mode
+    options:
+      - "Wärmerückgewinnung"
+      - "Durchlüften"
+      - "Aus"
+    initial_option: "Wärmerückgewinnung"
+    set_action:
+      - lambda: |-
+          auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
+          if (x == "Wärmerückgewinnung") v->set_mode(esphome::MODE_ECO_RECOVERY);
+          else if (x == "Durchlüften") {
+            // Use the configured timer duration (0 = Infinite)
+            uint32_t duration = (uint32_t)(id(vent_timer).state * 60 * 1000);
+            v->set_mode(esphome::MODE_VENTILATION, duration);
+          }
+          else v->set_mode(esphome::MODE_OFF);
+
+# ---------------------------------------------------------
 # AUTOMATIONS & SWITCHES
 # ---------------------------------------------------------
 switch:
@@ -441,27 +468,6 @@ binary_sensor:
 # ---------------------------------------------------------
 # VENTILATION CONTROL
 # ---------------------------------------------------------
-
-# Select for Mode
-select:
-  - platform: template
-    name: "Lüftungsmodus"
-    id: selected_mode
-    options:
-      - "Wärmerückgewinnung"
-      - "Durchlüften"
-      - "Aus"
-    initial_option: "Wärmerückgewinnung"
-    set_action:
-      - lambda: |-
-          auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
-          if (x == "Wärmerückgewinnung") v->set_mode(esphome::MODE_ECO_RECOVERY);
-          else if (x == "Durchlüften") {
-            // Use the configured timer duration (0 = Infinite)
-            uint32_t duration = (uint32_t)(id(vent_timer).state * 60 * 1000);
-            v->set_mode(esphome::MODE_VENTILATION, duration);
-          }
-          else v->set_mode(esphome::MODE_OFF);
 
 # Interval to check for pending broadcasts
 interval:

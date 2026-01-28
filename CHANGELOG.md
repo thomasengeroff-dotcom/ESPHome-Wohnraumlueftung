@@ -118,12 +118,12 @@ Added ESPHome YAML tag support to `settings.json`:
 
 ### 🎯 Performance Improvements
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| I²C Bus Traffic | 100% | 20% | 80% reduction |
-| APDS9960 Power | 100mA | 50mA | 50% savings |
-| Update Rate | 10/sec | 2/sec | More stable |
-| Log Spam | High | Low | DEBUG level |
+| Metric            | Before | After | Improvement   |
+|-------------------|--------|-------|---------------|
+| I²C Bus Traffic   | 100%   | 20%   | 80% reduction |
+| APDS9960 Power    | 100mA  | 50mA  | 50% savings   |
+| Update Rate       | 10/sec | 2/sec | More stable   |
+| Log Spam          | High   | Low   | DEBUG level   |
 
 ### 🔧 Technical Changes
 
