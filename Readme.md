@@ -2,6 +2,8 @@
 
 Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses Projekt steuert einen reversierbaren Lüfter (Push-Pull) zur Wärmerückgewinnung, überwacht die Luftqualität (IAQ, CO2-Äquivalent) und bietet ein intuitives User Interface mit OLED-Display, Gestensteuerung und LED-Feedback.
 
+> 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit 12V PWM-Lüftern. Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist explizit für VentoMaxx optimiert und muss für andere Hersteller ggf. angepasst werden.
+
 [![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,6 +14,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 - [Features](#-features)
 - [Vergleich mit VentoMaxx](#-vergleich-mit-ventomaxx-v-wrg)
+- [ESP-NOW & Autonomie](#-esp-now-kabellose-autonomie)
 - [Hardware & BOM](#️-hardware--bill-of-materials-bom)
 - [Eigene Platine (PCB)](#-eigene-platine-pcb)
 - [Pinbelegung](#-pinbelegung--verkabelung)
@@ -54,7 +57,7 @@ Volle Kontrolle und Visualisierung über Home Assistant.
 
 ## 🔄 Vergleich mit VentoMaxx V-WRG
 
-Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG / WRG PLUS](https://www.ventomaxx.de/dezentrale-lueftung-produktuebersicht/aktive-luefter-mit-waermerueckgewinnung/) Steuerung entwickelt. Während industrielle Lösungen oft starr und teuer sind, bietet dieser ESPHome-Ansatz ein völlig neues Level an Flexibilität.
+Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG / WRG PLUS](https://www.ventomaxx.de/dezentrale-lueftung-produktuebersicht/aktive-luefter-mit-waermerueckgewinnung/) Steuerung entwickelt. Während die originale VentoMaxx-Lösung keine Integration in ein Smart Home System ermöglicht, bietet dieser ESPHome-Ansatz ein völlig neues Level an Flexibilität und Integrität. Da hier diese Lösung auf ESPHome basiert, kann sie mit jeder Home Assistant Version verwendet werden und bietet eine native Integration in Home Assistant.
 
 ### Funktionsvergleich
 
@@ -72,13 +75,27 @@ Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG /
 ### 🚀 Warum diese Lösung überlegen ist
 
 1. **Echte Luftqualität**: Statt nur die Zeit zu steuern, reagiert dieses System auf den **IAQ (Indoor Air Quality)** Index. Bei schlechter Luft schaltet das System automatisch hoch.
-2. **Keine neuen Kabel**: Durch **ESP-NOW** synchronisieren sich Geräte in einem Raum (z.B. paarweiser Push-Pull Betrieb) komplett kabellos über Funk.
+2. **Keine neuen Kabel**: Durch **ESP-NOW** synchronisieren sich Geräte in einem Raum (z.B. paarweiser Push-Pull Betrieb) komplett kabellos über Funk. Das Ganze funktioniert sogar, wenn das lokale WLAN ausfällt, da die Kommunikation direkt über die Wi-Fi-Radio-Hardware (MAC-Ebene) erfolgt, ohne dass eine Verbindung zu einem Access Point erforderlich ist.
 3. **Wartungs-Intelligenz**: Durch die **Tacho-Auswertung** erkennt das System, ob ein Lüfter blockiert oder verschmutzt ist, und meldet dies proaktiv an Home Assistant.
 4. **Zukunftssicher**: Dank **Over-the-Air (OTA)** Updates können neue Funktionen oder verbesserte Regelalgorithmen (z.B. für Wärmerückgewinnung) jederzeit eingespielt werden.
 
 ---
 
-## 🛠️ Hardware & Bill of Materials (BOM)
+## 📡 ESP-NOW: Kabellose Autonomie
+
+Die Geräte kommunizieren über die [ESPHome ESP-NOW Komponente](https://esphome.io/components/espnow.html). **ESP-NOW** ist ein von Espressif entwickeltes, verbindungsloses Protokoll, das eine direkte Kommunikation zwischen ESP32-Geräten ohne Umweg über einen WLAN-Router ermöglicht.
+
+### Vorteile im Überblick
+
+- 🌐 **WLAN-Unabhängigkeit**: Die Geräte benötigen keinen WLAN-Router (Access Point) für die Synchronisation. Die Kommunikation erfolgt direkt auf der MAC-Ebene (2,4 GHz Radio). Fällt das lokale WLAN aus, arbeitet die Lüftungsgruppe ungestört weiter.
+- 🛡️ **Hohe Zuverlässigkeit**: Durch die direkte Punkt-zu-Punkt-Kommunikation ist das System immun gegen Überlastungen oder Störungen im herkömmlichen WLAN-Netzwerk.
+- ⚡ **Extrem geringe Latenz**: Da keine Verbindung aufgebaut oder verwaltet werden muss (handshake-frei), werden Synchronisationsbefehle nahezu verzögerungsfrei übertragen. Dies ist entscheidend für den exakten Richtungswechsel synchronisierter Lüfterpaare.
+- 🔌 **Keine Steuerleitungen**: Es müssen keine Datenkabel durch Wände gezogen werden. Die Synchronisation erfolgt "Out-of-the-box" über Funk.
+- 📡 **Automatisches Software-Filtering**: Durch den Broadcast-Modus und die projektinterne Filterung (Floor/Room ID) finden sich Geräte im gleichen Raum automatisch.
+
+Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](https://esphome.io/components/espnow.html).
+
+## �🛠️ Hardware & Bill of Materials (BOM)
 
 ### Zentrale Einheit
 
@@ -90,19 +107,19 @@ Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG /
 
 ### Aktoren & Sensoren
 
-| Komponente | Beschreibung |
-| :--- | :--- |
-| **Lüfter** | 120mm PWM Lüfter (z.B. Arctic P12 PWM). *Geplant: ebm-papst AxiRev für Profi-Einsatz.* |
-| **BME680** | Bosch Umweltsensor (Temp, Hum, Pressure, Gas/IAQ) |
-| **NTCs** | 2x NTC 10k *(Geplant für Zuluft/Abluft Messung)* |
-| **APDS-9960** | Gesten- und Annäherungssensor |
+| Komponente | Beschreibung | Dokumentation |
+| :--- | :--- | :--- |
+| **Lüfter** | 120mm PWM Lüfter (z.B. Arctic P12 PWM). *Geplant: ebm-papst AxiRev.* | [Fan Component](https://esphome.io/components/fan/speed.html) |
+| **BME680** | Bosch Umweltsensor (Temp, Hum, Pressure, Gas/IAQ) | [BME68x BSEC2](https://esphome.io/components/sensor/bme68x_bsec2.html) |
+| **NTCs** | 2x NTC 10k *(Geplant für Zuluft/Abluft Messung)* | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
+| **APDS-9960** | Gesten- und Annäherungssensor | [APDS-9960](https://esphome.io/components/sensor/apds9960.html) |
 
 ### User Interface
 
-| Komponente | Beschreibung |
-| :--- | :--- |
-| **Display** | 0.91" OLED (SSD1306, 128x32 I2C) |
-| **Touch** | 1x Kapazitiv (Implementiert) + 1x *(Geplant)* |
+| Komponente | Beschreibung | Dokumentation |
+| :--- | :--- | :--- |
+| **Display** | 0.91" OLED (SSD1306, 128x32 I2C) | [SSD1306 OLED](https://esphome.io/components/display/ssd1306.html) |
+| **Touch** | 1x Kapazitiv (Implementiert) | [Binary Sensor](https://esphome.io/components/binary_sensor/index.html) |
 
 ---
 
@@ -118,17 +135,17 @@ Eine dedizierte Platine (PCB), die alle oben genannten Komponenten (XIAO, Traco,
 
 ## 🔌 Pinbelegung & Verkabelung
 
-Das System basiert auf dem Seeed XIAO ESP32C6.
+Das System basiert auf dem [Seeed XIAO ESP32C6](https://esphome.io/components/esp32.html).
 
 ⚠️ **WICHTIG:** Der Lüfter läuft mit 12V, die Logik mit 3.3V. Achte auf die korrekten Spannungsteiler und Schutzbeschaltungen.
 
-| XIAO Pin | GPIO | Funktion | Anschluss / Bemerkung |
+| XIAO Pin | GPIO | Funktion | Bemerkung |
 | :--- | :--- | :--- | :--- |
-| **D0** | GPIO0 | PWM Lüfter | Via NPN-Transistor (Inverted Logic) |
-| **D1** | GPIO1 | Tacho Signal | Lüfter RPM Signal |
+| **D0** | GPIO0 | [PWM Output](https://esphome.io/components/output/ledc.html) | Via NPN-Transistor (Inverted Logic) |
+| **D1** | GPIO1 | [Pulse Counter](https://esphome.io/components/sensor/pulse_counter.html) | Lüfter Tacho Signal |
 | **D3** | GPIO21 | Touch Button | Display ON/OFF Toggle |
-| **D4** | GPIO22 | I2C SDA | BME680, OLED, APDS-9960 |
-| **D5** | GPIO23 | I2C SCL | BME680, OLED, APDS-9960 |
+| **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | BME680, OLED, APDS-9960 |
+| **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | BME680, OLED, APDS-9960 |
 | **D8** | GPIO18 | *NTC Innen* | *(Geplant)* |
 | **D9** | GPIO17 | *NTC Außen* | *(Geplant)* |
 
