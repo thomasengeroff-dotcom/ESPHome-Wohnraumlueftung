@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = '.esphome/build/esptest/.pioenvs/esptest/firmware.factory.bin'
+elf = '.esphome/build/esptest/.pioenvs/esptest/firmware.elf'

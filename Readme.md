@@ -1,8 +1,8 @@
 # 🌬️ Smarte Wohnraumlüftung mit Wärmerückgewinnung (ESP32-C6)
 
-Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses Projekt steuert einen reversierbaren Lüfter (Push-Pull) zur Wärmerückgewinnung, überwacht die Luftqualität (IAQ, CO2-Äquivalent) und bietet ein intuitives User Interface mit OLED-Display, Gestensteuerung und LED-Feedback.
+Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses Projekt steuert einen reversierbaren Lüfter (Push-Pull) zur Wärmerückgewinnung, überwacht die Luftqualität (IAQ, CO2-Äquivalent), berechnet die effektive Wärmerückgewinnung und bietet ein intuitives User Interface mit OLED-Display, Annäherungssensor und Touch-Bedienung über zwei kapazitive Taster.
 
-> 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit 12V PWM-Lüftern. Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist explizit für VentoMaxx optimiert und muss für andere Hersteller ggf. angepasst werden.
+> 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit 12V PWM-Lüftern. Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist damit explizit für die VentoMaxx V-WRG Serie optimiert und muss für andere Hersteller ggf. angepasst werden.
 
 [![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
@@ -12,7 +12,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ## 📑 Inhaltsverzeichnis
 
-- [Features](#-features)
+- [Leistungsmerkmale](#-leistungsmerkmale)
 - [Vergleich mit VentoMaxx](#-vergleich-mit-ventomaxx-v-wrg)
 - [ESP-NOW & Autonomie](#-esp-now-kabellose-autonomie)
 - [Hardware & BOM](#️-hardware--bill-of-materials-bom)
@@ -28,30 +28,54 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ---
 
-## ✨ Features
+## ✨ Leistungsmerkmale
 
-### Lüftungsmodi
+### ⚙️ Intelligente Betriebsmodi
 
-- 🔄 **Wärmerückgewinnung**: Alternierender Betrieb (Standard 70s Rein / 70s Raus). Synchronisiert über ESP-NOW.
-- 💨 **Durchlüften**: Permanenter Abluftbetrieb (z.B. im Sommer). Timer-gesteuert oder Dauerhaft (0 Min).
-- 🔗 **Dezentrale Gruppe**: Geräte kommunizieren direkt miteinander (ESP-NOW). Kein zentraler WLAN-Broker nötig.
+- 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll.
+- 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb.
+- 🔗 **Autarkes Mesh-Netzwerk**: Robuste Dezentralität durch direkte Peer-to-Peer Kommunikation (ESP-NOW). Der Gruppenbetrieb ist auch ohne zentrale WLAN-Infrastruktur oder externe Broker gewährleistet.
 
-### Sensorik & Überwachung
+### 🛡️ Präzisions-Sensorik & Monitoring
 
-- 🌡️ **Temperatur & Feuchte**: Präzise Messung (via BME680).
-- 🍃 **Luftqualität (IAQ)**: Bosch BME680 mit BSEC2-Algorithmus.
-- 🏎️ **Drehzahlüberwachung**: Echtes Tacho-Signal-Feedback vom Lüfter.
+- 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels Bosch BME680.
+- 🍃 **Luftqualitätsanalyse (IAQ)**: Integrierte BSEC2-Algorithmen zur Berechnung des Index of Air Quality (IAQ) und CO2-Äquivalenten für eine bedarfsgerechte Lüftungssteuerung.
+- 🏎️ **Closed-Loop Drehzahlüberwachung**: Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung.
 
-### Modernes UI
+### 🖥️ Human-Machine Interface (HMI)
 
-- 📟 **OLED Display**: Zeigt Status, IAQ und Drehzahl an.
-- 👋 **Annäherung**: Display wacht automatisch auf, wenn man sich nähert (APDS-9960).
-- 🔆 **Adaptive Helligkeit**: Display-Helligkeit passt sich automatisch an Umgebungslicht an.
-- 🎯 **Optimierte Sensorik**: Reduzierter I²C-Bus-Traffic und Stromverbrauch durch intelligente Filter.
+- 📟 **Status-Dashboard**: Kontrastreiches OLED-Display zur Echtzeit-Visualisierung von Systemstatus, Sensorwerten und Lüftermetriken.
+- 👋 **Smart Wake-Up**: Energieeffiziente Aktivierung des Displays durch Annäherungserkennung (APDS-9960).
+- 🔆 **Adaptive Helligkeitsregelung**: Automatische Anpassung der Display-Luminanz an das Umgebungslicht für optimale Ablesbarkeit bei Nacht und Tag.
+- 🎯 **Ressourcenoptimierung**: Intelligente Filteralgorithmen reduzieren die Bus-Last (I²C) und minimieren den Energieverbrauch der Peripherie.
 
-### Home Assistant Integration
+### 🏠 Integration
 
-Volle Kontrolle und Visualisierung über Home Assistant.
+**Volle Home Assistant Integration**: Native API-Unterstützung für nahtloses Monitoring, Steuerung und Automatisierung über Ihr Smart Home System.
+
+### �️ Roadmap & Zukünftige Erweiterungen
+
+Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Implementierung folgt):
+
+- **🤖 Adaptive IAQ-Regelung**:
+  - Dynamische Anpassung der Lüfterleistung basierend auf Echtzeit-IAQ-Werten.
+  - Granulare Konfiguration von Schwellenwerten, Reaktionskurven und Maximalbegrenzungen (Noise Control).
+  - Lokal und remote aktivierbar.
+
+- **🌙 Intelligenter Nachtmodus**:
+  - Zeitgesteuerte Drosselung der Lüfterleistung zur Geräuschminimierung in Ruhephasen.
+  - Flexibles Zeitmanagement und Definition spezifischer Nacht-Profile.
+  - Lokal und remote aktivierbar.
+
+- **🧹 Wartungs-Management**:
+  - Prädiktiver Filterwechsel-Alarm basierend auf Betriebsstunden und Zeitintervallen.
+  - Lokale Visualisierung und digitale Benachrichtigung im Smart Home Dashboard.
+
+- **💧 Feuchte-Management**:
+  - Automatisierte Entfeuchtungslogik zur Schimmelprävention basierend auf absoluter und relativer Feuchte.
+  - Intelligente Hysterese-Steuerung zur Vermeidung von "Rapid Cycling".
+  - Lokal und remote aktivierbar.
+  - Zielwert für maximale Luftfeuchtigkeit konfigurierbar.
 
 ---
 
@@ -337,7 +361,7 @@ Das Display zeigt alle wichtigen Informationen auf einen Blick:
 **Rechte Seite (rotiert alle 3 Sekunden):**
 
 | Ansicht | Anzeige | Icon |
-|---------|---------|------|
+| --------- | --------- | ------ |
 | **Temperatur** | 21.5°C | 🌡️ |
 | **Luftfeuchtigkeit** | 55% | 💧 |
 | **Luftqualität (IAQ)** | 0-500 | 🍃 |
