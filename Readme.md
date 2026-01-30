@@ -44,10 +44,9 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ### 🖥️ Human-Machine Interface (HMI)
 
-- 📟 **Status-Dashboard**: Kontrastreiches OLED-Display zur Echtzeit-Visualisierung von Systemstatus, Sensorwerten und Lüftermetriken.
-- 👋 **Smart Wake-Up**: Energieeffiziente Aktivierung des Displays durch Annäherungserkennung (APDS-9960).
-- 🔆 **Adaptive Helligkeitsregelung**: Automatische Anpassung der Display-Luminanz an das Umgebungslicht für optimale Ablesbarkeit bei Nacht und Tag.
-- 🎯 **Ressourcenoptimierung**: Intelligente Filteralgorithmen reduzieren die Bus-Last (I²C) und minimieren den Energieverbrauch der Peripherie.
+- 🚥 **LED Status-Panel**: Original VentoMaxx Bedienfeld mit 9 Status-LEDs (Modus, Stufe, Power).
+- 🔘 **Tastensteuerung**: Intuitive Bedienung über 3 physische Taster (Power, Modus, +/-).
+- 🔆 **Auto-Dimming**: (Optional) Helligkeitssteuerung der LEDs für Nachtbetrieb.
 
 ### 🏠 Integration
 
@@ -259,189 +258,62 @@ Die Konfiguration nutzt NTCs mit einem B-Wert von 3435. Falls du andere Sensoren
 
 ## 🎮 Bedienung & Steuerung
 
-Das System bietet drei Steuerungsmöglichkeiten: **Direkt am Gerät**, **über Home Assistant** und **automatisch** durch Sensoren.
+Die Steuerung erfolgt intuitiv über das integrierte Bedienpanel oder vollautomatisch via Home Assistant.
 
-### 🖐️ Bedienung am Gerät
+### 🖐️ Bedienpanel (VentoMaxx Style)
 
-#### Touch-Button (GPIO21)
+Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 
-Der kapazitive Touch-Button dient zur Display-Steuerung:
+#### Tastenbelegung
 
-| Aktion            | Funktion        | Feedback                      |
-| :---------------- | :-------------- | :---------------------------- |
-| **Kurzer Touch**  | Display Ein/Aus | Display aktiviert/deaktiviert |
+| Taste | Funktion | Bedienung |
+| :--- | :--- | :--- |
+| **Power (I/O)** | System Ein/Aus | • Kurz drücken: Standby Toggle<br>• Lang drücken (>5s): Hard Reset |
+| **Modus (M)** | Betriebsart wählen | • Kurz drücken: Wechselt zwischen *Wärmerückgewinnung* und *Durchlüften* |
+| **Stufe (+)** | Lüfterstärke | • Kurz drücken: Erhöht Stufe (1-5). Nach Max beginnt Zyklus bei 1. |
 
-> 💡 **Tipp:** Das Display schaltet sich automatisch nach 5 Sekunden ab, um die OLED-Lebensdauer zu schonen.
+#### Status-LEDs (Feedback)
 
-#### Annäherungssensor (APDS9960)
+| LED Gruppe | LEDs | Anzeige |
+| :--- | :--- | :--- |
+| **Power** | 🟢 1x Grün | Leuchtet permanent, wenn System aktiv. Blinkt bei Fehler. |
+| **Master** | � 1x Grün | Leuchtet, wenn dies das Master-Gerät in einer Gruppe ist. |
+| **Modus** | � 2x Grün | **LED 1**: Wärmerückgewinnung aktiv<br>**LED 2**: Durchlüften (Sommer) aktiv |
+| **Intensität** | 🟢 5x Grün | Zeigt aktuelle Lüfterstufe 1 bis 5 (linear skaliert). |
 
-Das System reagiert intelligent auf deine Anwesenheit:
+---
 
-```text
-     👋 Hand nähert sich
-         ↓
-    [APDS9960 Sensor]
-         ↓
-   Proximity > 15%
-         ↓
-    ✨ Display aktiviert
-         ↓
-    ⏱️ 5 Sekunden Timeout
-         ↓
-    🌙 Display deaktiviert
-```
+### � Steuerung über Home Assistant
 
-**Funktionsweise:**
+Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am Panel werden sofort synchronisiert.
 
-- **Erkennungsbereich:** < 20cm vor dem Sensor
-- **Reaktionszeit:** < 500ms
-- **Auto-Helligkeit:** Passt sich an Umgebungslicht an
-  - 🌞 Heller Raum → Volle Helligkeit
-  - 🌙 Dunkler Raum → Reduzierte Helligkeit
+#### Verfügbare Steuerungen
 
-### 🏠 Steuerung über Home Assistant
+- **Lüfter**: Slider 0-100% (Panel-Stufen entsprechen ~20% Schritten)
+- **Modus**: Auswahl (Eco Recovery / Ventilation / Off)
+- **Timer**: Konfiguration für "Durchlüften" (Standard: 30 Min)
+- **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und IAQ
 
-Alle Funktionen sind vollständig in Home Assistant integriert:
+#### Automatische Funktionen
 
-#### Betriebsmodi
+- **Nachtmodus (geplant)**: Dimmt die LEDs automatisch basierend auf Uhrzeit.
+- **Filter-Alarm**: Power-LED blinkt rot (geplant), wenn Filterwechsel nötig.
 
-| Modus                     | Beschreibung                            | Anwendungsfall             |
-| :------------------------ | :-------------------------------------- | :------------------------- |
-| 🔄 **Wärmerückgewinnung** | Alternierender Betrieb (70s Rein/Raus)  | Standard-Betrieb im Winter |
-| 💨 **Durchlüften**        | Permanenter Abluftbetrieb               | Schnelle Lüftung, Sommer   |
-| ⏸️ **Aus**                | Lüfter gestoppt                         | Wartung, Nachtruhe         |
-
-#### Steuerbare Parameter
-
-**Lüftergeschwindigkeit:**
-
-- Slider: 0-100%
-- Mindestdrehzahl: 10% (konfigurierbar)
-- Echtzeit-RPM-Anzeige
-
-**Durchlüften-Timer:**
-
-- Einstellbar: 0-120 Minuten (5-Min-Schritte)
-- 0 Min = Dauerbetrieb
-- Standard: 30 Minuten
-
-**Zyklusdauer (Wärmerückgewinnung):**
-
-- Einstellbar: 10-300 Sekunden
-- Standard: 70 Sekunden pro Richtung
-- Synchronisiert über ESP-NOW
-
-**Sync-Intervall:**
-
-- Einstellbar: 1-360 Minuten
-- Standard: 180 Minuten (3 Stunden)
-- Hält Geräte synchron
-
-### 📺 OLED Display (128x32)
-
-Das Display zeigt alle wichtigen Informationen auf einen Blick:
-
-```
-┌──────────────────────────────────────┐
-│ ↗ ████████░░  72%   🌡️ 21.5°C  IAQ 45│
-│                     💧 55%    ⚡ 850rpm│
-└──────────────────────────────────────┘
-```
-
-#### Display-Layout
-
-**Linke Seite:**
-
-- **Richtungspfeil:**
-  - `↗` = Zuluft (Rein)
-  - `↘` = Abluft (Raus)
-- **Drehzahlbalken:** Visuelle Darstellung 0-100%
-- **Prozentanzeige:** Aktuelle Lüftergeschwindigkeit
-
-**Rechte Seite (rotiert alle 3 Sekunden):**
-
-| Ansicht | Anzeige | Icon |
-| --------- | --------- | ------ |
-| **Temperatur** | 21.5°C | 🌡️ |
-| **Luftfeuchtigkeit** | 55% | 💧 |
-| **Luftqualität (IAQ)** | 0-500 | 🍃 |
-| **Drehzahl** | RPM | ⚡ |
-| **Luftdruck** | hPa | 🔽 |
-| **VOC** | ppm | 💨 |
-
-#### Luftqualitäts-Anzeige (IAQ)
-
-Das System verwendet eine intuitive Farbcodierung:
-
-| IAQ-Wert    | Bewertung     | Farbe        | Empfehlung        |
-| :---------- | :------------ | :----------- | :---------------- |
-| **0-50**    | Ausgezeichnet | 🟢 Grün      | Alles perfekt     |
-| **51-100**  | Gut           | 🟡 Gelb      | Weiter so         |
-| **101-150** | Mäßig         | 🟠 Orange    | Lüften empfohlen  |
-| **151-200** | Schlecht      | 🔴 Rot       | Sofort lüften!    |
-| **201+**    | Sehr schlecht | 🔴 Dunkelrot | Dringend handeln! |
-
-> 📡 **ESP-NOW:** IAQ-Werte werden automatisch an gekoppelte Geräte gesendet.
-
-### 🔄 Automatische Funktionen
-
-#### Smart Display Management
-
-1. **Proximity Wake-Up:**
-    - Hand vor Sensor → Display an
-    - Automatische Helligkeitsanpassung
-    - 5s Auto-Off Timer
-
-2. **Adaptive Helligkeit:**
-
-    ```yaml
-    Umgebungslicht > 100 → Helligkeit 255 (100%)
-    Umgebungslicht ≤ 100 → Helligkeit 128 (50%)
-    ```
-
-3. **OLED-Schutz:**
-    - Auto-Off nach Inaktivität
-    - Verhindert Einbrennen
-    - Verlängert Lebensdauer
-
-#### Automatische Lüftersteuerung
-
-**Fan Auto Cycle Script:**
-
-```text
-1. Ramp Up:   0% → 100% in 5s (sanfter Start)
-2. Hold:      100% für 20s (volle Leistung)
-3. Ramp Down: 100% → 0% in 5s (sanfter Stopp)
-4. Pause:     100ms
-5. Wiederholen
-```
-
-**Vorteile:**
-
-- ✅ Reduziert mechanischen Verschleiß
-- ✅ Leiser Betrieb
-- ✅ Energieeffizient
+---
 
 ### 💡 Tipps für optimale Nutzung
 
-#### Allgemein
+#### Betriebsarten sinnvoll einsetzen
 
-- 🌡️ **Winter:** Wärmerückgewinnung-Modus für Energieeffizienz
-- ☀️ **Sommer:** Durchlüften-Modus für schnelle Kühlung
-- 🌙 **Nacht:** Reduzierte Geschwindigkeit (30-40%) für leisen Betrieb
-- 🏃 **Schnelllüftung:** Durchlüften-Modus mit Timer (15-30 Min)
+- ❄️ **Winter (WRG)**: Nutzen Sie immer den Wärmerückgewinnungs-Modus für maximale Energieersparnis.
+- ☀️ **Sommer (Querlüftung)**: Abends den "Durchlüften"-Modus aktivieren, um kühle Außenluft einzubringen (ohne WRG).
+- 🔇 **Nacht**: Stufe 1 oder 2 ist meist ausreichend und kaum hörbar.
 
-#### Display-Nutzung
+#### Wartung & Pflege
 
-- 👋 Hand vor Sensor statt Touch-Button (schont Hardware)
-- 🌙 Display bleibt nachts aus (Auto-Off)
-- 📊 IAQ-Werte regelmäßig prüfen
-
-#### Wartung
-
-- 🧹 Keramikspeicher alle 6 Monate reinigen
-- 🔧 Lüfter alle 12 Monate entstauben
-- 📈 Effizienz-Werte monitoren (Verschlechterung = Reinigung nötig)
+- **Filter**: Alle 6 Monate prüfen/wechseln.
+- **Reinigung**: Panel nur mit trockenem Tuch reinigen.
+- **Wärmetauscher**: Einmal jährlich mit Wasser ausspülen (siehe Herstelleranleitung).
 
 ---
 
