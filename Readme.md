@@ -257,8 +257,51 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 | :--- | :--- | :--- |
 | **Power** | 🟢 1x Grün | Leuchtet permanent, wenn System aktiv. Blinkt bei Fehler. |
 | **Master** | 🟢 1x Grün | Leuchtet, wenn dies das Master-Gerät in einer Gruppe ist. |
-| **Modus** | 🟢 2x Grün | **LED 1**: Wärmerückgewinnung aktiv<br>**LED 2**: Durchlüften (Sommer) aktiv |
-| **Intensität** | 🟢 5x Grün | Zeigt aktuelle Lüfterstufe 1 bis 5 (linear skaliert). |
+| **Programm** | 🟢 2x Grün | Zeigt das aktive Programm an (siehe unten). |
+| **Intensität** | 🟢 5x Grün | Zeigt aktuelle Lüfterstufe 1 bis 5 (halbe/volle Helligkeit für 10 Stufen). |
+
+---
+
+### 🔄 Detaillierte Betriebsmodi (Programme)
+
+Über die **Modus-Taste (M)** werden die vier Hauptprogramme gewählt. Die Anzeige erfolgt über die zwei Modus-LEDs (**L** = Links, **R** = Rechts):
+
+#### 1. Effizienzlüftung (WRG)
+
+- **Anzeige:** LED **L** leuchtet.
+- **Funktion:** Optimierte Wärmerückgewinnung im zyklischen Push-Pull Betrieb.
+- **Zykluszeiten:** Die Reversierzeiten passen sich automatisch der Lüfterstufe an:
+  - Stufe 1: **70 Sek.**
+  - Stufe 2: **65 Sek.**
+  - Stufe 3: **60 Sek.**
+  - Stufe 4: **55 Sek.**
+  - Stufe 5: **50 Sek.**
+- **Synchronisation:** Paarzahlig aktive Stationen laufen im Gegentakt (Druckneutral).
+
+#### 2. Stoßlüftung
+
+- **Anzeige:** LED **R** leuchtet.
+- **Funktion:** Intensivlüftung für schnellen Luftaustausch.
+- **Ablauf:** 15 Minuten Effizienzlüftung (WRG), gefolgt von 105 Minuten Pause. Der 2-Stunden-Zyklus startet dann erneut mit umgekehrter Drehrichtung.
+
+#### 3. Querlüftung (Durchlüften)
+
+- **Anzeige:** LED **L** & **R** leuchten.
+- **Funktion:** Dauerhafter Durchfluss ohne Richtungswechsel (keine WRG).
+- **Betrieb:** Eine Hälfte der Gruppe arbeitet als Zuluft, die andere als Abluft.
+- **Hinweis:** Nur im Gruppenmodus verfügbar.
+
+#### 4. Sensorlüftung (Automatik)
+
+- **Anzeige:** Beide LEDs **AUS**.
+- **Funktion:** Bedarfsgesteuerte Regelung über den integrierten Hygrosensor.
+- **Logik:** Das System schaltet bei Überschreitung von Schwellenwerten automatisch hoch:
+  - **< 55% r.F.:** Stufe 1 (Standard)
+  - **>= 55% r.F.:** Stufe 2
+  - **>= 65% r.F.:** Stufe 3
+  - **>= 70% r.F.:** Stufe 4
+  - **>= 80% r.F.:** Stufe 5
+- Die Rückschaltung erfolgt bei Unterschreitung von 54% r.F. (Hysterese). Die maximale Stufe kann manuell begrenzt werden.
 
 ---
 
@@ -300,9 +343,9 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 
 ### Grundprinzip
 
-Das System nutzt einen **Keramikspeicher** zur Wärmerückgewinnung. Dieser speichert Wärme aus der Abluft und gibt sie an die Zuluft ab.
+Das System nutzt einen **Keramikspeicher** zur Wärmerückgewinnung. Dieser speichert Wärme aus der Abluft und gibt sie an die Zuluft ab. Die Zykluszeit (Phase) variiert je nach Luftstufe zwischen **50s und 70s**, um die Energieeffizienz zu optimieren.
 
-### Betriebszyklus (Standard: 70s pro Phase)
+### Betriebszyklus (50s bis 70s pro Phase)
 
 ```mermaid
 graph LR

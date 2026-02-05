@@ -7,7 +7,7 @@ Der APDS9960 Annäherungs- und Lichtsensor wurde umfassend optimiert:
 ### Performance-Verbesserungen
 
 | Parameter | Standard | Optimiert | Vorteil |
-|-----------|----------|-----------|---------|
+| :--- | :--- | :--- | :--- |
 | **Update Interval** | 60s | 500ms | Schnelle Reaktion bei geringem I²C-Traffic |
 | **Proximity Gain** | 4x | 2x | Bessere Nahbereichserkennung (<20cm) |
 | **LED Drive** | 100mA | 50mA | 50% Stromersparnis |
@@ -148,12 +148,23 @@ output:
     zero_means_zero: true      # 0% = wirklich AUS
 ```
 
-**Automatischer Zyklus:**
+**Automatischer Zyklus (Betriebsprogramme):**
 
-1. Ramp Up: 0→100% in 5s (100 Schritte à 50ms)
-2. Hold: 100% für 20s
-3. Ramp Down: 100→0% in 5s
-4. Pause: 100ms vor nächstem Zyklus
+1. **Effizienzlüftung (WRG):**
+   - Zykluszeiten (Phasendauer) in Abhängigkeit der Stufe:
+     - Stufe 1: 70s
+     - Stufe 2: 65s
+     - Stufe 3: 60s
+     - Stufe 4: 55s
+     - Stufe 5: 50s
+2. **Stoßlüftung:**
+   - 15 Min. Betrieb (WRG) / 105 Min. Pause.
+   - Richtungswechsel nach jedem 2-Stunden-Zyklus.
+3. **Sensorlüftung (Hygro-Option):**
+   - Schwellenwerte: 55%, 65%, 70%, 80% r.F.
+   - Hysterese: Rückschaltung bei < 54% r.F.
+4. **Querlüftung:**
+   - Permanenter Betrieb (50/50 Zuluft/Abluft Split), keine Richtungswechsel.
 
 ---
 

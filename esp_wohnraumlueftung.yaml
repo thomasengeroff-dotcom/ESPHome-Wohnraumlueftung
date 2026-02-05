@@ -101,11 +101,12 @@ i2c:
   timeout: 50ms # Increased timeout to prevent "software timeout" errors
 
 # ---------------------------------------------------------
-# MCP23017 I/O EXPANDER
+# PCA9685 I/O EXPANDER (LED Driver)
 # ---------------------------------------------------------
-mcp23017:
-  - id: mcp_hub
-    address: 0x20
+pca9685:
+  - id: pwm_hub
+    frequency: 1000Hz
+    address: 0x40
 
 # ---------------------------------------------------------
 # BME680 SENSOR (BSEC2)
@@ -121,71 +122,53 @@ bme68x_bsec2_i2c:
   state_save_interval: 6h # Save state every 6 hours
 
 # ---------------------------------------------------------
-# MCP23017 OUTPUTS (LEDs)
+# PCA9685 OUTPUTS (LEDs)
 # ---------------------------------------------------------
 output:
-  # --- LEDS Port A ---
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 0
-      mode: OUTPUT
-    id: led_pwr
-    inverted: false
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 1
-      mode: OUTPUT
-    id: led_master
-    inverted: false
-  # Level LEDs (1-5)
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 2
-      mode: OUTPUT
-    id: led_l1
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 3
-      mode: OUTPUT
-    id: led_l2
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 4
-      mode: OUTPUT
-    id: led_l3
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 5
-      mode: OUTPUT
-    id: led_l4
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 6
-      mode: OUTPUT
-    id: led_l5
-  # Mode LED WRG
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 7
-      mode: OUTPUT
-    id: led_wrg
+  # --- LEDS Port A (Channels 0-7) ---
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 0
+    id: out_led_pwr
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 1
+    id: out_led_master
 
-  # --- LEDS Port B ---
+  # Level LEDs (Channels 2-6)
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 2
+    id: out_led_l1
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 3
+    id: out_led_l2
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 4
+    id: out_led_l3
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 5
+    id: out_led_l4
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 6
+    id: out_led_l5
+
+  # Mode LED WRG (Channel 7)
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 7
+    id: out_led_wrg
+
+  # --- LEDS Port B (Channel 8) ---
   # Mode LED Ventilation
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 8
-      mode: OUTPUT
-    id: led_vent
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 8
+    id: out_led_vent
 
   # --- Fan PWM (Standard Output) ---
   - platform: ledc
@@ -197,46 +180,68 @@ output:
     zero_means_zero: true
 
 # ---------------------------------------------------------
-# LED LIGHTS (Internal Helper)
+# LED LIGHTS (Monochromatic for Dimming)
 # ---------------------------------------------------------
 light:
-  - platform: binary
-    output: led_pwr
+  - platform: monochromatic
+    output: out_led_pwr
+    name: "Status LED Power"
     id: status_led_power
     internal: true
-  - platform: binary
-    output: led_master
+    default_transition_length: 0.5s
+  - platform: monochromatic
+    output: out_led_master
+    name: "Status LED Master"
     id: status_led_master
     internal: true
-  - platform: binary
-    output: led_wrg
-    id: status_led_mode_wrg
+    default_transition_length: 0.5s
+  - platform: monochromatic
+    output: out_led_wrg
+    name: "Status LED Mode WRG"
+    id: status_led_wrg
     internal: true
-  - platform: binary
-    output: led_vent
-    id: status_led_mode_vent
+    default_transition_length: 0.5s
+    # Rename id to match old logic (status_led_mode_wrg) to avoid changing helpers too much
+    # Or change helpers. Current helper uses 'status_led_mode_wrg'. Let's alias it or use the id directly.
+    # To keep helpers cleaner, I will use the ID expected by helpers: status_led_mode_wrg
+  - platform: monochromatic
+    output: out_led_vent
+    name: "Status LED Mode Vent"
+    id: status_led_mode_vent # Automation helper expects this ID
     internal: true
+    default_transition_length: 0.5s
+
   # Level LEDs
-  - platform: binary
-    output: led_l1
+  - platform: monochromatic
+    output: out_led_l1
     id: status_led_l1
     internal: true
-  - platform: binary
-    output: led_l2
+    default_transition_length: 0.2s
+  - platform: monochromatic
+    output: out_led_l2
     id: status_led_l2
     internal: true
-  - platform: binary
-    output: led_l3
+    default_transition_length: 0.2s
+  - platform: monochromatic
+    output: out_led_l3
     id: status_led_l3
     internal: true
-  - platform: binary
-    output: led_l4
+    default_transition_length: 0.2s
+  - platform: monochromatic
+    output: out_led_l4
     id: status_led_l4
     internal: true
-  - platform: binary
-    output: led_l5
+    default_transition_length: 0.2s
+  - platform: monochromatic
+    output: out_led_l5
     id: status_led_l5
     internal: true
+    default_transition_length: 0.2s
+
+# Alias for ID consistency if needed, but I kept IDs same as before where possible.
+# Exception: status_led_wrg vs status_led_mode_wrg.
+# Helper uses: status_led_power, status_led_master, status_led_mode_wrg, status_led_mode_vent, status_led_l1..l5
+# IDs above match helpers.
 
 # ---------------------------------------------------------
 # SENSORS CONFIGURATION
@@ -541,6 +546,16 @@ select:
 # AUTOMATIONS & SWITCHES
 # ---------------------------------------------------------
 switch:
+  # PCA9685 Output Enable (Active Low)
+  - platform: gpio
+    pin:
+      number: GPIO21
+      inverted: true
+    name: "PCA9685 Output Enable"
+    id: pca9685_oe
+    restore_mode: ALWAYS_ON
+    internal: true
+
   - platform: template
     name: "Lüfter Richtung A"
     id: fan_direction
@@ -614,14 +629,13 @@ script:
 # CONTROL PANEL BUTTONS (Input)
 # ---------------------------------------------------------
 binary_sensor:
-  # Button Mode (Right) - Mode Control
+  # Button Mode (Right) - Mode Control (D9 / GPIO20)
   - platform: gpio
     pin:
-      mcp23xxx: mcp_hub
-      number: 14 # GPB6 -> PIN 11 on FFC (Mode)
+      number: GPIO20
       mode:
         input: true
-        pullup: true
+        # Internal Pullup removed (External 10k used)
       inverted: true # Pressed = Low -> Inverted = ON
     name: "Button Mode"
     id: button_mode
@@ -635,17 +649,43 @@ binary_sensor:
             cycle_operating_mode(id(current_mode_index));
             id(update_leds).execute();
 
-  # Button Power (GPB5)
+  # Button Power (Left) - On/Off (D8 / GPIO19)
   - platform: gpio
     pin:
-      mcp23xxx: mcp_hub
-      number: 13 # GPB5 -> PIN 10 on FFC (Power)
+      number: GPIO19
       mode:
         input: true
-        pullup: true
-      inverted: true
+        # Internal Pullup removed (External 10k used)
+      inverted: true # Pressed = Low -> Inverted = ON
     name: "Button Power"
     id: button_power
+    filters:
+      - delayed_on: 25ms
+      - delayed_off: 25ms
+    on_click:
+      then:
+        - lambda: |-
+            id(ventilation_enabled) = !id(ventilation_enabled);
+            if (id(ventilation_enabled)) {
+              id(operating_mode) = id(operating_mode); // Restore mode
+            } else {
+              id(operating_mode) = 0; // Off
+              id(fan_direction).turn_off();
+            }
+            // Trigger fan update
+            id(fan_speed_update).execute();
+            id(update_leds).execute();
+
+  # Button Level (Middle) - Speed Level (D10 / GPIO18)
+  - platform: gpio
+    pin:
+      number: GPIO18
+      mode:
+        input: true
+        # Internal Pullup removed (External 10k used)
+      inverted: true # Pressed = Low -> Inverted = ON
+    name: "Button Fan Intensity"
+    id: button_level
     filters:
       - delayed_on: 25ms
       - delayed_off: 25ms
@@ -654,28 +694,6 @@ binary_sensor:
           - ON for at least 1s
         then:
           - lambda: toggle_system_power(); id(update_leds).execute();
-
-  # Button Level (Left) - Fan Intensity Control (GPB7)
-  - platform: gpio
-    pin:
-      mcp23xxx: mcp_hub
-      number: 15 # GPB7 -> PIN 12 on FFC (Level)
-      mode:
-        input: true
-        pullup: true
-      inverted: true
-    name: "Button Fan Intensity"
-    id: button_level
-    filters:
-      - delayed_on: 25ms
-      - delayed_off: 25ms
-    on_click:
-      then:
-        - lambda: |-
-            id(fan_intensity_level) = (id(fan_intensity_level) % 10) + 1;
-            set_fan_intensity_level(id(fan_intensity_level));
-            id(update_leds).execute();
-            ESP_LOGI("button", "Fan intensity set to level %d", id(fan_intensity_level));
 
 # ---------------------------------------------------------
 # VENTILATION CONTROL

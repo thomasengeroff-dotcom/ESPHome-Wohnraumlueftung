@@ -7,27 +7,23 @@ Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den 
 
 ---
 
-## 1. Übersicht & BOM (Bill of Materials)
-
 ### Zentrale Einheit & Power
 
 * **MCU**: Seeed Studio XIAO ESP32C6
 * **Netzteil (High Voltage)**: Recom RAC10-12SK/277 (230V AC -> 12V DC, 10W)
-* **Logic Power (DC/DC)**: Recom R-78E5.0-0.5 oder Traco TSR 1-2450 (12V -> 5V)
+* **Logic Power (MCU Supply)**: Recom R-78E5.0-0.5 oder Traco TSR 1-2450 (12V -> 5V)
+  * *Versorgung*: Speist ausschließlich den XIAO ESP32C6 (via 5V Pin).
+* **Peripheral Power (3.3V Buck)**: **Diodes Inc. AP63203WU-7** (12V -> 3.3V, 2A)
+  * *Versorgung*: Speist alle Sensoren (BME680), I/O Expander und Bedienpanel.
+  * *Hinweis*: Der interne 3.3V LDO des ESP32 wird **nicht** genutzt (Pin open).
 * **Sicherung**: 1A Slow Blow (Träge)
 * **Varistor**: S10K275 (Überspannungsschutz Eingang)
 * **Pufferung**:
   * 470µF / 25V Elko (12V Rail)
-* **MCU**: Seeed Studio XIAO ESP32C6
-* **Netzteil (High Voltage)**: Recom RAC10-12SK/277 (230V AC -> 12V DC, 10W)
-* **Logic Power (DC/DC)**: Recom R-78E5.0-0.5 oder Traco TSR 1-2450 (12V -> 5V)
-* **Sicherung**: 1A Slow Blow (Träge)
-* **Varistor**: S10K275 (Überspannungsschutz Eingang)
-* **Pufferung**:
-  * 470µF / 25V Elko (12V Rail)
-  * 10µF / 50V Elko (Eingang DC/DC)
-  * 10µF / 16V Elko (Ausgang DC/DC 5V)
+  * 10µF / 50V Elko (Eingang 5V DC/DC)
+  * **470µF / 16V Elko** (Ausgang 5V DC/DC) - *Wichtig für ESP32 WiFi Peaks!*
   * 100nF Kerko (HF-Entstörung 5V Rail)
+  * **AP63203 Beschaltung** (siehe unten bei PCB Design)
 
 ### Aktoren & Sensoren
 
@@ -50,6 +46,36 @@ Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den 
 * **I/O Expander**: **MCP23017** (I2C) - Zur Ansteuerung des Panels.
 * **NTC-Sensorik**: 2x 10kΩ NTC (Beta 3435)
   * *Beschaltung*: 10kΩ 0.1% Referenzwiderstand + 100nF Filter + 3.3V Zener/TVS
+
+## 1. Detaillierte BOM (Bill of Materials)
+
+Status: **Final (06.02.2026)** - ✅ Verified
+
+| Nr. | Menge | Wert / Bauteil | Designator | Footprint | Hersteller Part | Notiz |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| 1 | 1 | 470µF / 25V | C1 | Radial BD10 | KM477M025G13RR | Main 12V Buffer |
+| 2 | 1 | 10µF / 50V | C2 | 1206 | GRM31CR61H106MA12L | 5V Reg Input |
+| 3 | 5 | 100nF | C6, C7, C10, C22, **C25** | 0805 | CC0805KRX7R... | Bypass / HF (C25 für AP63203) |
+| 4 | 1 | 470µF / 16V | C13 | SMD BD6.3 | RVT1C471M0607 | 5V Output Buffer |
+| 5 | 1 | 10µF / 25V | C20 | **0603** | CL10A106MA8NRNC | AP63203 Input (Bias beachten) |
+| 6 | 2 | 22µF / 6.3V | C23, C24 | 0603 | CL10A226MQ8NRNC | AP63203 Output |
+| 7 | 1 | **100µF / 25V** | **C27** | SMD BD6.3 | RVT1E101M0605 | Fan Filter (Ersetzt C11) ✅ |
+| 8 | 1 | 10µF / 25V | C28 | 1210 | CL32B106KAJNNNE | Extra Buffer |
+| 9 | 1 | 470µH | L1 | SMD | ASPI-0804T-471M-T | Fan Filter |
+| 10 | 1 | 3.9µH | L2 | SMD | ANR4030T3R9M | AP63203 Inductor |
+| 11 | 1 | AP63203WU-7 | U37 | TSOT-26 | AP63203WU-7 | 3.3V Regulator |
+| ... | ... | ... | ... | ... | ... | ... |
+
+> [!TIP]
+> **Check-Ergebnis**:
+>
+> 1. **Sicherheit**: Das kritische C11 Problem ist gelöst. **C27 (100µF / 25V)** ist absolut sicher für die 12V Lüfter-Spannung.
+> 2. **Stabilität**: **C25 (100nF)** wurde parallel zu C20 ergänzt. Das ist sehr gut für das HF-Verhalten des Buck-Converters.
+> 3. **Hinweis zu C20**: Du nutzt `CL10A106MA8NRNC` (0603, 10µF, 25V).
+>     * Das ist elektrisch sicher (Spannungsfestigkeit passt).
+>     * *Physikalischer Effekt*: Bei 12V Bias hat ein 0603 MLCC nur noch ca. 20-30% seiner Kapazität (effektiv ~2-3µF). Da du aber C25 (HF) und C1 (470µF Bulk) hast, ist das in diesem Design **akzeptabel**.
+>
+> **Freigabe: BOM ist valide.**
 
 ---
 
@@ -131,3 +157,39 @@ Das VentoMaxx Panel wird über ein 14-Pin Flachbandkabel angeschlossen. Die Bele
 * **MCP23017**: Reset-Pin auf VCC (High) legen. Adress-Pins (A0, A1, A2) auf GND (Addr 0x20).
 * **FFC Connector**: Passenden 14-Pin FPC/FFC Connector (Pitch messen! Meist 1.0mm oder 0.5mm) einplanen.
 * **ESD Schutz**: Alle Leitungen zum FFC Connector sollten mit TVS-Dioden geschützt werden, da das Panel extern bedienbar ist.
+
+### AP63203 (12V -> 3.3V) Implementierung (Peripherie-Versorgung)
+
+Der **AP63203WU-7** versorgt alle externen 3.3V Komponenten (Sensoren, MCP23017), während der ESP32 separat über 5V läuft.
+
+**Power-Architektur:**
+
+* **ESP32**: Wird via **5V Pin** vom Recom/Traco Wandler (5V) versorgt.
+* **Peripherie**: Wird via **AP63203 (3.3V)** versorgt.
+* **WICHTIG**:
+  * Der 3.3V Pin des ESP32 bleibt **unbeschaltet** (NC).
+  * **Ground (GND)** von 5V-Kreis und 3.3V-Kreis müssen verbunden sein!
+  * I2C Pullups müssen an die **3.3V (AP63203)** Rail angeschlossen werden (um die Sensoren zu schützen, da ESP32 3.3V tolerant ist).
+
+**Komponenten-Werte (Schematic):**
+
+* **U1**: Diodes Inc. AP63203WU-7 (3.3V Fixed, 2A Synch Buck)
+* **C_IN (Eingang)**:
+  * 1x **10µF** / 25V (oder 35V) MLCC (X7R, 1206) - Nahe an VIN/GND Pins!
+  * 1x **100nF** (0.1µF) / 50V MLCC (0603) - HF-Entkopplung.
+* **L1 (Spule)**:
+  * **3.9µH** (Empfohlen laut Datasheet Table 2 für 3.3V Output).
+  * *Alternativ*: 4.7µH möglich (SparkFun nutzt dies), aber 3.9µH ist das Optimum für maximale Effizienz/Stabilität.
+  * *Rating*: Sättigungsstrom (Isat) > 2.5A. DCR < 50mΩ.
+* **C_OUT (Ausgang)**:
+  * 2x **22µF** / 10V (oder 6.3V) MLCC (X7R, 0805/1206).
+  * *Wichtig*: Keramik-Kondensatoren nutzen (Low ESR).
+* **C_BOOT**:
+  * 1x **100nF** (0.1µF) / 16V MLCC (0603) zwischen BST und SW Pin.
+
+**Layout-Tipps:**
+
+1. **Input-Cap**: Der 10µF Eingangskondensator muss so nah wie möglich an den PINs VIN und GND des ICs sitzen (kleinster Loop Area).
+2. **SW Node**: Die Verbindung vom SW-Pin zur Spule kurz und breit halten (hohe HF-Emissionen).
+3. **Power Path**: Breite Traces für VIN, GND und VOUT (mind. 20-30 mil, besser Flächen).
+4. **Thermal**: GND-Pin gut an die Ground-Plane anbinden (Vias) zur Wärmeabfuhr.

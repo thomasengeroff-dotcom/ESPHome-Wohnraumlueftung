@@ -65,16 +65,16 @@ espnow:
           // Check for IAQ Traffic Light Packet (1 Byte)
           if (packet.size() == 1) {
             uint8_t val = packet[0];
-            id(led_red).turn_off();
-            id(led_yellow).turn_off();
-            id(led_green).turn_off();
+            id(led_red).turn_off().perform();
+            id(led_yellow).turn_off().perform();
+            id(led_green).turn_off().perform();
             
             if (val == 0x01) {      // Bad
-              id(led_red).turn_on(); 
+              id(led_red).turn_on().set_brightness(0.5).perform(); 
             } else if (val == 0x02) { // Medium
-              id(led_yellow).turn_on();
+              id(led_yellow).turn_on().set_brightness(0.5).perform();
             } else if (val == 0x03) { // Good
-              id(led_green).turn_on();
+              id(led_green).turn_on().set_brightness(0.5).perform();
             }
           } 
           // Check for Sync Packet (Larger)
@@ -87,50 +87,18 @@ espnow:
 # ---------------------------------------------------------
 
 # 1. IAQ Traffic Light LEDs (Real Hardware on Slave)
-switch:
-  - platform: gpio
-    pin: GPIO0
-    name: "Ampel Rot"
-    id: led_red
-    inverted: false
-  - platform: gpio
-    pin: GPIO1
-    name: "Ampel Gelb"
-    id: led_yellow
-    inverted: false
-  - platform: gpio
-    pin: GPIO2
-    name: "Ampel Grün"
-    id: led_green
-    inverted: false
-
-  # 2. Dummy Fan Direction Switch (Required by Component)
-  - platform: template
-    name: "Lüfter Richtung Slave"
-    id: fan_direction
-    optimistic: true
-    turn_on_action:
-      - logger.log: "[Slave] Fan Direction: A (Rein)"
-    turn_off_action:
-      - logger.log: "[Slave] Fan Direction: B (Raus)"
-
-# 3. Dummy Fan (Required by Component)
-fan:
-  - platform: template
-    name: "Simulierter Lüfter"
-    id: lueftung_fan
-    speed_count: 100
-    on_turn_on:
-      - logger.log: "[Slave] Fan ON"
-    on_turn_off:
-      - logger.log: "[Slave] Fan OFF"
-    on_speed_set:
-      - logger.log:
-          format: "[Slave] Fan Speed set to %.1f%%"
-          args: ["x * 100.0"]
-
-# 4. Dummy Status LEDs (Required by automation_helpers.h)
+# Dimmable Lights (LEDC PWM)
 output:
+  - platform: ledc
+    pin: GPIO0
+    id: out_led_red
+  - platform: ledc
+    pin: GPIO1
+    id: out_led_yellow
+  - platform: ledc
+    pin: GPIO2
+    id: out_led_green
+  # 4. Dummy Status LEDs (Required by automation_helpers.h)
   - platform: template
     id: out_mock_pwr
     type: binary
@@ -163,8 +131,44 @@ output:
     id: out_mock_l5
     type: binary
     write_action: []
+# 3. Dummy Fan (Required by Component)
+fan:
+  - platform: template
+    name: "Simulierter Lüfter"
+    id: lueftung_fan
+    speed_count: 100
+    on_turn_on:
+      - logger.log: "[Slave] Fan ON"
+    on_turn_off:
+      - logger.log: "[Slave] Fan OFF"
+    on_speed_set:
+      - logger.log:
+          format: "[Slave] Fan Speed set to %.1f%%"
+          args: ["x * 100.0"]
 
 light:
+  - platform: monochromatic
+    output: out_led_red
+    name: "Ampel Rot"
+    id: led_red
+  - platform: monochromatic
+    output: out_led_yellow
+    name: "Ampel Gelb"
+    id: led_yellow
+  - platform: monochromatic
+    output: out_led_green
+    name: "Ampel Grün"
+    id: led_green
+  # 2. Dummy Fan Direction Switch (Required by Component)
+  - platform: template
+    name: "Lüfter Richtung Slave"
+    id: fan_direction
+    optimistic: true
+    turn_on_action:
+      - logger.log: "[Slave] Fan Direction: A (Rein)"
+    turn_off_action:
+      - logger.log: "[Slave] Fan Direction: B (Raus)"
+  # 3. Dummy Status LEDs (Binary Light Wrapper around Mock Output)
   - platform: binary
     output: out_mock_pwr
     name: "Dummy Power LED"
