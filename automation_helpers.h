@@ -175,9 +175,9 @@ inline void update_leds_logic() {
   id(status_led_mode_vent).turn_off();
   
   if (id(system_on)) {
-    if (id(selected_mode).state == "Wärmerückgewinnung") {
+    if (id(selected_mode).current_option() == "Wärmerückgewinnung") {
       id(status_led_mode_wrg).turn_on();
-    } else if (id(selected_mode).state == "Durchlüften") {
+    } else if (id(selected_mode).current_option() == "Durchlüften") {
        id(status_led_mode_vent).turn_on();
     }
   }
@@ -190,7 +190,7 @@ inline void update_leds_logic() {
   id(status_led_l4).turn_off();
   id(status_led_l5).turn_off();
 
-  if (!id(system_on) || id(selected_mode).state == "Aus") return;
+  if (!id(system_on) || id(selected_mode).current_option() == "Aus") return;
 
   int level = id(fan_intensity_level);
   

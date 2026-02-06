@@ -29,7 +29,6 @@ external_components:
 esphome:
   includes:
     - automation_helpers.h # Helper functions logic
-    - automation_helpers.h # Helper functions logic
   on_boot:
     priority: 600
     then:
@@ -44,10 +43,21 @@ globals:
     type: bool
     initial_value: "true"
 
+  # Ventilation enabled state (referenced by button logic)
+  - id: ventilation_enabled
+    type: bool
+    initial_value: "true"
+
+  # Operating mode (0=WRG, 1=Durchlüften, 2=Aus)
+  - id: operating_mode
+    type: int
+    initial_value: "0"
+
   # Fan intensity level (1-10)
   - id: fan_intensity_level
     type: int
     initial_value: "5" # Start at medium intensity
+
   # Current operating mode index (0=WRG, 1=Durchlüften, 2=Aus)
   - id: current_mode_index
     type: int
@@ -198,12 +208,9 @@ light:
   - platform: monochromatic
     output: out_led_wrg
     name: "Status LED Mode WRG"
-    id: status_led_wrg
+    id: status_led_mode_wrg # ID expected by automation_helpers.h
     internal: true
     default_transition_length: 0.5s
-    # Rename id to match old logic (status_led_mode_wrg) to avoid changing helpers too much
-    # Or change helpers. Current helper uses 'status_led_mode_wrg'. Let's alias it or use the id directly.
-    # To keep helpers cleaner, I will use the ID expected by helpers: status_led_mode_wrg
   - platform: monochromatic
     output: out_led_vent
     name: "Status LED Mode Vent"
@@ -290,6 +297,28 @@ sensor:
       name: "BME680 Belastung durch Atemluft"
       id: breath_voc_equivalent
       accuracy_decimals: 2
+
+  # ---------------------------------------------------------
+  # SCD41 CO2 SENSOR (Optional)
+  # ---------------------------------------------------------
+  # Will show as "unavailable" until sensor is connected to H2 header
+  - platform: scd4x
+    co2:
+      name: "CO2"
+      id: co2_sensor
+      accuracy_decimals: 0
+      filters:
+        - median:
+            window_size: 5
+            send_every: 3
+    temperature:
+      name: "SCD41 Temperatur"
+      id: scd41_temperature
+      accuracy_decimals: 1
+    humidity:
+      name: "SCD41 Luftfeuchtigkeit"
+      id: scd41_humidity
+      accuracy_decimals: 1
 
   # ---------------------------------------------------------
   # NTC TEMPERATURE SENSORS (Analog)
@@ -624,6 +653,14 @@ script:
     then:
       - lambda: |-
           update_leds_logic();
+
+  # Fan Speed Update (Referenced by button logic)
+  - id: fan_speed_update
+    mode: restart
+    then:
+      - lambda: |-
+          // Update fan speed based on current intensity
+          set_fan_intensity_level(id(fan_intensity_level));
 
 # ---------------------------------------------------------
 # CONTROL PANEL BUTTONS (Input)
