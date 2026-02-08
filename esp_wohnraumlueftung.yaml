@@ -135,49 +135,49 @@ bme68x_bsec2_i2c:
 # PCA9685 OUTPUTS (LEDs)
 # ---------------------------------------------------------
 output:
-  # --- LEDS Port A (Channels 0-7) ---
-  - platform: pca9685
-    pca9685_id: pwm_hub
-    channel: 0
-    id: out_led_pwr
-  - platform: pca9685
-    pca9685_id: pwm_hub
-    channel: 1
-    id: out_led_master
-
-  # Level LEDs (Channels 2-6)
-  - platform: pca9685
-    pca9685_id: pwm_hub
-    channel: 2
-    id: out_led_l1
-  - platform: pca9685
-    pca9685_id: pwm_hub
-    channel: 3
-    id: out_led_l2
-  - platform: pca9685
-    pca9685_id: pwm_hub
-    channel: 4
-    id: out_led_l3
-  - platform: pca9685
-    pca9685_id: pwm_hub
-    channel: 5
-    id: out_led_l4
+  # --- LEDS Port A (Channels 6-15) ---
   - platform: pca9685
     pca9685_id: pwm_hub
     channel: 6
-    id: out_led_l5
-
-  # Mode LED WRG (Channel 7)
+    id: out_led_pwr
   - platform: pca9685
     pca9685_id: pwm_hub
     channel: 7
-    id: out_led_wrg
+    id: out_led_master
 
-  # --- LEDS Port B (Channel 8) ---
-  # Mode LED Ventilation
+  # Level LEDs (Channels 8-12)
   - platform: pca9685
     pca9685_id: pwm_hub
     channel: 8
+    id: out_led_l1
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 9
+    id: out_led_l2
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 10
+    id: out_led_l3
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 11
+    id: out_led_l4
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 12
+    id: out_led_l5
+
+  # Mode LED WRG (Channel 13)
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 13
+    id: out_led_wrg
+
+  # --- LEDS Port B (Channel 15) ---
+  # Mode LED Ventilation
+  - platform: pca9685
+    pca9685_id: pwm_hub
+    channel: 15
     id: out_led_vent
 
   # --- Fan PWM (Standard Output) ---

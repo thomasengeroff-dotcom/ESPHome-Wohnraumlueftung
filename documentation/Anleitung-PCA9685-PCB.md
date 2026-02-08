@@ -40,17 +40,18 @@ Wir verwenden einen **PCA9685** für **dimmbare LEDs** und direkte **GPIOs des E
 
 ### B. LED Zuordnung (PCA9685 Outputs)
 
-| Funktion | PCA9685 Kanal | TSSOP-28 Pin | FFC Pin |
+| Funktion | PCA9685 Kanal | TSSOP-28 Pin | Signal Name |
 | :--- | :--- | :--- | :--- |
-| **LED Power** | LED0 | Pin 6 | Pin 6 |
-| **LED Master**| LED1 | Pin 7 | Pin 5 |
-| **LED L1** | LED2 | Pin 8 | Pin 11 |
-| **LED L2** | LED3 | Pin 9 | Pin 10 |
-| **LED L3** | LED4 | Pin 10| Pin 9 |
-| **LED L4** | LED5 | Pin 11| Pin 8 |
-| **LED L5** | LED6 | Pin 12| Pin 7 |
-| **LED WRG** | LED7 | Pin 13| Pin 13 |
-| **LED Vent** | LED8 | Pin 15| Pin 12 |
+| **LED Power** | Channel 6 | Pin 12 | LED_PWRV |
+| **LED Master** | Channel 7 | Pin 13 | LED_MSTV |
+| **LED L1** | Channel 8 | Pin 15 | LED_L1V |
+| **LED L2** | Channel 9 | Pin 16 | LED_L2V |
+| **LED L3** | Channel 10 | Pin 17 | LED_L3V |
+| **LED L4** | Channel 11 | Pin 18 | LED_L4V |
+| **LED L5** | Channel 12 | Pin 19 | LED_L5V |
+| **LED WRG** | Channel 13 | Pin 20 | LED_WRGV |
+| **LED Vent** | Channel 15 | Pin 22 | LED_VENV |
+| *Unbenutzt* | Ch 0-5, 14 | - | - |
 
 > ✅ **Bestätigung für Common Cathode (Gemeinsames GND)**:
 >
@@ -69,11 +70,11 @@ Die Taster-Pins vom FFC gehen direkt an den XIAO.
 
 | Funktion | FFC Pin | XIAO Pin | ESP32 GPIO | Pullup |
 | :--- | :--- | :--- | :--- | :--- |
-| **BTN Power**| Pin 2 | **D8** | GPIO19 | **10k an 3.3V** |
+| **BTN Power** | Pin 2 | **D8** | GPIO19 | **10k an 3.3V** |
 | **BTN Mode** | Pin 4 | **D9** | GPIO20 | **10k an 3.3V** |
-| **BTN Level**| Pin 3 | **D10** | GPIO18 | **10k an 3.3V** |
-| **GND** | PIN 1 | -| - | - |
-| **GND** | PIN 14 | -| - | - |
+| **BTN Level** | Pin 3 | **D10** | GPIO18 | **10k an 3.3V** |
+| **GND** | PIN 1 | - | - | - |
+| **GND** | PIN 14 | - | - | - |
 
 **Gesamte Pin-Belegung (XIAO ESP32-C6):**
 
@@ -82,9 +83,9 @@ Die Taster-Pins vom FFC gehen direkt an den XIAO.
 | **D0 (GPIO0)** | NTC Sensor Innen (ADC) |
 | **D1 (GPIO1)** | NTC Sensor Außen (ADC) |
 | **D2 (GPIO2)** | *Frei* |
-| **D3 (GPIO21)**| PCA9685_OE (PCA9685 Output Enable) |
-| **D4 (GPIO22)**| I2C SDA (BME680, PCA9685) |
-| **D5 (GPIO23)**| I2C SCL (BME680, PCA9685) |
+| **D3 (GPIO21)** | PCA9685_OE (PCA9685 Output Enable) |
+| **D4 (GPIO22)** | I2C SDA (BME680, PCA9685) |
+| **D5 (GPIO23)** | I2C SCL (BME680, PCA9685) |
 | **D6 (GPIO16)**| Lüfter PWM |
 | **D7 (GPIO17)**| Lüfter Tacho |
 | **D8 (GPIO19)**| Taster Power |

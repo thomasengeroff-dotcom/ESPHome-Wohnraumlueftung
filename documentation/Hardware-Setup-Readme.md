@@ -7,7 +7,7 @@ Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den 
 
 ---
 
-### Zentrale Einheit & Power
+## Zentrale Einheit & Power
 
 * **MCU**: Seeed Studio XIAO ESP32C6
 * **Netzteil (High Voltage)**: XP Power ECE10US12 oder TRACO POWER TMPS 10-112 (230V AC -> 12V DC, 10W)
@@ -61,7 +61,7 @@ Status: **Final (06.02.2026)** - ✅ Verified
 | 4 | 1 | 470µF / 16V | C13 | SMD BD6.3 | RVT1C471M0607 | 5V Output Buffer |
 | 5 | 1 | 10µF / 25V | C20 | **0603** | CL10A106MA8NRNC | AP63203 Input (Bias beachten) |
 | 6 | 2 | 22µF / 6.3V | C23, C24 | 0603 | CL10A226MQ8NRNC | AP63203 Output |
-| 7 | 1 | **100µF / 25V** | **C27** | SMD BD6.3 | RVT1E101M0605 | Fan Filter (Ersetzt C11) ✅ |
+| 7 | 1 | **100µF / 25V** | **C27** | **SMD 7343** | TAJE107M025RNJ | Fan Filter (Tantal, Low ESR) ✅ |
 | 8 | 1 | 10µF / 25V | C28 | 1210 | CL32B106KAJNNNE | Extra Buffer |
 | 9 | 1 | 470µH | L1 | SMD | ASPI-0804T-471M-T | Fan Filter |
 | 10 | 1 | 3.9µH | L2 | SMD | ANR4030T3R9M | AP63203 Inductor |
@@ -71,7 +71,7 @@ Status: **Final (06.02.2026)** - ✅ Verified
 > [!TIP]
 > **Check-Ergebnis**:
 >
-> 1. **Sicherheit**: Das kritische C11 Problem ist gelöst. **C27 (100µF / 25V)** ist absolut sicher für die 12V Lüfter-Spannung.
+> 1. **Sicherheit**: Das kritische C11 Problem ist gelöst. **C27 (100µF / 25V)** ist absolut sicher für die 12V Lüfter-Spannung. (Upgrade auf Tantal C7230).
 > 2. **Stabilität**: **C25 (100nF)** wurde parallel zu C20 ergänzt. Das ist sehr gut für das HF-Verhalten des Buck-Converters.
 > 3. **Hinweis zu C20**: Du nutzt `CL10A106MA8NRNC` (0603, 10µF, 25V).
 >     * Das ist elektrisch sicher (Spannungsfestigkeit passt).
@@ -130,15 +130,17 @@ Der PCA9685 steuert die 9 LEDs des Front-Panels über PWM (dimmbar).
 
 | PCA9685 Kanal | Funktion | Panel Komponente | Widerstand |
 | :--- | :--- | :--- | :--- |
-| **Channel 0** | PWM OUTPUT | LED Power (On/Off) | 470Ω (RN1) |
-| **Channel 1** | PWM OUTPUT | LED Master (Status) | 470Ω (RN1) |
-| **Channel 2** | PWM OUTPUT | LED Intensität 1 | 470Ω (RN1) |
-| **Channel 3** | PWM OUTPUT | LED Intensität 2 | 470Ω (RN1) |
-| **Channel 4** | PWM OUTPUT | LED Intensität 3 | 470Ω (RN2) |
-| **Channel 5** | PWM OUTPUT | LED Intensität 4 | 470Ω (RN2) |
-| **Channel 6** | PWM OUTPUT | LED Intensität 5 | 470Ω (RN2) |
-| **Channel 7** | PWM OUTPUT | LED Modus: WRG | 470Ω (RN2) |
-| **Channel 8** | PWM OUTPUT | LED Modus: Durchlüften | 10kΩ (RN3) |
+| **Channel 0-5** | *NC* | *Not Connected* | - |
+| **Channel 6** | PWM OUTPUT | LED Power (On/Off) | 470Ω |
+| **Channel 7** | PWM OUTPUT | LED Master (Status) | 470Ω |
+| **Channel 8** | PWM OUTPUT | LED Intensität 1 | 470Ω |
+| **Channel 9** | PWM OUTPUT | LED Intensität 2 | 470Ω |
+| **Channel 10** | PWM OUTPUT | LED Intensität 3 | 470Ω |
+| **Channel 11** | PWM OUTPUT | LED Intensität 4 | 470Ω |
+| **Channel 12** | PWM OUTPUT | LED Intensität 5 | 470Ω |
+| **Channel 13** | PWM OUTPUT | LED Modus: WRG | 470Ω |
+| **Channel 14** | *NC* | *Not Connected* | - |
+| **Channel 15** | PWM OUTPUT | LED Modus: Durchlüften | 470Ω |
 
 ### C. Front-Panel Buttons (Direkt an ESP32)
 
@@ -156,7 +158,7 @@ Das Front-Panel wird über ein 14-Pin Flachbandkabel (0.5mm Pitch) angeschlossen
 
 **Anschluss-Logik**:
 
-* **LEDs**: Angesteuert via PCA9685 PWM Outputs (Channels 0-8) mit 470Ω/10kΩ Vorwiderständen.
+* **LEDs**: Angesteuert via PCA9685 PWM Outputs (Channels 6-15) mit 470Ω/10kΩ Vorwiderständen.
 * **Buttons**: Direkt an ESP32 GPIOs (D8, D9, D10) mit 10kΩ Pullups, schalten gegen GND.
 * **Connector**: FPC 0.5-14P (U17) - SHOU HAN FPC 0.5-14P LTH2.0
 

@@ -24,7 +24,7 @@ Die Umschaltung erfolgt über einen **Jumper (Steckbrücke)** auf der Platine.
 | **R2** | Resistor | **10kΩ** | 0603 | Pullup für Gate Q1 (hält Mosfet OFF). |
 | **JP1** | Header | **1x3 Pin Header** (2.54mm) | THT | Jumper zur Moduswahl. |
 | **L1** (Optional) | Inductor | **470µH** (>500mA) | SMD/THT | LC-Filter Spule (Glättung für 3-Pin). |
-| **C1** (Optional) | Capacitor | **100µF** / 25V | Elko | LC-Filter Kondensator. |
+| **C1** | Capacitor | **100µF** / KEMET Tantal | SMD 7343 / Case E / TAJE | LC-Filter Kondensator (LCSC C7230). |
 
 ---
 
