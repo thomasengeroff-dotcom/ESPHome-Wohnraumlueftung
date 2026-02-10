@@ -181,12 +181,37 @@ output:
     id: out_led_vent
 
   # --- Fan PWM (Standard Output) ---
+  # Hardware: High-Side Circuit (4-Pin Mode)
+  #   GPIO16 -> R3 (1kΩ) -> Q3 Base (NPN S8050)
+  #   Q3 Collector -> Q1 Gate (PMOS AO3401) + R8 (2.2kΩ) Pullup to 12V
+  #   Q1 Source: +12V, Q1 Drain: PWM_12V_OUT
+  #   D1 (B5819WS): Flyback diode at PWM_12V_OUT (Cathode -> Drain, Anode -> GND)
+  #   PWM_12V_OUT -> L1 (470µH) -> DC_VAR_12V -> C27 (100µF) -> GND
+  #
+  # Hardware: Dual Low-Side Circuit (3-Pin Dual-GND Mode)
+  #   GPIO16 -> Gate Q5 (NMOS PMV16XNR) + R19 (10kΩ) pull-down to GND
+  #   Q5 controls Fan GND1, D2 (B5819WS) protection at Fan Pin 1
+  #
+  # Primary PWM (GPIO16)
+  # - 4-Pin Mode: PWM signal via Q3/Q1 high-side circuit to fan PWM pin
+  # - 3-Pin Dual-GND Mode: Controls GND1 via low-side MOSFET Q5
   - platform: ledc
     pin: GPIO16
-    frequency: 25000 Hz
-    id: fan_pwm_output
-    inverted: true
-    min_power: ${min_fan_threshold}%
+    frequency: 28000 Hz # Changed from 25kHz to 28kHz for silent operation
+    id: fan_pwm_primary
+    inverted: false # Changed: no inversion needed for low-side MOSFETs
+    min_power: 0%
+    zero_means_zero: true
+
+  # Secondary PWM (GPIO2) - Only for 3-Pin Dual-GND Mode
+  # GPIO2 -> Gate Q4 (NMOS PMV16XNR) + R18 (10kΩ) pull-down to GND
+  # Q4 controls Fan GND2, D3 (B5819WS) protection at Fan Pin 4
+  - platform: ledc
+    pin: GPIO2
+    frequency: 28000 Hz
+    id: fan_pwm_secondary
+    inverted: false
+    min_power: 0%
     zero_means_zero: true
 
 # ---------------------------------------------------------
@@ -433,21 +458,9 @@ text_sensor:
     lambda: |-
       return get_iaq_classification(id(iaq).state);
 
-# ---------------------------------------------------------
-# # !alte! FAN OUTPUT CONTROL (PWM)
-# ---------------------------------------------------------
-# output:
-#   - platform: ledc
-#     pin: GPIO16 # Pin D6 (moved from D0 to free ADC for NTC sensors)
-#     frequency: 25000 Hz # Standard PWM frequency for PC fans
-#     id: fan_pwm_output
-#     inverted: true # Inverted for NPN Transistor drive (High ESP = Base on = Collector Low)
-#     min_power: ${min_fan_threshold}%
-#     zero_means_zero: true # Ensure 0% is truly off
-
 fan:
   - platform: speed
-    output: fan_pwm_output
+    output: fan_pwm_primary # Changed from fan_pwm_output
     name: "Lüfter"
     id: lueftung_fan
     speed_count: 100 # 1-100% Granularity
@@ -556,20 +569,41 @@ select:
     id: selected_mode
     options:
       - "Wärmerückgewinnung"
+      - "Stoßlüftung"
       - "Durchlüften"
       - "Aus"
     initial_option: "Wärmerückgewinnung"
     set_action:
       - lambda: |-
           auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
-          if (x == "Wärmerückgewinnung") v->set_mode(esphome::MODE_ECO_RECOVERY);
-          else if (x == "Durchlüften") {
+          if (x == "Wärmerückgewinnung") {
+            v->set_mode(esphome::MODE_ECO_RECOVERY);
+          } else if (x == "Stoßlüftung") {
+            v->set_mode(esphome::MODE_STOSSLUEFTUNG);
+          } else if (x == "Durchlüften") {
             // Use the configured timer duration (0 = Infinite)
             uint32_t duration = (uint32_t)(id(vent_timer).state * 60 * 1000);
             v->set_mode(esphome::MODE_VENTILATION, duration);
+          } else if (x == "Aus") {
+            v->set_mode(esphome::MODE_OFF);
           }
-          else v->set_mode(esphome::MODE_OFF);
           id(update_leds).execute();
+
+  # Fan Control Mode (NEW)
+  - platform: template
+    name: "Fan Control Mode"
+    id: fan_mode_select
+    options:
+      - "4-Pin PWM"
+      - "3-Pin Dual-GND"
+    initial_option: "4-Pin PWM"
+    optimistic: true
+    on_value:
+      then:
+        - logger.log:
+            format: "Fan control mode changed to: %s"
+            args: ["x.c_str()"]
+        - script.execute: fan_speed_update
 
 # ---------------------------------------------------------
 # AUTOMATIONS & SWITCHES
@@ -589,6 +623,11 @@ switch:
     name: "Lüfter Richtung A"
     id: fan_direction
     optimistic: true
+    # OFF = Direction A (GND1), ON = Direction B (GND2)
+    on_turn_on:
+      - script.execute: fan_speed_update
+    on_turn_off:
+      - script.execute: fan_speed_update
 
   # Automatic Fan Cycle (Ramp Up -> Hold -> Ramp Down -> Off)
   - platform: template
@@ -618,7 +657,7 @@ script:
                 count: 100
                 then:
                   - output.set_level:
-                      id: fan_pwm_output
+                      id: fan_pwm_primary
                       level: !lambda |-
                         return calculate_ramp_up(iteration);
                   - delay: 50ms
@@ -636,7 +675,7 @@ script:
                 count: 100
                 then:
                   - output.set_level:
-                      id: fan_pwm_output
+                      id: fan_pwm_primary
                       level: !lambda |-
                         return calculate_ramp_down(iteration);
                   - delay: 50ms
@@ -654,13 +693,74 @@ script:
       - lambda: |-
           update_leds_logic();
 
-  # Fan Speed Update (Referenced by button logic)
+  # Unified Fan Speed and Direction Control
+  - id: set_fan_speed_and_direction
+    parameters:
+      speed: float # 0.0-1.0 (duty cycle)
+      direction: int # 0 = Direction A, 1 = Direction B
+    then:
+      - lambda: |-
+          std::string mode = id(fan_mode_select).state;
+
+          if (mode == "4-Pin PWM") {
+            // 4-Pin Mode (AxiRev): Use PWM duty cycle for speed AND direction
+            // AxiRev Specification:
+            // - 0-49% Duty: Direction A (intake), speed increases with PWM
+            // - 50% Duty: Neutral (stopped)
+            // - 51-100% Duty: Direction B (exhaust), speed increases with PWM
+            
+            float axirev_duty;
+            
+            if (direction == 0) {
+              // Direction A: Map speed to 0-49% range
+              // speed 0.0 -> 0%, speed 1.0 -> 49%
+              axirev_duty = speed * 0.49f;
+            } else {
+              // Direction B: Map speed to 51-100% range
+              // speed 0.0 -> 51%, speed 1.0 -> 100%
+              axirev_duty = 0.51f + (speed * 0.49f);
+            }
+            
+            id(fan_pwm_primary).set_level(axirev_duty);
+            id(fan_pwm_secondary).set_level(0.0);  // Ensure GND2 is OFF
+            
+          } else if (mode == "3-Pin Dual-GND") {
+            // 3-Pin Dual-GND Mode: Switch between GND1 and GND2
+            
+            // Map speed to VarioPro voltage range (7V-12V = 58%-100%)
+            float variopro_duty = 0.58f + speed * 0.42f;
+            
+            if (direction == 0) {
+              // Direction A: Activate GND1, deactivate GND2
+              id(fan_pwm_secondary).set_level(0.0);
+              delayMicroseconds(100);  // 100µs safety delay for MOSFET switching
+              id(fan_pwm_primary).set_level(variopro_duty);
+            } else {
+              // Direction B: Activate GND2, deactivate GND1
+              id(fan_pwm_primary).set_level(0.0);
+              delayMicroseconds(100);  // 100µs safety delay for MOSFET switching
+              id(fan_pwm_secondary).set_level(variopro_duty);
+            }
+          }
+
+  # Fan Speed Update (called when intensity or mode changes)
   - id: fan_speed_update
     mode: restart
     then:
       - lambda: |-
-          // Update fan speed based on current intensity
-          set_fan_intensity_level(id(fan_intensity_level));
+          int intensity = id(fan_intensity_level);
+
+          // Convert intensity (1-10) to speed (0.0-1.0)
+          float speed = (intensity - 1) / 9.0f;  // 1->0.0, 10->1.0
+          if (speed < 0.0f) speed = 0.0f;
+          if (speed > 1.0f) speed = 1.0f;
+
+          // Get direction from fan_direction switch
+          int direction = id(fan_direction).state ? 1 : 0;
+
+          // Apply speed and direction
+          auto call = id(set_fan_speed_and_direction);
+          call.execute(speed, direction);
 
 # ---------------------------------------------------------
 # CONTROL PANEL BUTTONS (Input)
@@ -682,7 +782,7 @@ binary_sensor:
     on_click:
       then:
         - lambda: |-
-            id(current_mode_index) = (id(current_mode_index) + 1) % 3;
+            id(current_mode_index) = (id(current_mode_index) + 1) % 4;
             cycle_operating_mode(id(current_mode_index));
             id(update_leds).execute();
 
@@ -704,13 +804,19 @@ binary_sensor:
         - lambda: |-
             id(ventilation_enabled) = !id(ventilation_enabled);
             if (id(ventilation_enabled)) {
-              id(operating_mode) = id(operating_mode); // Restore mode
+              // Power ON: Restore previous mode and fan speed
+              ESP_LOGI("power", "System ON - restoring mode %d", id(current_mode_index));
+              cycle_operating_mode(id(current_mode_index));
+              id(fan_speed_update).execute();
             } else {
-              id(operating_mode) = 0; // Off
-              id(fan_direction).turn_off();
+              // Power OFF: Stop fan and set mode to OFF
+              ESP_LOGI("power", "System OFF");
+              auto *v = (esphome::VentilationController*)id(ventilation_ctrl);
+              v->set_mode(esphome::MODE_OFF);
+              id(lueftung_fan).turn_off();
+              id(fan_pwm_primary).set_level(0.0);
+              id(fan_pwm_secondary).set_level(0.0);
             }
-            // Trigger fan update
-            id(fan_speed_update).execute();
             id(update_leds).execute();
 
   # Button Level (Middle) - Speed Level (D10 / GPIO18)
@@ -727,6 +833,21 @@ binary_sensor:
       - delayed_on: 25ms
       - delayed_off: 25ms
     on_multi_click:
+      # Short press: Cycle through intensity levels 1→10→1
+      - timing:
+          - ON for at most 0.5s
+          - OFF for at least 0.1s
+        then:
+          - lambda: |-
+              if (!id(ventilation_enabled)) return;  // Ignore if system is off
+              int level = id(fan_intensity_level);
+              level = (level % 10) + 1;  // 1→2→...→10→1
+              id(fan_intensity_level) = level;
+              set_fan_intensity_level(level);
+              id(fan_speed_update).execute();
+              id(update_leds).execute();
+              ESP_LOGI("button", "Intensity level: %d", level);
+      # Long press (≥1s): Toggle system power
       - timing:
           - ON for at least 1s
         then:

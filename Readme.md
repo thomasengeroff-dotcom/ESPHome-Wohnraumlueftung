@@ -137,7 +137,7 @@ Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](http
 
 | Komponente | Beschreibung | Dokumentation |
 | :--- | :--- | :--- |
-| **Lüfter** | **4412 FGM PR** (3-Pin, VarioPro) oder **AxiRev** (4-Pin). *Siehe Hardware-Setup-Readme.* | [Fan Component](https://esphome.io/components/fan/speed.html) |
+| **Lüfter** | **AxiRev** (4-Pin PWM) oder **VarioPro 4412 FGM PR** (3-Pin). *Siehe [Anleitung-Fan-Circuit.md](documentation/Anleitung-Fan-Circuit.md)* | [Fan Component](https://esphome.io/components/fan/speed.html) |
 | **BME680** | Bosch Umweltsensor (Temp, Hum, Pressure, Gas/IAQ) | [BME68x BSEC2](https://esphome.io/components/sensor/bme68x_bsec2.html) |
 | **NTCs** | 2x NTC 10k (Zuluft/Abluft) für Effizienzmessung | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
 | **I/O Expander** | **MCP23017** (I2C) für VentoMaxx Panel | [MCP23017](https://esphome.io/components/mcp23017.html) |
@@ -173,8 +173,9 @@ Das System basiert auf dem [Seeed XIAO ESP32C6](https://esphome.io/components/es
 | **D3** | GPIO21 | Input (Pullup) | **MCP23017 INTB** (Interrupt) |
 | **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | BME680, MCP23017 |
 | **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | BME680, MCP23017 |
-| **D6** | GPIO16 | [PWM Output](https://esphome.io/components/output/ledc.html) | Fan PWM (Universal: Direkt oder High-Side Mosfet) |
+| **D6** | GPIO16 | [PWM Output](https://esphome.io/components/output/ledc.html) | Fan PWM Primary (4-Pin: via Q3/Q1 High-Side, 3-Pin: GND1 via Q5) |
 | **D7** | GPIO17 | [Pulse Counter](https://esphome.io/components/sensor/pulse_counter.html) | Fan Tacho (Pullup 3V3!) |
+| **(D2)** | GPIO2 | [PWM Output](https://esphome.io/components/output/ledc.html) | Fan PWM Secondary (3-Pin: GND2 via Q4) |
 | **D8-D10** | - | Reserve | SPI / Frei |
 
 ### 📊 Schematische Darstellung (Konzept)
@@ -192,8 +193,9 @@ graph TD
     end
 
     subgraph Power_Fan
-    XIAO -->|D6 PWM| FAN_CTRL[Universal Fan Interface]
-    FAN_CTRL -->|Variabel/PWM| FAN[Lüfter 12V]
+    XIAO -->|D6 PWM Primary| FAN_CTRL[Universal Fan Interface]
+    XIAO -->|GPIO2 PWM Secondary| FAN_CTRL
+    FAN_CTRL -->|4-Pin PWM / 3-Pin Dual-GND| FAN[Lüfter 12V]
     FAN -->|Tacho D7| XIAO
     end
 
@@ -470,6 +472,7 @@ ESPHome-Wohnraumlueftung/
 │       ├── __init__.py
 │       └── ventilation_group.h
 ├── documentation/
+│   ├── Anleitung-Fan-Circuit.md
 │   ├── Hardware-Setup-Readme.md
 │   └── Dynamic-Configuration.md
 └── Readme.md                      # Diese Datei

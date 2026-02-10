@@ -1,5 +1,50 @@
 # 📋 Changelog - ESPHome Wohnraumlüftung
 
+## 2026-02-10 - Hybrid Fan Interface & Documentation Update
+
+### ✨ Hardware Changes
+
+#### Hybrid Fan Control Interface
+
+- **Dual-Mode Support**: Board unterstützt jetzt sowohl **4-Pin PWM** (AxiRev) als auch **3-Pin Dual-GND** (VarioPro) Lüfter
+- **Neue Komponenten**:
+  - **Q4, Q5** (PMV16XNR SOT-23): Dual Low-Side MOSFETs für 3-Pin GND1/GND2 Kontrolle
+  - **D1** (B5819WS): Freilaufdiode an PWM_12V_OUT (Q1 Drain) — kritisch für Buck-Converter
+  - **D2** (B5819WS): Schutzdiode an Fan Pin 1 (GND/GND1)
+  - **D3** (B5819WS): Schutzdiode an Fan Pin 4 (PWM/GND2)
+  - **R18, R19** (10kΩ 0402): Pull-down Widerstände für Q4/Q5 Gates
+  - **JP1** (1x3 2.54mm): VCC Moduswahl (Constant/Variable 12V)
+  - **JP2, JP3** (1x3 1.27mm): Pin 1/Pin 4 Moduswahl
+- **GPIO2**: Neue Funktion als **Fan PWM Secondary** (Low-Side GND2 via Q4)
+
+### 🐛 Bug Fixes
+
+- **D1 Freilaufdiode** an PWM_12V_OUT gefehlt — ohne diese wird Q1 im 3-Pin Modus durch induktive Spannungsspitzen zerstört
+- **R8**: Dokumentation korrigiert (2.2kΩ / 0805, nicht 10kΩ / 0603)
+- **R3**: Beschreibung korrigiert ("für Q3" statt "für Q2")
+- **D1 (SS14)** in Schaltplan → korrigiert zu **D1 (B5819WS)**
+- **Dioden-Designatoren**: D1/D3 → D2/D3 im Low-Side Circuit
+
+### 📚 Documentation Updates
+
+- `Anleitung-Fan-Circuit.md` — BOM und Schaltplan an aktuelle Hardware angepasst
+- `Hardware-Setup-Readme.md` — Universal Fan Interface komplett überarbeitet (S8050, R8=2.2kΩ, JP1/JP2/JP3)
+- `Technical-Details.md` — PWM-Konfiguration aktualisiert (GPIO16/GPIO2, 28kHz, Dual-Mode)
+- `Readme.md` — Pin-Tabelle, Mermaid-Diagramm, Projektstruktur erweitert
+- `esp_wohnraumlueftung.yaml` — PWM-Kommentare mit vollständigen Schaltungsdetails
+
+### 📁 File Changes
+
+#### Modified Files
+
+- `esp_wohnraumlueftung.yaml` — PWM-Kommentare erweitert
+- `documentation/Anleitung-Fan-Circuit.md` — BOM/Schematic Korrekturen
+- `documentation/Hardware-Setup-Readme.md` — Fan Interface Rewrite
+- `documentation/Technical-Details.md` — PWM-Sektion aktualisiert
+- `Readme.md` — GPIO-Tabelle, Diagramm, Struktur
+
+---
+
 ## 2026-01-28 - Major Documentation & Optimization Update
 
 ### ✨ New Features

@@ -10,9 +10,10 @@ namespace esphome {
 // ---------------------------------------------------------
 
 enum VentilationMode {
-  MODE_OFF = 0,         // Fan Off
-  MODE_ECO_RECOVERY = 1, // Alternating Direction (Heat Recovery)
-  MODE_VENTILATION = 2   // Constant Direction (Durchlüften)
+  MODE_OFF = 0,              // Fan Off
+  MODE_ECO_RECOVERY = 1,     // Alternating Direction (Heat Recovery)
+  MODE_VENTILATION = 2,      // Constant Direction (Durchlüften)
+  MODE_STOSSLUEFTUNG = 3     // Stoßlüftung: 15min WRG + 105min Pause (2h Cycle)
 };
 
 enum MessageType {
@@ -61,6 +62,14 @@ class VentilationController : public Component {
   uint32_t ventilation_start_time = 0;
   bool pending_broadcast = false;
 
+  // Stoßlüftung State
+  uint32_t stoss_cycle_start = 0;       // Start of current 2h cycle
+  bool stoss_active_phase = true;       // true = 15min WRG active, false = 105min pause
+  bool stoss_direction_flip = false;    // Flips after each 2h cycle
+  static constexpr uint32_t STOSS_ACTIVE_MS  = 15UL * 60 * 1000;  // 15 minutes
+  static constexpr uint32_t STOSS_PAUSE_MS   = 105UL * 60 * 1000; // 105 minutes
+  static constexpr uint32_t STOSS_CYCLE_MS   = STOSS_ACTIVE_MS + STOSS_PAUSE_MS; // 2 hours
+
   // --- HARDWARE REFS ---
   fan::Fan *main_fan{nullptr};
   switch_::Switch *direction_switch{nullptr}; // ON = IN, OFF = OUT
@@ -89,6 +98,34 @@ class VentilationController : public Component {
         if (now - ventilation_start_time > ventilation_duration_ms) {
             ESP_LOGI("vent", "Ventilation timer expired. Switching to Heat Recovery.");
             set_mode(MODE_ECO_RECOVERY);
+        }
+    }
+
+    // 1b. Handle Stoßlüftung Cycle (15min WRG + 105min Pause)
+    if (current_mode == MODE_STOSSLUEFTUNG) {
+        uint32_t elapsed = now - stoss_cycle_start;
+        if (stoss_active_phase) {
+            // Active phase: 15 min WRG
+            if (elapsed >= STOSS_ACTIVE_MS) {
+                // Switch to pause phase
+                stoss_active_phase = false;
+                stoss_cycle_start = now;
+                ESP_LOGI("vent", "Stoßlüftung: Active phase done, pausing for 105 min");
+                if (main_fan && main_fan->state) main_fan->turn_off().perform();
+            }
+        } else {
+            // Pause phase: 105 min
+            if (elapsed >= STOSS_PAUSE_MS) {
+                // Start new 2h cycle with reversed direction
+                stoss_active_phase = true;
+                stoss_direction_flip = !stoss_direction_flip;
+                stoss_cycle_start = now;
+                ESP_LOGI("vent", "Stoßlüftung: New cycle, direction flipped to %s",
+                         stoss_direction_flip ? "reversed" : "normal");
+                if (main_fan && !main_fan->state) main_fan->turn_on().perform();
+                update_hardware();
+            }
+            return; // During pause, skip cycle logic
         }
     }
 
@@ -135,6 +172,12 @@ class VentilationController : public Component {
       
       if (mode == MODE_VENTILATION) {
           ventilation_start_time = millis();
+      }
+      if (mode == MODE_STOSSLUEFTUNG) {
+          stoss_cycle_start = millis();
+          stoss_active_phase = true;
+          stoss_direction_flip = false;
+          ESP_LOGI("vent", "Stoßlüftung started: 15min WRG + 105min Pause cycle");
       }
       
       update_hardware();
@@ -188,11 +231,23 @@ class VentilationController : public Component {
   void update_hardware() {
       bool target_in = true; // Default IN
 
-      if (current_mode == MODE_VENTILATION) {
+      if (current_mode == MODE_OFF) {
+          // OFF mode handled below in fan state section
+      } else if (current_mode == MODE_VENTILATION) {
           // In Ventilation, we stick to our physical orientation
           target_in = is_phase_a; 
+      } else if (current_mode == MODE_STOSSLUEFTUNG) {
+          // Stoßlüftung: During active phase, behave like ECO_RECOVERY
+          // but apply direction flip after each 2h cycle
+          if (stoss_active_phase) {
+              if (global_phase) {
+                  target_in = stoss_direction_flip ? !is_phase_a : is_phase_a;
+              } else {
+                  target_in = stoss_direction_flip ? is_phase_a : !is_phase_a;
+              }
+          }
       } else {
-          // In Recovery, we alternate
+          // ECO_RECOVERY: We alternate
           // global_phase = TRUE means Phase A devices are IN
           if (global_phase) {
               target_in = is_phase_a;
@@ -213,7 +268,7 @@ class VentilationController : public Component {
 
       // 2. Set Fan State
       if (main_fan) {
-          if (current_mode == MODE_OFF) {
+          if (current_mode == MODE_OFF || (current_mode == MODE_STOSSLUEFTUNG && !stoss_active_phase)) {
                if (main_fan->state) main_fan->turn_off().perform();
           } else {
                if (!main_fan->state) main_fan->turn_on().perform();

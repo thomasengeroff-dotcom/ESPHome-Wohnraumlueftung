@@ -51,7 +51,7 @@ Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den 
 
 ## 1. Detaillierte BOM (Bill of Materials)
 
-Status: **Final (06.02.2026)** - ✅ Verified
+Status: **Final (10.02.2026)** - ✅ Verified
 
 | Nr. | Menge | Wert / Bauteil | Designator | Footprint | Hersteller Part | Notiz |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
@@ -89,7 +89,7 @@ Status: **Final (06.02.2026)** - ✅ Verified
 | :--- | :--- | :--- | :--- |
 | **D0** | GPIO0 | **NTC Innen** | Analog In (10k Spannungsteiler) |
 | **D1** | GPIO1 | **NTC Außen** | Analog In (10k Spannungsteiler) |
-| **D2** | GPIO2 | *Reserve* | (Frei / Debug LED) |
+| **D2** | GPIO2 | **Fan PWM Secondary** | Low-Side GND2 via Q4 (3-Pin Dual-GND Mode) |
 | **D3** | GPIO21 | **PCA9685 OE** | Output Enable (Active Low, mit 10kΩ Pullup) |
 | **D4** | GPIO22 | **I2C SDA** | PCA9685, BME680⚠️, SCD41⚠️ (mit 4.7kΩ Pullup) |
 | **D5** | GPIO23 | **I2C SCL** | PCA9685, BME680⚠️, SCD41⚠️ (mit 4.7kΩ Pullup) |
@@ -101,28 +101,36 @@ Status: **Final (06.02.2026)** - ✅ Verified
 
 ### C. Universal-Lüfter Interface (3-Pin & 4-Pin Support)
 
-Damit du sowohl moderne 4-Pin PWM-Lüfter als auch ältere/spezielle 3-Pin Lüfter (wie VarioPro) steuern kannst, brauchst du eine **Umschaltung**.
+Das Board unterstützt sowohl 4-Pin PWM (AxiRev) als auch 3-Pin Dual-GND (VarioPro) Lüfter. Die Umschaltung erfolgt über 3 Jumper-Blöcke.
 
-**Logik:**
+**Detaillierte Schaltpläne und BOM**: Siehe [Anleitung-Fan-Circuit.md](Anleitung-Fan-Circuit.md)
 
-* **4-Pin Mode**: 12V ist dauerhaft an. PWM-Signal geht an Pin 4.
-* **3-Pin Mode**: 12V wird "gehackt" (High-Side PWM). Pin 4 ist inaktiv.
+**High-Side Circuit (4-Pin Mode):**
 
-**Schaltplan-Erweiterung (High-Side Switch):**
+1. **Level Shifter Q3** (NPN **S8050**): GPIO16 → R3 (1kΩ) → Q3 Basis. Q3 Emitter → GND.
+2. **PMOS Q1** (AO3401): Q3 Collector → Q1 Gate + **R8 (2.2kΩ)** Pullup auf 12V. Q1 Source → 12V, Drain → PWM_12V_OUT.
+3. **D1 (B5819WS)**: Freilaufdiode Kathode → PWM_12V_OUT, Anode → GND.
+4. **LC-Filter**: PWM_12V_OUT → L1 (470µH) → DC_VAR_12V → C27 (100µF) → GND.
 
-1. **P-Channel MOSFET** (z.B. AO3401) in die 12V-Leitung zum Lüfter einfügen (Source an 12V, Drain an Lüfter Pin 2).
-2. **Treiber**: NPN-Transistor (BC547) steuert das Gate des MOSFETs (Gate Pullup 10k auf 12V, NPN Collector an Gate).
-3. **DIP-Switch / Jumper** (2-Wege Umschalter) für das PWM-Signal (XIAO D6):
-    * **Position A (4-Pin)**: Leitet D6 direkt an Lüfter **Pin 4**. (In dieser Stellung muss der MOSFET dauerhaft leitend geschaltet werden, z.B. Gate manuell auf GND brücken oder zweiten Jumper nutzen).
-    * **Position B (3-Pin)**: Leitet D6 an die Basis des NPN-Treibers -> MOSFET moduliert die 12V Versorgungsspannung.
+**Dual Low-Side Circuit (3-Pin Dual-GND Mode):**
+
+1. **Q5** (NMOS **PMV16XNR** SOT-23): Fan GND1 → Drain, Source → GND. Gate ← GPIO16 + R19 (10kΩ Pull-down).
+2. **Q4** (NMOS **PMV16XNR** SOT-23): Fan GND2 → Drain, Source → GND. Gate ← GPIO2 + R18 (10kΩ Pull-down).
+3. **D2 (B5819WS)**: Schutzdiode Kathode → Fan Pin 1, Anode → GND.
+4. **D3 (B5819WS)**: Schutzdiode Kathode → Fan Pin 4, Anode → GND.
+
+**Jumper-Konfiguration:**
+
+| Jumper | Position 1-2 (4-Pin) | Position 2-3 (3-Pin) |
+| :--- | :--- | :--- |
+| **JP1** | Fan VCC ← Constant 12V | Fan VCC ← Variable (DC_VAR_12V) |
+| **JP2** | Fan Pin 1 ← GND | Fan Pin 1 ← Q5 Drain (GND1) |
+| **JP3** | Fan Pin 4 ← GPIO16 (PWM) | Fan Pin 4 ← Q4 Drain (GND2) |
 
 > ⚠️ **Tacho-Signal & Geräusche (3-Pin Mode)**:
 >
-> 1. **RPM-Schwankung**: Ja, das betrifft nur das *Auslesen* der Drehzahl (Tacho), da dem Sensor der Strom fehlt. Das ist für die Regelung unkritisch, nur die Anzeige "zappelt".
-> 2. **Spulenfiepen (Whine)**: "Gehackte" 12V (PWM) erzeugen bei Lüftern oft hörbares Fiepen.
->     * **Lösung für "maximale Sauberkeit"**: Baue einen **LC-Filter** (Spule + Kondensator) hinter den MOSFET. Das glättet das PWM-Signal zu einer sauberen Gleichspannung (Buck-Converter Prinzip).
->     * **Regelung**: Die Drehzahl ist weiterhin **voll regelbar**! (50% PWM ≈ 6V, 100% PWM = 12V).
->     * *Werte*: z.B. 100µH - 330µH Spule + 100µF Elko. Damit läuft der 3-Pin Lüfter lautlos und analog.
+> 1. **RPM-Schwankung**: Betrifft nur das *Auslesen* der Drehzahl (Tacho). Für die Regelung unkritisch.
+> 2. **Spulenfiepen**: Der LC-Filter (L1 + C27) glättet das PWM-Signal zu einer sauberen Gleichspannung (Buck-Converter Prinzip) → lautloser Betrieb.
 
 ### B. PCA9685 PWM Driver (Adresse 0x40)
 

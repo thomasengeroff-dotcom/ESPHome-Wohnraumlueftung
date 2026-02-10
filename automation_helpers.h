@@ -118,7 +118,7 @@ inline void set_fan_intensity_level(int level) {
 }
 
 // --- Mode Cycling ---
-// Cycles through operating modes: 0=WRG, 1=Durchlüften, 2=Aus
+// Cycles through operating modes: 0=WRG, 1=Stoßlüftung, 2=Durchlüften, 3=Aus
 inline void cycle_operating_mode(int mode_index) {
   auto *v = (esphome::VentilationController*)&id(ventilation_ctrl);
   
@@ -127,11 +127,15 @@ inline void cycle_operating_mode(int mode_index) {
       v->set_mode(esphome::MODE_ECO_RECOVERY);
       ESP_LOGI("mode", "Switched to: Wärmerückgewinnung");
       break;
-    case 1:  // Durchlüften
+    case 1:  // Stoßlüftung
+      v->set_mode(esphome::MODE_STOSSLUEFTUNG);
+      ESP_LOGI("mode", "Switched to: Stoßlüftung");
+      break;
+    case 2:  // Durchlüften
       v->set_mode(esphome::MODE_VENTILATION);
       ESP_LOGI("mode", "Switched to: Durchlüften");
       break;
-    case 2:  // Aus
+    case 3:  // Aus
       v->set_mode(esphome::MODE_OFF);
       id(lueftung_fan).turn_off();
       ESP_LOGI("mode", "Switched to: Aus");
@@ -139,7 +143,6 @@ inline void cycle_operating_mode(int mode_index) {
   }
 }
 
-// --- System Power Toggle ---
 // --- System Power Toggle ---
 // Toggles entire system on/off (fan, operations)
 inline void toggle_system_power() {
@@ -160,8 +163,11 @@ inline void toggle_system_power() {
 
 // --- Status LED Update Logic ---
 // Updates the 5 LEDs based on system state and fan level
-// Mapped to MCP23017 outputs
+// Uses VentilationController mode (integer) instead of fragile string comparisons
 inline void update_leds_logic() {
+  auto *v = (esphome::VentilationController*)&id(ventilation_ctrl);
+  int current_mode = v->current_mode;
+
   // 1. Power LED (Always ON if system is ON)
   if (id(system_on)) {
     id(status_led_power).turn_on();
@@ -175,11 +181,18 @@ inline void update_leds_logic() {
   id(status_led_mode_vent).turn_off();
   
   if (id(system_on)) {
-    if (id(selected_mode).current_option() == "Wärmerückgewinnung") {
+    if (current_mode == esphome::MODE_ECO_RECOVERY) {
+      // WRG: Left LED on
       id(status_led_mode_wrg).turn_on();
-    } else if (id(selected_mode).current_option() == "Durchlüften") {
-       id(status_led_mode_vent).turn_on();
+    } else if (current_mode == esphome::MODE_STOSSLUEFTUNG) {
+      // Stoßlüftung: Right LED on
+      id(status_led_mode_vent).turn_on();
+    } else if (current_mode == esphome::MODE_VENTILATION) {
+      // Durchlüften: Both LEDs on
+      id(status_led_mode_wrg).turn_on();
+      id(status_led_mode_vent).turn_on();
     }
+    // MODE_OFF: Both LEDs off (already reset above)
   }
 
   // 3. Level LEDs (1-10 mapped to 5 LEDs)
@@ -190,7 +203,7 @@ inline void update_leds_logic() {
   id(status_led_l4).turn_off();
   id(status_led_l5).turn_off();
 
-  if (!id(system_on) || id(selected_mode).current_option() == "Aus") return;
+  if (!id(system_on) || current_mode == esphome::MODE_OFF) return;
 
   int level = id(fan_intensity_level);
   
