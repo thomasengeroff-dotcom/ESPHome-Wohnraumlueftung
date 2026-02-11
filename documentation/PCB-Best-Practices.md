@@ -10,7 +10,7 @@
 
 > [!NOTE]
 > C13 (470µF Elko) ist ein **Bulk-Pufferkondensator** für WiFi-Peaks. Er deckt niedrige Frequenzen ab (µs–ms Bereich). Für hochfrequentes Rauschen (MHz-Bereich) wäre **zusätzlich** ein 100nF Kerko *direkt* an den Power-Pins des XIAO sinnvoll. Falls Board-Platz knapp ist: Das XIAO-Modul hat intern bereits HF-Caps — daher als **optional** einzustufen.
-
+--> wird nicht eingearbeitet.
 ---
 
 ## 2. Galvanische Trennung (High-Voltage)
@@ -66,7 +66,7 @@ Verlustleistung: P = V² / R = (12)² / 47000 = 3.06 mW ← vernachlässigbar
 
 > [!TIP]
 > 47kΩ ist ein guter Kompromiss: Schnell genug entladen (<1 Minute), aber nur ~3mW Dauerverlust im Betrieb. Kein messbarer Einfluss auf die Gesamteffizienz.
-
+**Status**: ✅ Umgesetzt für C1 und C13
 ---
 
 ## 4. Trace-Breiten (Power-Pfade)
@@ -83,10 +83,10 @@ Verlustleistung: P = V² / R = (12)² / 47000 = 3.06 mW ← vernachlässigbar
 
 **Zu prüfende Pfade:**
 
-- [ ] 12V von Netzteil → Fan VCC
-- [ ] 12V → Buck-Converter (AP63203) Input
-- [ ] GND-Rückführung der MOSFETs Q4, Q5 → GND-Plane
-- [ ] 5V Output (Recom) → XIAO 5V Pin
+- [x] 12V von Netzteil → Fan VCC
+- [x] 12V → Buck-Converter (AP63203) Input
+- [x] GND-Rückführung der MOSFETs Q4, Q5 → GND-Plane
+- [x] 5V Output (Recom) → XIAO 5V Pin
 
 ---
 
@@ -176,43 +176,84 @@ Verlustleistung: P = V² / R = (12)² / 47000 = 3.06 mW ← vernachlässigbar
   Source┘
 ```
 
+**Status**: ✅ Umgesetzt für U37, Q4, Q5, Q1
 ---
 
 ## 6. I2C Routing — Analyse
 
-### 6.1 Deine Werte
+### 6.1 Deine Topologie (Stern-Konfiguration)
 
-| Signal | Länge | Ziel |
-|:---|:---|:---|
-| SCL | 15.5mm | SCD41 CO2 Sensor |
-| SDA | 14.6mm | SCD41 CO2 Sensor |
+```text
+                    Pull-ups (4.7kΩ)
+                         ↓
+    BME680 ←─────6cm─────┤ ESP32-C6 ├─────9-10cm─────→ SCD41
+   (I2C-Anschluss)      (GPIO6/7)              (CO2 Sensor)
+```
+
+**Tatsächliche Leitungslängen:**
+
+| Branch | Signal | Länge | Ziel |
+| :--- | :--- | :--- | :--- |
+| **Rechts** | SCL/SDA | **~6cm** | I2C-Anschluss (z.B. BME680) |
+| **Links** | SCL/SDA | **~9-10cm** | SCD41 CO2 Sensor |
+| **Pull-ups** | Position | **Direkt am ESP** | ✅ Optimal! |
 
 ### 6.2 Bewertung
 
-**Kein Buffer nötig.** ✅
+**Perfekt! Kein Buffer nötig.** ✅
 
-I2C ist für bis zu **~30cm** bei Standard-Mode (100kHz) und **~10cm** bei Fast-Mode (400kHz) ohne Puffer zuverlässig. Deine Leitungslängen liegen bei nur **~15mm** — das ist weit unter den kritischen Grenzen:
+Deine Stern-Topologie ist **deutlich besser** als eine durchgehende 15cm-Leitung! Hier ist warum:
 
-| I2C-Modus | Max. Bus-Kapazität | Max. Leitungslänge (typisch) | Deine Länge |
+| I2C-Modus | Max. Stub-Länge | Längster Branch | Status |
 |:---|:---|:---|:---|
-| Standard (100kHz) | 400pF | ~30cm | **15mm** ✅ |
-| Fast-Mode (400kHz) | 400pF | ~10cm | **15mm** ✅ |
-| Fast-Mode Plus (1MHz) | 550pF | ~5cm | **15mm** ✅ |
+| Standard (100kHz) | ~30cm | **10cm** | ✅ Perfekt |
+| Fast-Mode (400kHz) | ~15cm | **10cm** | ✅ Gut |
+| Fast-Mode Plus (1MHz) | ~8cm | **10cm** | ⚠️ Grenzwertig |
 
-**Warum kein Problem?**
+**Warum das gut ist:**
 
-- Bus-Kapazität bei 15mm: ~2–3pF (Leiterbahn) + ~5pF (SCD41 Pin) ≈ **~8pF total**
-- Budget: 400pF → du nutzt nur **~2%** der erlaubten Kapazität
-- Pull-ups (4.7kΩ) sind korrekt dimensioniert für 3.3V I2C
+1. **Kurze Stubs**: Jeder Sensor hat nur 6-10cm vom Hub → minimale Kapazität pro Branch
+2. **Pull-ups am Hub**: Optimal platziert — kürzeste Wege zu beiden Sensoren
+3. **Gesamtkapazität**: ~10pF (6cm) + ~12pF (10cm) + 2×5pF (Sensoren) ≈ **~32pF total**
+   - Budget: 400pF → du nutzt nur **~8%** der erlaubten Kapazität
+4. **Fast-Mode möglich**: Bei dieser Topologie kannst du sogar **400kHz** verwenden!
 
-### 6.3 Empfehlungen (trotzdem sinnvoll)
+### 6.3 Empfehlungen (Best Practices für Stern-Topologie)
 
-1. **Pair-Routing**: SDA und SCL möglichst dicht nebeneinander routen (gleicher Layer, parallel)
-2. **Keine Durchführung** durch Power-Planes wenn vermeidbar (erzeugt Impedanzsprünge)
-3. **Gleiche Länge**: Dein Delta ist nur 0.9mm (15.5mm vs 14.6mm) — das ist perfekt, keine Anpassung nötig
+1. **I2C-Geschwindigkeit**: Du kannst **Standard-Mode (100kHz)** oder **Fast-Mode (400kHz)** verwenden:
+
+   ```yaml
+   i2c:
+     sda: GPIO6
+     scl: GPIO7
+     scan: true
+     frequency: 400kHz  # ← Bei Stern-Topologie mit 10cm OK!
+   ```
+
+   > **Tipp**: Starte mit 100kHz für maximale Stabilität. Wenn alles läuft, kannst du auf 400kHz erhöhen.
+
+2. **Pair-Routing**: SDA und SCL **zwingend** dicht nebeneinander routen (gleicher Layer, parallel, max. 1mm Abstand)
+   - Reduziert elektromagnetische Störungen (EMI)
+   - Minimiert Laufzeitunterschiede
+   - **Wichtig**: Gilt für BEIDE Branches (links UND rechts vom ESP)
+
+3. **Symmetrisches Layout**: Versuche beide Branches ähnlich zu routen
+   - Gleiche Trace-Breite
+   - Gleiche Layer-Wechsel (wenn nötig)
+   - Minimiert Reflexionen am Hub
+
+4. **Keine Durchführung** durch Power-Planes wenn vermeidbar (erzeugt Impedanzsprünge)
+
+5. **Pull-up Position**: ✅ Bereits optimal — direkt am ESP ist perfekt für Stern-Topologie!
 
 > [!NOTE]
-> Ein Bus-Buffer (z.B. PCA9600) wäre erst bei >20cm Gesamtlänge oder >3 I2C-Slaves an langen Stichen nötig. Mit 15mm und 2-3 Slaves bist du weit im sicheren Bereich.
+> **Stern-Topologie vs. Bus-Topologie**: Deine Konfiguration ist besser als eine durchgehende 15cm-Leitung, weil:
+>
+> - Jeder Branch trägt nur seine eigene Kapazität bei (nicht kumulativ)
+> - Reflexionen am Ende eines Branches beeinflussen den anderen Branch minimal
+> - Pull-ups am zentralen Hub sorgen für gleichmäßige Signal-Qualität
+>
+> Ein Bus-Buffer (z.B. PCA9600) wäre erst bei >15cm **pro Branch** oder >4 I2C-Slaves nötig.
 
 ---
 
@@ -228,15 +269,9 @@ I2C ist für bis zu **~30cm** bei Standard-Mode (100kHz) und **~10cm** bei Fast-
 | **Buttons** | BTN_MOD (TP1, TP13), BTN_PWR (TP6, TP14), BTN_LVL (TP7) | ✅ Vollständig |
 | **LEDs** | LED_WRG, LED_VEN, LED_L1–L5, LED_PWR, LED_MST | ✅ Vollständig |
 | **Fan Circuit** | PWM_12V_OUT (TP16), DC_VAR_12V (TP18), FAN_TACHO (TP26) | ✅ Vollständig |
-| **I2C** | SCL (TP20) | ⚠️ SDA fehlt |
+| **I2C** | SCL (TP20) | SDA |
 | **NTC Sensoren** | NTC_IN_SIG (TP1), NTC_OUT_SIG (TP3) | ✅ Vollständig |
 | **PCA9685** | PCA9685_OE (TP13) | ✅ |
-
-> [!WARNING]
-> **Fehlend**: Test Point für **SDA**. Du hast nur SCL (TP20). Empfehlung: TP für SDA hinzufügen, damit du beide I2C-Leitungen mit dem Oszilloskop/Logic-Analyzer messen kannst.
-
-> [!NOTE]
-> **Doppelte Designatoren**: Die CSV enthält mehrfach TP1, TP7, TP9, TP13. Das kann zu Konflikten führen. → Einheitlich durchnummerieren (TP1–TP31).
 
 ---
 
