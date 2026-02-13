@@ -23,6 +23,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 - [Wärmerückgewinnung](#-wärmerückgewinnung---so-funktionierts)
 - [Technische Details](#-technische-details--optimierungen)
 - [Projektstruktur](#-projektstruktur)
+- [Code-Architektur](#️-code-architektur--wartbarkeit)
 - [Troubleshooting](#-troubleshooting)
 - [Lizenz](#-lizenz)
 
@@ -38,8 +39,9 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ### 🛡️ Präzisions-Sensorik & Monitoring
 
-- 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels Bosch BME680.
-- 🍃 **Luftqualitätsanalyse (IAQ)**: Integrierte BSEC2-Algorithmen zur Berechnung des Index of Air Quality (IAQ) und CO2-Äquivalenten für eine bedarfsgerechte Lüftungssteuerung.
+- 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels Sensirion SCD41.
+- 💨 **Echte CO2-Messung**: Der SCD41 nutzt **photoacoustic sensing** zur direkten CO2-Messung (400-5000 ppm) statt berechneter Äquivalente - ideal für bedarfsgerechte Lüftungssteuerung.
+- 📊 **Automatische Intensitätsregelung**: Das System erhöht die Lüfterleistung automatisch bei steigendem CO2-Gehalt für optimale Raumluftqualität.
 - 🏎️ **Closed-Loop Drehzahlüberwachung**: Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung.
 
 ### 🖥️ Human-Machine Interface (HMI)
@@ -59,9 +61,9 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Implementierung folgt):
 
-- **🤖 Adaptive IAQ-Regelung**:
-  - Dynamische Anpassung der Lüfterleistung basierend auf Echtzeit-IAQ-Werten.
-  - Granulare Konfiguration von Schwellenwerten, Reaktionskurven und Maximalbegrenzungen (Noise Control).
+- **🤖 Adaptive CO2-Regelung**:
+  - Dynamische Anpassung der Lüfterleistung basierend auf Echtzeit-CO2-Werten (ppm).
+  - Granulare Konfiguration von Schwellenwerten (z.B. 800/1000/1400 ppm), Reaktionskurven und Maximalbegrenzungen (Noise Control).
   - Lokal und remote aktivierbar.
 
 - **🌙 Intelligenter Nachtmodus**:
@@ -79,6 +81,22 @@ Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Imp
   - Lokal und remote aktivierbar.
   - Zielwert für maximale Luftfeuchtigkeit konfigurierbar.
 
+### 🔧 Aktuelle technische Verbesserungen
+
+- **Hardware-Upgrade: SCD41 CO2-Sensor (Februar 2026)**:
+  - ✅ Wechsel von BME680 (VOC-basierte IAQ-Schätzung) zu **SCD41** (echte CO2-Messung)
+  - ✅ **Photoacoustic sensing** für präzise CO2-Messung (400-5000 ppm)
+  - ✅ Integrierte Temperatur- und Feuchtigkeitsmessung
+  - ✅ Automatische CO2-basierte Lüftungsregelung für optimale Raumluftqualität
+  - ✅ Dokumentation: `EasyEDA-Pro/components/SCD41-Sensirion.pdf`
+
+- **Code-Refactoring (Februar 2026)**:
+  - ✅ Alle Multi-Line-Lambdas in `automation_helpers.h` ausgelagert
+  - ✅ Verbesserte Typsicherheit durch explizite C++ Funktionen
+  - ✅ Modernisierte ESPHome API-Nutzung (`current_option()` statt deprecated `.state`)
+  - ✅ Korrekte Template-Typen für Script-Komponenten (`RestartScript<>`, `SingleScript<>`)
+  - ✅ Präzise Komponenten-Typen (`SpeedFan`, `LEDCOutput` statt generischer Basisklassen)
+
 ---
 
 ## 🔄 Vergleich mit VentoMaxx V-WRG
@@ -92,7 +110,7 @@ Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG /
 | **Konnektivität**   | Kabelgebunden / Inselbetrieb   | **WiFi 6 & ESP-NOW Mesh**                    |
 | **Smart Home**      | Nein (oder teure Zusatzmodule) | **Nativ Home Assistant (API)**               |
 | **Visualisierung**  | Status-LEDs (Original Panel)   | **Status-LEDs + Home Assistant Dashboard**   |
-| **Sensorik**        | Optional CO2 (rudimentär)      | **BME680 (IAQ, VOC, Temp, Hum, Pressure)**   |
+| **Sensorik**        | Optional CO2 (rudimentär)      | **SCD41 (Echtes CO2, Temp, Hum)**            |
 | **Bedienung**       | Wandschalter / Fernbedienung   | **Original Panel, App & Automatik**          |
 | **Synchronisierung**| Physisches Steuerkabel         | **Kabellos & Intelligent via ESP-NOW**       |
 | **Konfiguration**   | DIP-Schalter / Potentiometer   | **Dynamisch per Software (Floor/Room IDs)**  |
@@ -100,7 +118,7 @@ Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG /
 
 ### 🚀 Warum diese Lösung überlegen ist
 
-1. **Echte Luftqualität**: Statt nur die Zeit zu steuern, reagiert dieses System auf den **IAQ (Indoor Air Quality)** Index. Bei schlechter Luft schaltet das System automatisch hoch.
+1. **Echte CO2-Messung statt Schätzwerte**: Der SCD41 misst den tatsächlichen CO2-Gehalt (400-5000 ppm) mittels **photoacoustic sensing** - nicht nur VOC-basierte Näherungswerte. Bei erhöhtem CO2 schaltet das System automatisch hoch.
 2. **Keine neuen Kabel**: Durch **ESP-NOW** synchronisieren sich Geräte in einem Raum (z.B. paarweiser Push-Pull Betrieb) komplett kabellos über Funk. Das Ganze funktioniert sogar, wenn das lokale WLAN ausfällt, da die Kommunikation direkt über die Wi-Fi-Radio-Hardware (MAC-Ebene) erfolgt, ohne dass eine Verbindung zu einem Access Point erforderlich ist.
 3. **Wartungs-Intelligenz**: Durch die **Tacho-Auswertung** erkennt das System, ob ein Lüfter blockiert oder verschmutzt ist, und meldet dies proaktiv an Home Assistant.
 4. **Zukunftssicher**: Dank **Over-the-Air (OTA)** Updates können neue Funktionen oder verbesserte Regelalgorithmen (z.B. für Wärmerückgewinnung) jederzeit eingespielt werden.
@@ -138,7 +156,7 @@ Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](http
 | Komponente | Beschreibung | Dokumentation |
 | :--- | :--- | :--- |
 | **Lüfter** | **AxiRev** (4-Pin PWM) oder **VarioPro 4412 FGM PR** (3-Pin). *Siehe [Anleitung-Fan-Circuit.md](documentation/Anleitung-Fan-Circuit.md)* | [Fan Component](https://esphome.io/components/fan/speed.html) |
-| **BME680** | Bosch Umweltsensor (Temp, Hum, Pressure, Gas/IAQ) | [BME68x BSEC2](https://esphome.io/components/sensor/bme68x_bsec2.html) |
+| **SCD41** | Sensirion CO2-Sensor (Echtes CO2 400-5000ppm, Temp, Hum) via I²C | [SCD4X Component](https://esphome.io/components/sensor/scd4x.html) |
 | **NTCs** | 2x NTC 10k (Zuluft/Abluft) für Effizienzmessung | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
 | **I/O Expander** | **MCP23017** (I2C) für VentoMaxx Panel | [MCP23017](https://esphome.io/components/mcp23017.html) |
 
@@ -171,8 +189,8 @@ Das System basiert auf dem [Seeed XIAO ESP32C6](https://esphome.io/components/es
 | **D0** | GPIO0 | [ADC Input](https://esphome.io/components/sensor/adc.html) | NTC Innen (Spannungsteiler) |
 | **D1** | GPIO1 | [ADC Input](https://esphome.io/components/sensor/adc.html) | NTC Außen (Spannungsteiler) |
 | **D3** | GPIO21 | Input (Pullup) | **MCP23017 INTB** (Interrupt) |
-| **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | BME680, MCP23017 |
-| **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | BME680, MCP23017 |
+| **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | SCD41, MCP23017 |
+| **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | SCD41, MCP23017 |
 | **D6** | GPIO16 | [PWM Output](https://esphome.io/components/output/ledc.html) | Fan PWM Primary (4-Pin: via Q3/Q1 High-Side, 3-Pin: GND1 via Q5) |
 | **D7** | GPIO17 | [Pulse Counter](https://esphome.io/components/sensor/pulse_counter.html) | Fan Tacho (Pullup 3V3!) |
 | **(D2)** | GPIO2 | [PWM Output](https://esphome.io/components/output/ledc.html) | Fan PWM Secondary (3-Pin: GND2 via Q4) |
@@ -188,7 +206,7 @@ graph TD
 
     subgraph Digital_Bus_I2C
     XIAO -->|D4/D5| MCP[MCP23017]
-    XIAO -->|D4/D5| BME[BME680]
+    XIAO -->|D4/D5| SCD41[SCD41 CO2-Sensor]
     MCP -->|14-Pin FFC| PANEL[VentoMaxx Bedienpanel]
     end
 
@@ -316,7 +334,7 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 - **Lüfter**: Slider 0-100% (Panel-Stufen entsprechen ~20% Schritten)
 - **Modus**: Auswahl (Eco Recovery / Ventilation / Off)
 - **Timer**: Konfiguration für "Durchlüften" (Standard: 30 Min)
-- **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und IAQ
+- **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und **CO2-Gehalt (ppm)**
 
 #### Automatische Funktionen
 
@@ -453,7 +471,7 @@ Diese Dokumentation enthält:
 
 - ESPHome YAML Syntax Best Practices
 - I²C Bus Konfiguration
-- BME680 BSEC2 Konfiguration
+- SCD41 CO2-Sensor Konfiguration
 - ESP-NOW Kommunikation
 - Lüftersteuerung (PWM)
 
@@ -466,7 +484,7 @@ ESPHome-Wohnraumlueftung/
 ├── esp_wohnraumlueftung.yaml      # Hauptkonfiguration
 ├── esp32c6_common.yaml            # Gemeinsame ESP32-C6 Einstellungen
 ├── device_config.yaml             # Dynamische Gerätekonfiguration
-├── automation_helpers.h           # Helper-Funktionen (IAQ, Rampen)
+├── automation_helpers.h           # C++ Helper-Funktionen für Lambdas
 ├── components/                    # Externe Komponenten
 │   └── ventilation_group/         # Lüftungssteuerung
 │       ├── __init__.py
@@ -480,6 +498,55 @@ ESPHome-Wohnraumlueftung/
 
 ---
 
+## 🏗️ Code-Architektur & Wartbarkeit
+
+### Modular aufgebaute Firmware
+
+Die Firmware folgt einem **modularen Architekturansatz**, der Wartbarkeit und Erweiterbarkeit maximiert:
+
+#### **`automation_helpers.h` - Zentrale Helper-Bibliothek**
+
+Alle komplexen Lambda-Funktionen wurden in wiederverwendbare C++ Helper-Funktionen ausgelagert:
+
+**Vorteile:**
+
+- ✅ **Bessere Lesbarkeit**: YAML bleibt übersichtlich, Logik ist in C++ dokumentiert
+- ✅ **Wiederverwendbarkeit**: Funktionen können an mehreren Stellen genutzt werden
+- ✅ **Typsicherheit**: Compiler-Checks zur Compile-Zeit statt Runtime-Fehler
+- ✅ **IDE-Support**: Syntax-Highlighting, Auto-Completion und Refactoring-Tools
+- ✅ **Einfachere Wartung**: Änderungen an einem Ort statt in mehreren YAML-Lambdas
+
+**Enthaltene Funktionen:**
+
+- `handle_espnow_receive()` - ESP-NOW Paket-Verarbeitung und State-Synchronisation
+- `handle_button_*_click()` - Taster-Event-Handler (Power, Mode, Level)
+- `set_*_handler()` - UI-Element Callbacks (Timer, Cycle Duration, Fan Intensity)
+- `update_leds_logic()` - LED-Status-Aktualisierung basierend auf System-State
+- `cycle_operating_mode()` - Betriebsmodus-Wechsel-Logik
+- `get_iaq_classification()` - IAQ-Wert zu Text-Klassifizierung
+- `calculate_heat_recovery_efficiency()` - Wärmerückgewinnungs-Berechnung
+
+**Beispiel:**
+
+```yaml
+# Vorher: Komplexe Lambda direkt im YAML
+binary_sensor:
+  - platform: gpio
+    on_press:
+      - lambda: |-
+          id(current_mode_index) = (id(current_mode_index) + 1) % 4;
+          cycle_operating_mode(id(current_mode_index));
+          id(update_leds).execute();
+
+# Nachher: Sauberer Aufruf der Helper-Funktion
+binary_sensor:
+  - platform: gpio
+    on_press:
+      - lambda: handle_button_mode_click();
+```
+
+---
+
 ## 🔍 Troubleshooting
 
 Für eine umfassende Anleitung zur Fehlerbehebung, siehe die dedizierte [Troubleshooting-Dokumentation](documentation/Troubleshooting.md).
@@ -489,7 +556,7 @@ Für eine umfassende Anleitung zur Fehlerbehebung, siehe die dedizierte [Trouble
 - ESPHome YAML Fehler
 - I²C Bus Probleme
 - APDS9960 Proximity-Sensor
-- BME680 / BSEC2 Kalibrierung
+- SCD41 CO2-Sensor Kalibrierung
 - ESP-NOW Synchronisation
 - Kompilierungsfehler
 - Performance-Optimierung
