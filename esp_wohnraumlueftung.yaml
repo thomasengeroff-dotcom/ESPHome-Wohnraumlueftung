@@ -196,18 +196,18 @@ output:
   # - 4-Pin Mode: PWM signal via Q3/Q1 high-side circuit to fan PWM pin
   # - 3-Pin Dual-GND Mode: Controls GND1 via low-side MOSFET Q5
   - platform: ledc
-    pin: GPIO16
+    pin: GPIO19 # Pin D8 (Updated)
     frequency: 28000 Hz # Changed from 25kHz to 28kHz for silent operation
     id: fan_pwm_primary
     inverted: false # Changed: no inversion needed for low-side MOSFETs
     min_power: 0%
     zero_means_zero: true
 
-  # Secondary PWM (GPIO2) - Only for 3-Pin Dual-GND Mode
-  # GPIO2 -> Gate Q4 (NMOS PMV16XNR) + R18 (10kΩ) pull-down to GND
+  # Secondary PWM (GPIO18) - Only for 3-Pin Dual-GND Mode
+  # GPIO18 -> Gate Q4 (NMOS PMV16XNR) + R18 (10kΩ) pull-down to GND
   # Q4 controls Fan GND2, D3 (B5819WS) protection at Fan Pin 4
   - platform: ledc
-    pin: GPIO2
+    pin: GPIO18 # Pin D10 (Updated)
     frequency: 28000 Hz
     id: fan_pwm_secondary
     inverted: false
@@ -374,7 +374,7 @@ sensor:
 
   - platform: adc
     id: ntc_innen_source
-    pin: GPIO0 # Pin D0 - ADC capable
+    pin: GPIO1 # Pin D1 - ADC capable (Updated)
     attenuation: 12db # For 0-3.3V range (updated from deprecated 11db)
     update_interval: 10s
     internal: true
@@ -405,7 +405,7 @@ sensor:
 
   - platform: adc
     id: ntc_aussen_source
-    pin: GPIO1 # Pin D1 - ADC capable
+    pin: GPIO0 # Pin D0 - ADC capable (Updated)
     attenuation: 12db # For 0-3.3V range (updated from deprecated 11db)
     update_interval: 10s
     internal: true
@@ -590,6 +590,8 @@ select:
 # ---------------------------------------------------------
 switch:
   # PCA9685 Output Enable (Active Low)
+  # This switch controls the power to the PCA9685 driver
+  # LEDs are off until the switch is turned on
   - platform: gpio
     pin:
       number: GPIO21
@@ -763,10 +765,10 @@ binary_sensor:
         - lambda: |-
             handle_button_mode_click();
 
-  # Button Power (Left) - On/Off (D8 / GPIO19)
+  # Button Power (Left) - On/Off (D6 / GPIO16)
   - platform: gpio
     pin:
-      number: GPIO19
+      number: GPIO16 # Updated from GPIO19
       mode:
         input: true
         # Internal Pullup removed (External 10k used)
@@ -781,10 +783,10 @@ binary_sensor:
         - lambda: |-
             handle_button_power_click();
 
-  # Button Level (Middle) - Speed Level (D10 / GPIO18)
+  # Button Level (Middle) - Speed Level (D2 / GPIO2)
   - platform: gpio
     pin:
-      number: GPIO18
+      number: GPIO2 # Updated from GPIO18
       mode:
         input: true
         # Internal Pullup removed (External 10k used)

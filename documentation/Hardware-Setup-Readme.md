@@ -110,19 +110,19 @@ Status: **Final (10.02.2026)** - ✅ Verified
 
 ### A. XIAO ESP32C6 (Master)
 
-| XIAO Pin | GPIO | Funktion | Anschluss-Details |
-| :--- | :--- | :--- | :--- |
-| **D0** | GPIO0 | **NTC Innen** | Analog In (10k Spannungsteiler) |
-| **D1** | GPIO1 | **NTC Außen** | Analog In (10k Spannungsteiler) |
-| **D2** | GPIO2 | **Fan PWM Secondary** | Low-Side GND2 via Q4 (3-Pin Dual-GND Mode) |
-| **D3** | GPIO21 | **PCA9685 OE** | Output Enable (Active Low, mit 10kΩ Pullup) |
-| **D4** | GPIO22 | **I2C SDA** | PCA9685, BME680⚠️, SCD41⚠️ (mit 4.7kΩ Pullup) |
-| **D5** | GPIO23 | **I2C SCL** | PCA9685, BME680⚠️, SCD41⚠️ (mit 4.7kΩ Pullup) |
-| **D6** | GPIO16 | **Fan PWM** | An Basis S8050 (NPN) |
-| **D7** | GPIO17 | **Fan Tacho** | Von Lüfter Pin 3 (mit Pullup & TVS) |
-| **D8** | GPIO19 | **Button Power** | Front-Panel (mit 10kΩ Pullup) |
-| **D9** | GPIO20 | **Button Mode** | Front-Panel (mit 10kΩ Pullup) |
-| **D10** | GPIO18 | **Button Level** | Front-Panel (mit 10kΩ Pullup) |
+| XIAO Pin | GPIO | Funktion | Type | Status | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **D0** | GPIO0 | **NTC_OUT_SIG** | Analog | ✅ OK | Used as ADC1_CH0. Not a strapping pin. |
+| **D1** | GPIO1 | **NTC_IN_SIG** | Analog | ✅ OK | Used as ADC1_CH1. Not a strapping pin. |
+| **D2** | GPIO2 | **Button Level** | Input | ✅ OK | Safe. Not a strapping pin on C6. |
+| **D3** | GPIO21 | **PCA9685 OE** | Output | ✅ OK | General GPIO. Output Enable (Active Low). |
+| **D4** | GPIO22 | **I2C SDA** | I2C | ✅ OK | Native Hardware I2C SDA. |
+| **D5** | GPIO23 | **I2C SCL** | I2C | ✅ OK | Native Hardware I2C SCL. |
+| **D6** | GPIO16 | **Button Power** | Input | ⚠️ Check | Default UART0 TX. **Logger must be moved to USB-C!** |
+| **D7** | GPIO17 | **Fan Tacho** | Input | ⚠️ Check | Default UART0 RX. **Logger must be moved to USB-C!** |
+| **D8** | GPIO19 | **Fan PWM Primary** | Output | ✅ OK | General GPIO. Safe for PWM. |
+| **D9** | GPIO20 | **Button Mode** | Input | ✅ OK | General GPIO. Safe for Input. |
+| **D10** | GPIO18 | **Fan PWM Secondary** | Output | ✅ OK | General GPIO / LS_GND2. Safe for Output. |
 
 ### C. Universal-Lüfter Interface (3-Pin & 4-Pin Support)
 

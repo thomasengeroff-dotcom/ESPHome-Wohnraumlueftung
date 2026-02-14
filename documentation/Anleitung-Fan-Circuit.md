@@ -10,7 +10,7 @@ Die Schaltung kombiniert zwei Steuerungsmethoden:
 
 - **High-Side Switch** schaltet +12V via P-MOSFET
 - Lüfter bekommt dauerhaft 12V an VCC (Jumper 1-2)
-- Geschwindigkeitsregelung via PWM-Signal an Pin 4 (GPIO16)
+- Geschwindigkeitsregelung via PWM-Signal an Pin 4 (GPIO19)
 - Lüfter regelt sich selbst
 
 ### B. 3-Pin Dual-GND Modus (VarioPro)
@@ -20,8 +20,8 @@ Die Steuerung der Lüfter erfolgt über die GND-Leitungen. Dies wird im folgende
 - **Dual Low-Side MOSFETs** schalten GND1 und GND2 getrennt
 - Lüfter bekommt variable Spannung (Jumper 2-3)
 - Richtungssteuerung durch Umschalten der aktiven GND-Leitung:
-  - **GND1 aktiv** (GPIO16 PWM) = Richtung A (z.B. Zuluft)
-  - **GND2 aktiv** (GPIO2 PWM) = Richtung B (z.B. Abluft)
+  - **GND1 aktiv** (GPIO19 PWM) = Richtung A (z.B. Zuluft)
+  - **GND2 aktiv** (GPIO18 PWM) = Richtung B (z.B. Abluft)
 - Spannungsbereich: 7V-12V (58%-100% Duty Cycle)
 - **PWM-Frequenz**: 28kHz (geräuschloser Betrieb)
 
@@ -33,7 +33,7 @@ Die Steuerung der Lüfter erfolgt über die GND-Leitungen. Dies wird im folgende
 
 | Bauteil | Symbol | Wert/Typ | Bauform | Funktion |
 | :--- | :--- | :--- | :--- | :--- |
-| **Q1** | PMOS | **AO3401** (oder AO3401A) | SOT-23 | High-Side Switch für 4-Pin Modus (Max 3-4A). |
+| **Q1** | PMOS | **DMP3098L** (LCSC C42186055) | SOT-23 | High-Side Switch für 4-Pin Modus (Vgs ±20V, Max 3.3A). |
 | **Q3** | NPN | **S8050** (oder 2N2222, BC847) | SOT-23 | Pegelwandler 3.3V → 12V Gate für Q1. |
 | **D1** | Diode | **B5819WS** (Schottky) | SOD-323 | Freilaufdiode (Schutz gegen Induktion). |
 | **R3** | Resistor | **1kΩ** | 0603 | Basis-Widerstand für Q3. |
@@ -69,10 +69,10 @@ Die Steuerung der Lüfter erfolgt über die GND-Leitungen. Dies wird im folgende
                      │
                      ├──── R8 (2.2k) ─┐
                      │                │
-                     │            Gate Q1 (PMOS AO3401)
+                     │            Gate Q1 (PMOS DMP3098L)
                      │                │
                      │                │
-FAN_PWM ──── R3 (1k) ─┴─ Base Q3 (NPN S8050)
+FAN_PWM ──── R3 (1k) ─┴─ Base Q3 (NPN S8050) <-- GPIO19
                          │
                     Emitter Q3
                          │
@@ -83,7 +83,13 @@ Drain Q1  ──── PWM_12V_OUT ──── D1 (B5819WS Kathode)
                                  │
                                 GND (D1 Anode)
 
+Source Q1 ──── +12V
+ Drain Q1  ──── PWM_12V_OUT ──── D1 (B5819WS Kathode)
+                                  │
+                                 GND (D1 Anode)
+
 PWM_12V_OUT ──── L1 (470µH) ──── DC_VAR_12V ──── C27 (100µF) ─── GND
+
 ```
 
 ### B. Dual Low-Side Circuit (für 3-Pin Dual-GND Modus)
@@ -97,7 +103,7 @@ Fan GND1 ──── Drain Q5 (NMOS PMV16XNR SOT-23)
               │
           D2 (B5819WS): Kathode → Fan GND1, Anode → GND
 
-GPIO16 ───────┬──── Gate Q5
+GPIO19 ───────┬──── Gate Q5
               │
           R19 (10k)
               │
@@ -109,7 +115,7 @@ Fan GND2 ──── Drain Q4 (NMOS PMV16XNR SOT-23)
               │
           D3 (B5819WS): Kathode → Fan GND2, Anode → GND
 
-GPIO2 ────────┬──── Gate Q4
+GPIO18 ────────┬──── Gate Q4
               │
           R18 (10k)
               │
@@ -135,7 +141,7 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 
 **JP3 (Pin 4 Select):**
 
-- **1-2 (4-Pin Mode):** Fan Pin 4 <--> GPIO16 (PWM Signal)
+- **1-2 (4-Pin Mode):** Fan Pin 4 <--> GPIO19 (PWM Signal)
 - **2-3 (3-Pin Mode):** Fan Pin 4 <--> Drain Q4 (GND2)
 
 **Jumper-Positionen:**
@@ -150,7 +156,7 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 | **1** | GND/GND1 | **GND** (via JP2 1-2) | **Fan GND1** (via JP2 2-3 to Q5) |
 | **2** | VCC | JP1 Pin 2 (12V) | JP1 Pin 2 (Variable) |
 | **3** | Tacho | GPIO17 (Pullup) | GPIO17 (Pullup) |
-| **4** | PWM/GND2 | **PWM** (via JP3 1-2 from GPIO16) | **Fan GND2** (via JP3 2-3 to Q4) |
+| **4** | PWM/GND2 | **PWM** (via JP3 1-2 from GPIO19) | **Fan GND2** (via JP3 2-3 to Q4) |
 
 > ⚠️ **Wichtig**: Für korrekte Funktion müssen **ALLE Jumper (JP1, JP2, JP3)** passend gesetzt werden!
 
@@ -162,13 +168,13 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 
 1. **Hardware**:
    - JP1 auf Position 1-2 → Fan VCC bekommt konstant 12V
-   - GPIO16 liefert 28kHz PWM direkt an Fan Pin 4
+   - GPIO19 liefert 28kHz PWM direkt an Fan Pin 4
    - Q4, Q5 (Low-Side MOSFETs) sind **nicht aktiv**
 
 2. **Software**:
    - "Fan Control Mode" = "4-Pin PWM"
-   - `fan_pwm_primary` (GPIO16) steuert Geschwindigkeit **und Richtung**
-   - `fan_pwm_secondary` (GPIO2) bleibt auf 0%
+   - `fan_pwm_primary` (GPIO19) steuert Geschwindigkeit **und Richtung**
+   - `fan_pwm_secondary` (GPIO18) bleibt auf 0%
 
 3. **Lüfterverhalten (AxiRev Spezifikation)**:
    - **Richtungssteuerung via PWM Duty Cycle**:
@@ -183,13 +189,13 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 1. **Hardware**:
    - JP1 auf Position 2-3 → Fan VCC bekommt variable Spannung
    - Fan +12V an konstant 12V
-   - Fan GND1 an Q5 Drain (GPIO16 PWM)
-   - Fan GND2 an Q4 Drain (GPIO2 PWM)
+   - Fan GND1 an Q5 Drain (GPIO19 PWM)
+   - Fan GND2 an Q4 Drain (GPIO18 PWM)
 
 2. **Software**:
    - "Fan Control Mode" = "3-Pin Dual-GND"
-   - **Richtung A**: GPIO16 = PWM (58%-100%), GPIO2 = 0%
-   - **Richtung B**: GPIO16 = 0%, GPIO2 = PWM (58%-100%)
+   - **Richtung A**: GPIO19 = PWM (58%-100%), GPIO18 = 0%
+   - **Richtung B**: GPIO19 = 0%, GPIO18 = PWM (58%-100%)
    - **Safety Interlock**: 10ms Delay beim Umschalten
 
 3. **Lüfterverhalten**:
@@ -207,12 +213,12 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
    - Mindestens **0.8mm** (für 3A Motorstrom)
    - Besser **1.0mm** für Sicherheit
 
-2. **Signal-Pfade** (GPIO16, GPIO2, Tacho):
+2. **Signal-Pfade** (GPIO19, GPIO18, Tacho):
    - **0.3mm** ausreichend
 
 ### MOSFET Kühlung
 
-- **AO3401 (SOT-23)**: Kleine Kupferfläche an Drain/Source als Kühlkörper
+- **DMP3098L (SOT-23)**: Kleine Kupferfläche an Drain/Source als Kühlkörper
 - **PMV16XNR (SOT-23) - Q4, Q5**: Sehr niedriger RDS(on) (~20mΩ bei 4.5V Gate)
   - Bei 3A Last: P = I² × R = 9 × 0.020 = **0.18W**
   - SOT-23 kann bis ~0.5W ohne Kühlung
@@ -235,8 +241,8 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 
 | GPIO | Funktion | 4-Pin Modus | 3-Pin Dual-GND Modus |
 | :--- | :--- | :--- | :--- |
-| **GPIO16** | PWM Primary | Fan PWM Signal | GND1 Control (Richtung A) |
-| **GPIO2** | PWM Secondary | Nicht verwendet | GND2 Control (Richtung B) |
+| **GPIO19** | PWM Primary | Fan PWM Signal | GND1 Control (Richtung A) |
+| **GPIO18** | PWM Secondary | Nicht verwendet | GND2 Control (Richtung B) |
 | **GPIO17** | Tacho Input | RPM Sensor | RPM Sensor |
 
 ### Mode Selection in Home Assistant
@@ -282,8 +288,8 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 
 ### Schritt 1: Bestehende Schaltung beibehalten
 
-1. Platziere **Q1 (PMOS AO3401)** und **Q3 (NPN S8050)**
-2. Verbinde NPN Basis via **R3 (1kΩ)** an GPIO16
+1. Platziere **Q1 (PMOS DMP3098L)** und **Q3 (NPN S8050)**
+2. Verbinde NPN Basis via **R3 (1kΩ)** an GPIO19
 3. Verbinde PMOS Gate an NPN Collector + **R8 (2.2kΩ)** Pullup an 12V
 4. Platziere **D1 (B5819WS)** als Freilaufdiode an PWM_12V_OUT (nah an Q1)
 5. Platziere **Jumper JP1** (Pin 1 an 12V, Pin 3 an PMOS Drain, Pin 2 an Fan VCC)
@@ -295,8 +301,8 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
 3. Verbinde Fan GND1 an Q5 Drain, Fan GND2 an Q4 Drain
 4. Verbinde beide Sources an Board GND
 5. Platziere **Freilaufdioden D2, D3** (Kathode an Drain, Anode an GND)
-6. Verbinde GPIO16 via R19 (10kΩ 0402) an Gate Q5
-7. Verbinde GPIO2 via R18 (10kΩ 0402) an Gate Q4
+6. Verbinde GPIO19 via R19 (10kΩ 0402) an Gate Q5
+7. Verbinde GPIO18 via R18 (10kΩ 0402) an Gate Q4
 8. Platziere R18, R19 (10kΩ 0402) Pull-Down von jedem Gate zu GND
 
 ### Schritt 3: Mode Select Jumper & Fan Connector
@@ -306,7 +312,7 @@ Um Pin 1 und Pin 4 korrekt zwischen den Modi umzuschalten, sind zwei weitere Jum
    - Pin 2 an Fan Header Pin 1
    - Pin 3 an Drain Q5
 2. Platziere **JP3 (1x3)** für Pin 4 Selektion:
-   - Pin 1 an GPIO16
+   - Pin 1 an GPIO19
    - Pin 2 an Fan Header Pin 4
    - Pin 3 an Drain Q4
 

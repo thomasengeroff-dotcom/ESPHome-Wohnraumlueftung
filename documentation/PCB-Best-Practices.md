@@ -364,3 +364,26 @@ GND ━━━━━━━━━━━━━━━━━━━━━━━━━�
 | 6 | I2C Routing | ✅ OK | 15mm kein Buffer nötig |
 | 7 | Test Points | ✅ Fast komplett | 31 TPs, SDA TP fehlt, Nummern-Duplikate bereinigen |
 | 8 | Zero-Ohm Widerstände | 🟢 Optional | R0_FAN, R0_I2C, R0_3V3 empfohlen |
+
+---
+
+## 9. Teardrops (Tränen)
+
+**Zweck**: Mechanische Stabilisierung des Übergangs von Trace zu Pad/Via. Verhindert das Abreißen der Leiterbahn bei thermischem Stress oder mechanischer Belastung (Bohren).
+
+**Status**: ✅ Erledigt
+
+### 9.1 Anleitung in EasyEDA Pro
+
+EasyEDA Pro kann Teardrops automatisch generieren:
+
+1. **Menu**: `Tools` -> `Teardrops`
+2. **Settings**:
+    - **Trigger**: All
+    - **Target**: Pad, Via
+    - **Length**: 100% (oder 0.3-0.5mm)
+    - **Curved**: Ja (sieht besser aus & HF-freundlicher)
+3. **Action**: `Add`
+
+> [!IMPORTANT]
+> Führe diesen Schritt als **allerletzten Schritt** vor dem Gerber-Export aus! Wenn du Traces nachträglich bewegst, müssen die Teardrops oft erneuert werden (`Remove` -> `Add`).

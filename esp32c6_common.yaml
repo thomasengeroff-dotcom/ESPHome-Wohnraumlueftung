@@ -26,6 +26,7 @@ esp32:
 # ---------------------------------------------------------
 # Enables serial logging over USB-C
 logger:
+  hardware_uart: USB_SERIAL_JTAG
   # level: DEBUG # Default is DEBUG, change to VERBOSE for more info or INFO for less spam
 
 # ---------------------------------------------------------
