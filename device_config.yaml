@@ -25,7 +25,8 @@ number:
     initial_value: ${default_floor_id}
     optimistic: true
     restore_value: true # Persist across reboots
-    mode: box
+    entity_category: config
+    # mode: box (Removed to encourage integer display in HA)
     set_action:
       then:
         - lambda: |-
@@ -43,7 +44,8 @@ number:
     initial_value: ${default_room_id}
     optimistic: true
     restore_value: true # Persist across reboots
-    mode: box
+    entity_category: config
+    # mode: box
     set_action:
       then:
         - lambda: |-
@@ -61,7 +63,8 @@ number:
     initial_value: ${default_device_id}
     optimistic: true
     restore_value: true # Persist across reboots
-    mode: box
+    entity_category: config
+    # mode: box
     set_action:
       then:
         - lambda: |-
