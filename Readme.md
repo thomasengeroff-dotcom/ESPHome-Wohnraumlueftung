@@ -6,6 +6,10 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 [![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
+[![GitHub release](https://img.shields.io/github/v/release/thomasengeroff-dotcom/ESPHome-Wohnraumlueftung)](https://github.com/thomasengeroff-dotcom/ESPHome-Wohnraumlueftung/releases)
+[![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red)](https://esphome.io/components/esp32.html)
+![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
+![Sensor: BME680](https://img.shields.io/badge/Sensor-BME680-lightgrey)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -417,6 +421,15 @@ Außen → Keramikspeicher → Innenraum (vorgewärmt)
 - 🌡️ **NTC Außen** misst Außentemperatur
 - 🌡️ **NTC Innen** misst vorgewärmte Zuluft (~16°C)
 - 🏠 Vorgewärmte Luft strömt in den Raum
+
+### NTC Sensoren
+
+Die NTC Sensoren messen die Temperatur am Keramikspeicher innen und außen. Um die Messung möglichst genau zu machen, werden sehr kleine NTC Sensoren genutzt, mit möglichst geringer Masse und hoher Genauigkeit. Dadurch wird die Anpassung an die wechselnde Temperatur je nach Lüftungsrichtung möglichst schnell und präzise.
+Konkret wird der folgende Sensor verwendet:
+
+| Hersteller | Artikelnummer | Bezugsquelle | Genauigkeit | Datenblatt |
+| :--- | :--- | :--- | :--- | :--- |
+| **VARIOHM** | `ENTC-EI-10K9777-02` | [Reichelt Elektronik](https://www.reichelt.de/de/de/shop/produkt/thermistor_ntc_-40_bis_125_c-350474) | ± 0,2 °C | [PDF](EasyEDA-Pro/components/NTC_ENTC_EI-10K9777-02.pdf) |
 
 ### Effizienzberechnung
 
