@@ -172,6 +172,21 @@ sensor:
           send_every: 3
       - delta: 0.2
 
+  # 3. NTC Fan Tacho Sensor
+  - platform: pulse_counter
+    pin:
+      number: GPIO21
+      mode:
+        input: true
+        pullup: true
+    name: "Fan Speed"
+    id: fan_rpm
+    unit_of_measurement: "RPM"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.5 # 2 pulses per revolution
+    update_interval: 2s
+
 # ---------------------------------------------------------
 # TEXT SENSORS
 # ---------------------------------------------------------
@@ -218,6 +233,31 @@ switch:
     name: "Ampel Grün"
     id: led_green
     inverted: false
+
+# ---------------------------------------------------------
+# FAN TEST CONTROL (2kHz PWM on GPIO6)
+# ---------------------------------------------------------
+output:
+  - platform: ledc
+    pin: GPIO16
+    id: fan_pwm_output
+    frequency: 2000Hz
+
+number:
+  - platform: template
+    name: "Fan PWM Duty Cycle"
+    id: fan_pwm_duty
+    optimistic: true
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+    on_value:
+      then:
+        - output.set_level:
+            id: fan_pwm_output
+            level: !lambda "return x / 100.0;"
 
 # ---------------------------------------------------------
 # CAPTIVE PORTAL
