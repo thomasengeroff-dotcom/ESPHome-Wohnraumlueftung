@@ -9,7 +9,7 @@ esphome:
   friendly_name: ESPSlaveNTC
   platformio_options:
     board_build.flash_mode: dio
-    build_type: debug # Einkommentieren für schnelleres Kompilieren (aber größere und langsamere Firmware)
+    # build_type: debug # Einkommentieren für schnelleres Kompilieren (aber größere und langsamere Firmware)
 
 esp32:
   board: esp32-c6-devkitc-1
@@ -233,6 +233,45 @@ switch:
     name: "Ampel Grün"
     id: led_green
     inverted: false
+
+  - platform: gpio
+    name: "MCP23017 Pin A0"
+    pin:
+      mcp23xxx: mcp23017_hub
+      # Use pin A0
+      number: 0
+      mode:
+        output: true
+      inverted: false
+
+  # MCP23017 Pin Test - DISABLED due to linker error on ESP32-C6/ESP-IDF
+  # "undefined reference to pin_interrupt_mode"
+  # Uncomment when supported or patch available
+#   - platform: gpio
+#     pin:
+#       mcp23xxx: mcp23017_hub
+#       number: 0
+#       mode:
+#         output: true
+#     name: "MCP23017 LED PIN A0"
+#     id: mcp_led_test
+
+# ---------------------------------------------------------
+# I2C Configuration
+# ---------------------------------------------------------
+i2c:
+  sda: GPIO22
+  scl: GPIO23
+  scan: true
+  id: bus_a
+
+# ---------------------------------------------------------
+# MCP23017 Configuration
+# ---------------------------------------------------------
+mcp23017:
+  - id: mcp23017_hub
+    address: 0x20
+    i2c_id: bus_a
 
 # ---------------------------------------------------------
 # FAN TEST CONTROL (2kHz PWM on GPIO6)

@@ -249,25 +249,29 @@ light:
     name: "Status LED Power"
     id: status_led_power
     internal: true
-    default_transition_length: 0.5s
+    default_transition_length: 0.5s # nice fading effect
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_master
     name: "Status LED Master"
     id: status_led_master
     internal: true
     default_transition_length: 0.5s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_wrg
     name: "Status LED Mode WRG"
     id: status_led_mode_wrg # ID expected by automation_helpers.h
     internal: true
     default_transition_length: 0.5s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_vent
     name: "Status LED Mode Vent"
     id: status_led_mode_vent # Automation helper expects this ID
     internal: true
     default_transition_length: 0.5s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
 
   # Level LEDs
   - platform: monochromatic
@@ -275,26 +279,31 @@ light:
     id: status_led_l1
     internal: true
     default_transition_length: 0.2s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l2
     id: status_led_l2
     internal: true
     default_transition_length: 0.2s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l3
     id: status_led_l3
     internal: true
     default_transition_length: 0.2s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l4
     id: status_led_l4
     internal: true
     default_transition_length: 0.2s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l5
     id: status_led_l5
     internal: true
     default_transition_length: 0.2s
+    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
 
 # Alias for ID consistency if needed, but I kept IDs same as before where possible.
 # Exception: status_led_wrg vs status_led_mode_wrg.
