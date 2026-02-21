@@ -16,17 +16,6 @@
 /// Used by automation_helpers.h (YAML lambdas) and by the native C++ unit tests.
 class VentilationLogic {
 public:
-    /// @brief Maps a raw BME680 IAQ index to a German human-readable label.
-    /// @param iaq_val  IAQ value (0–500+).
-    /// @return Classification string ("Ausgezeichnet" … "Gesundheitsgefährdend").
-    static std::string get_iaq_classification(float iaq_val);
-
-    /// @brief Generates an RGB byte vector for a traffic-light LED based on IAQ.
-    /// Sent over ESP-NOW so the peer can mirror the colour.
-    /// @param iaq_val  IAQ value (0–500+).
-    /// @return 3-byte vector {R, G, B}.
-    static std::vector<uint8_t> get_iaq_traffic_light_data(float iaq_val);
-
     /// @brief Calculates heat-recovery efficiency (WRG) as a percentage.
     /// Formula: (T_supply − T_outside) / (T_indoor − T_outside) × 100.
     /// Returns 0 if ΔT < 1 °C (avoids division by zero).

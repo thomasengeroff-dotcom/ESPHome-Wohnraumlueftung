@@ -152,19 +152,6 @@ pca9685:
     address: 0x40
 
 # ---------------------------------------------------------
-# BME680 SENSOR (BSEC2)
-# ---------------------------------------------------------
-# Configured via I2C at address 0x77
-bme68x_bsec2_i2c:
-  address: 0x77
-  model: bme680
-  operating_age: 28d # Time for the sensor to reach stable calibration
-  sample_rate: LP # Low Power mode (sampling every 3s)
-  supply_voltage: 3.3V
-  temperature_offset: 0.0 # Adjusted for room temperature
-  state_save_interval: 6h # Save state every 6 hours
-
-# ---------------------------------------------------------
 # PCA9685 OUTPUTS (LEDs) & GPIO OUTPUTS
 # ---------------------------------------------------------
 output:
@@ -296,49 +283,25 @@ light:
 # SENSORS CONFIGURATION
 # ---------------------------------------------------------
 sensor:
-  # BME680 Environmental Data
-  - platform: bme68x_bsec2
+  # BMP390 Environmental Data (Temperature & Pressure)
+  - platform: bmp3xx_i2c
     temperature:
-      name: "BME680 Temperatur"
+      name: "BMP390 Temperatur"
       id: temperature
       accuracy_decimals: 1
+      oversampling: 16x
       filters:
         - median:
             window_size: 5
             send_every: 5
     pressure:
-      name: "BME680 Luftdruck"
+      name: "BMP390 Luftdruck"
       id: pressure
       accuracy_decimals: 1
-    humidity:
-      name: "BME680 Luftfeuchtigkeit"
-      id: humidity
-      accuracy_decimals: 1
-    iaq:
-      name: "BME680 IAQ"
-      id: iaq
-      accuracy_decimals: 0
-      # Traffic light logic sent via ESP-NOW when IAQ updates
-      on_value:
-        then:
-          - espnow.send:
-              address: "98:A3:16:85:96:70"
-              data: !lambda |-
-                return get_iaq_traffic_light_data(x);
-    co2_equivalent:
-      name: "BME680 CO2 Äquivalent"
-      id: co2_equivalent
-      accuracy_decimals: 0
-
-    # Der "Breath VOC equivalent" (b-VOC) Sensorwert des BME680 ist ein berechneter Messwert
-    # der Bosch Sensortec Environmental Cluster (BSEC) Software, der die Konzentration flüchtiger
-    # organischer Verbindungen (VOCs) in der Atemluft schätzt. Er korreliert den Gaswiderstandssensor
-    # mit typischen Ausatemgasen, um ein Maß für die Luftqualität in Innenräumen zu liefern.
-    # Anwendung: Dieser Wert hilft, die Belastung der Innenraumluft durch menschliche Ausatemluft zu beurteilen.
-    breath_voc_equivalent:
-      name: "BME680 Belastung durch Atemluft"
-      id: breath_voc_equivalent
-      accuracy_decimals: 2
+      oversampling: 16x
+    address: 0x76
+    update_interval: 60s
+    iir_filter: 2x
 
   # ---------------------------------------------------------
   # SCD41 CO2 SENSOR (Optional)
@@ -353,6 +316,9 @@ sensor:
         - median:
             window_size: 5
             send_every: 3
+    temperature_offset: 4.0 # Optional: Standardwert ist 4.0 °C
+    altitude_compensation: 250m # Ersetze 250m durch Wohnort-Höhe
+    automatic_self_calibration: true
     temperature:
       name: "SCD41 Temperatur"
       id: scd41_temperature
@@ -441,7 +407,7 @@ sensor:
     update_interval: 30s
     lambda: |-
       return calculate_heat_recovery_efficiency(
-        id(temperature).state,     // Room temperature from BME680
+        id(temperature).state,     // Room temperature from BMP390
         id(temp_zuluft).state,     // Supply air temperature
         id(temp_abluft).state      // Exhaust air temperature
       );
@@ -464,16 +430,7 @@ sensor:
 # TEXT SENSORS (Status & Classification)
 # ---------------------------------------------------------
 text_sensor:
-  - platform: bme68x_bsec2
-    iaq_accuracy:
-      name: "${device_name} IAQ Accuracy"
-
-  # Human-readable IAQ classification (Good, Average, Bad, etc.)
-  - platform: template
-    name: "${device_name} IAQ Classification"
-    id: iaq_classification
-    lambda: |-
-      return get_iaq_classification(id(iaq).state);
+  # (IAQ/BSEC components removed because BMP390 does not support them)
 
   # Human-readable CO2 classification (Ausgezeichnet, Gut, etc.)
   - platform: template

@@ -12,14 +12,6 @@
         return false; \
     }
 
-bool test_iaq_classification() {
-    TEST_ASSERT(VentilationLogic::get_iaq_classification(25.0f) == "Ausgezeichnet");
-    TEST_ASSERT(VentilationLogic::get_iaq_classification(50.0f) == "Ausgezeichnet");
-    TEST_ASSERT(VentilationLogic::get_iaq_classification(51.0f) == "Gut");
-    TEST_ASSERT(VentilationLogic::get_iaq_classification(350.0f) == "Gesundheitsgefährdend");
-    return true;
-}
-
 bool test_heat_recovery() {
     // T_in=20, T_out=0, T_supply=16 -> Eff = (16-0)/(20-0) = 80%
     float eff = VentilationLogic::calculate_heat_recovery_efficiency(20.0f, 16.0f, 0.0f);
@@ -154,7 +146,6 @@ int main() {
     std::cout << "Running VentilationLogic Tests..." << std::endl;
     
     bool all_passed = true;
-    if(test_iaq_classification()) std::cout << "[PASS] IAQ Classification" << std::endl; else all_passed = false;
     if(test_co2_logic()) std::cout << "[PASS] CO2 Logic" << std::endl; else all_passed = false;
     if(test_heat_recovery()) std::cout << "[PASS] Heat Recovery" << std::endl; else all_passed = false;
     if(test_fan_logic()) std::cout << "[PASS] Fan Logic" << std::endl; else all_passed = false;

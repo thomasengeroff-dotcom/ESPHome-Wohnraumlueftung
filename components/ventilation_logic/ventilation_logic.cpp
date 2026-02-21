@@ -1,46 +1,5 @@
 #include "ventilation_logic.h"
 
-/// @brief Maps raw IAQ index to a human-readable German classification.
-/// Thresholds follow the Bosch BME680 BSEC recommendation.
-std::string VentilationLogic::get_iaq_classification(float iaq_val) {
-  int val = (int)iaq_val;
-  if (val <= 50) {
-    return "Ausgezeichnet";
-  } else if (val <= 100) {
-    return "Gut";
-  } else if (val <= 150) {
-    return "Mäßig";
-  } else if (val <= 200) {
-    return "Schlecht";
-  } else if (val <= 300) {
-    return "Sehr Schlecht";
-  } else {
-    return "Gesundheitsgefährdend";
-  }
-}
-
-/// @brief Converts IAQ value to an RGB traffic-light colour vector.
-/// Green (≤50) → Yellow-Green → Yellow → Orange → Red (>200).
-/// The 3-byte result is sent to the peer device via ESP-NOW.
-std::vector<uint8_t> VentilationLogic::get_iaq_traffic_light_data(float iaq_val) {
-  uint8_t r = 0, g = 0, b = 0;
-  int val = (int)iaq_val;
-  
-  if (val <= 50) { // Green
-    g = 255; 
-  } else if (val <= 100) { // Yellow-Green
-    r = 128; g = 255;
-  } else if (val <= 150) { // Yellow
-    r = 255; g = 255;
-  } else if (val <= 200) { // Orange
-    r = 255; g = 128;
-  } else { // Red
-    r = 255; 
-  }
-  
-  return {r, g, b};
-}
-
 /// @brief Calculates Wärmerückgewinnung (heat recovery) efficiency.
 /// Returns 0 when the indoor/outdoor ΔT is < 1 °C, clamped to [0, 100] %.
 float VentilationLogic::calculate_heat_recovery_efficiency(float t_raum, float t_zuluft, float t_aussen) {

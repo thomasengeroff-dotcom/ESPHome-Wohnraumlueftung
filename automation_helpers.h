@@ -82,10 +82,6 @@ extern esphome::VentilationController *ventilation_ctrl;
 
 // --- Inline wrappers (called from YAML lambdas) -----------------------
 
-/// @brief Delegates IAQ classification to VentilationLogic.
-inline std::string get_iaq_classification(float iaq_val) {
-  return VentilationLogic::get_iaq_classification(iaq_val);
-}
 
 /// @brief Returns a human-readable German CO2 classification.
 inline std::string get_co2_classification(float co2_ppm) {
@@ -132,11 +128,6 @@ inline void apply_co2_auto_control() {
     }
 }
 
-
-/// @brief Returns an IAQ traffic-light RGB vector for ESP-NOW visualization.
-inline std::vector<uint8_t> get_iaq_traffic_light_data(float iaq_val) {
-  return VentilationLogic::get_iaq_traffic_light_data(iaq_val);
-}
 
 /// @brief Sets fan PWM based on mode (4-pin/3-pin), speed, and direction.
 /// Handles specific logic for 4-pin PWM.

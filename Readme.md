@@ -9,7 +9,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 [![GitHub release](https://img.shields.io/github/v/release/thomasengeroff-dotcom/ESPHome-Wohnraumlueftung)](https://github.com/thomasengeroff-dotcom/ESPHome-Wohnraumlueftung/releases)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red)](https://esphome.io/components/esp32.html)
 ![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
-![Sensor: BME680](https://img.shields.io/badge/Sensor-BME680-lightgrey)
+![Sensor: BMP390](https://img.shields.io/badge/Sensor-BMP390-lightgrey)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -45,6 +45,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 - 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels Sensirion SCD41.
 - 💨 **Echte CO2-Messung**: Der SCD41 nutzt **photoacoustic sensing** zur direkten CO2-Messung (400-5000 ppm) statt berechneter Äquivalente - ideal für bedarfsgerechte Lüftungssteuerung.
+- 🏔️ **Luftdruckmessung via BMP390**: Der hochpräzise Barometer-Sensor ermöglicht lokale Wettertrend-Analysen, Sturmwarnungen (Rapid Pressure Drop) und liefert gleichzeitig die exakten Höhendaten für die Autokalibrierung und barometrische Kompensation des SCD41 CO2-Sensors.
 - 📊 **Automatische Intensitätsregelung**: Das System kann die Lüfterleistung automatisch bei steigendem CO2-Gehalt für optimale Raumluftqualität erhöhen.
 - 🏎️ **Closed-Loop Drehzahlüberwachung**: Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung.
 
@@ -93,13 +94,18 @@ Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Imp
 
 - **KI-gestützte Lüftungssteuerung**:
   - Proaktive KI-gestützte Lüftungssteuerung basierend auf historischen Daten und externen Prognosen (Wetter, CO2, Feuchte). Siehe [📄 KI-gestützte Lüftungssteuerung](documentation/KI-gestützte-Lüftungssteuerung.md) für Details.
+
+- **🚶 Radar-basierte Anwesenheitserkennung**:
+  - Integration eines 24GHz mmWave-Radarsensors (MR24HPC1) über den vorgesehenen UART-Pin-Header auf der Platine.
+  - Da die dezentralen Lüftungsgeräte ohnehin in jedem relevanten Raum optimal positioniert sind, dienen sie gleichzeitig als perfekter Standort für eine raumgenaue Präsenzerfassung, die nahtlos an Home Assistant übergeben wird.
+  - **Bedarfsgesteuerte Regelung**: Über Home Assistant lässt sich konfigurieren, inwieweit die Lüftung bei erkannter Anwesenheit reagieren soll (z. B. Lüfterdrehzahl drosseln zur Lärmreduzierung im Schlafzimmer).
   
 ### 🔧 Aktuelle technische Verbesserungen
 
-- **Hardware-Upgrade: SCD41 CO2-Sensor (Februar 2026)**:
-  - ✅ Wechsel von BME680 (VOC-basierte IAQ-Schätzung) zu **SCD41** (echte CO2-Messung)
+- **Hardware-Upgrade: SCD41 CO2-Sensor & BMP390 (Februar 2026)**:
+  - ✅ Wechsel von BME680 (VOC-basierte IAQ-Schätzung) zu **SCD41** (echte CO2-Messung) und **BMP390** (Luftdruck)
   - ✅ **Photoacoustic sensing** für präzise CO2-Messung (400-5000 ppm)
-  - ✅ Integrierte Temperatur- und Feuchtigkeitsmessung
+  - ✅ Integrierte Temperatur- und Feuchtigkeitsmessung (SCD41)
   - ✅ Automatische CO2-basierte Lüftungsregelung für optimale Raumluftqualität
   - ✅ Dokumentation: `EasyEDA-Pro/components/SCD41-Sensirion.pdf`
 
@@ -172,6 +178,7 @@ Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](http
 | :--- | :--- | :--- |
 | **Lüfter** | **AxiRev** (4-Pin PWM) oder **3-Pin PWM** (ohne Tacho-Signal). *Siehe [Anleitung-Fan-Circuit.md](documentation/Anleitung-Fan-Circuit.md)* | [Fan Component](https://esphome.io/components/fan/speed.html) |
 | **SCD41** | Sensirion CO2-Sensor (Echtes CO2 400-5000ppm, Temp, Hum) via I²C | [SCD4X Component](https://esphome.io/components/sensor/scd4x.html) |
+| **BMP390** | Bosch Hochpräziser Barometrischer Drucksensor via I²C | [BMP3XX Component](https://esphome.io/components/sensor/bmp3xx.html) |
 | **NTCs** | 2x NTC 10k (Zuluft/Abluft) für Effizienzmessung | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
 | **I/O Expander** | **MCP23017** (I2C) für VentoMaxx Panel | [MCP23017](https://esphome.io/components/mcp23017.html) |
 
@@ -224,6 +231,7 @@ graph TD
     subgraph Digital_Bus_I2C
     XIAO -->|D4/D5| MCP[MCP23017]
     XIAO -->|D4/D5| SCD41[SCD41 CO2-Sensor]
+    XIAO -->|D4/D5| BMP390[BMP390 Drucksensor]
     MCP -->|14-Pin FFC| PANEL[VentoMaxx Bedienpanel]
     end
 
@@ -394,7 +402,7 @@ graph LR
 
 ### Phase 1: Abluft (Rausblasen) - 70 Sekunden
 
-```
+```text
 Innenraum (warm) → Keramikspeicher → Außen
     21°C              ↓ Wärme         5°C
                   speichern
@@ -409,7 +417,7 @@ Innenraum (warm) → Keramikspeicher → Außen
 
 ### Phase 2: Zuluft (Reinblasen) - 70 Sekunden
 
-```
+```text
 Außen → Keramikspeicher → Innenraum (vorgewärmt)
  5°C     ↑ Wärme           ~16°C
         abgeben
@@ -471,7 +479,7 @@ Bei Verwendung mehrerer Geräte im gleichen Raum:
 
 **Paar-Betrieb (2 Geräte):**
 
-```
+```text
 Gerät A: Phase A (Zuluft)  ←→  Gerät B: Phase B (Abluft)
          ↓ 70s wechseln ↓
 Gerät A: Phase B (Abluft) ←→  Gerät B: Phase A (Zuluft)
@@ -548,7 +556,6 @@ Alle komplexen Lambda-Funktionen wurden in wiederverwendbare C++ Helper-Funktion
 - `set_*_handler()` - UI-Element Callbacks (Timer, Cycle Duration, Fan Intensity)
 - `update_leds_logic()` - LED-Status-Aktualisierung basierend auf System-State
 - `cycle_operating_mode()` - Betriebsmodus-Wechsel-Logik
-- `get_iaq_classification()` - IAQ-Wert zu Text-Klassifizierung
 - `calculate_heat_recovery_efficiency()` - Wärmerückgewinnungs-Berechnung
 
 **Beispiel:**
