@@ -3,6 +3,7 @@
 # just for testing purposes.
 # It contains the three led traffic light and the ntc sensor.
 # The main reason for this device is to test the NTC sensor.
+# The device is also to test the connection to the Ventomaxx control panel
 # ---------------------------------------------------------
 esphome:
   name: espslaventc
@@ -297,6 +298,43 @@ number:
         - output.set_level:
             id: fan_pwm_output
             level: !lambda "return x / 100.0;"
+
+# ---------------------------------------------------------
+# PHYSICAL BUTTONS (Binary Sensors)
+# ---------------------------------------------------------
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO1
+      mode:
+        input: true
+      inverted: true
+    name: "Button On/Off"
+    id: button_on_off
+    on_press:
+      - switch.toggle: led_red
+
+  - platform: gpio
+    pin:
+      number: GPIO2
+      mode:
+        input: true
+      inverted: true
+    name: "Button Mode"
+    id: button_mode
+    on_press:
+      - switch.toggle: led_yellow
+
+  - platform: gpio
+    pin:
+      number: GPIO3
+      mode:
+        input: true
+      inverted: true
+    name: "Button Level"
+    id: button_level
+    on_press:
+      - switch.toggle: led_green
 
 # ---------------------------------------------------------
 # CAPTIVE PORTAL

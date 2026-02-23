@@ -9,6 +9,7 @@
 #include "esphome.h"
 #include <string>
 #include <vector>
+#include <deque>
 
 // Core and Component Headers
 #include "esphome/components/globals/globals_component.h"
@@ -16,10 +17,16 @@
 #include "esphome/components/template/select/template_select.h"
 #include "esphome/components/template/number/template_number.h"
 #include "esphome/components/template/switch/template_switch.h"
-#include "esphome/components/fan/fan.h"
-#include "esphome/components/sensor/sensor.h"
 #include "esphome/components/output/float_output.h"
 #include "esphome/components/light/light_state.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/homeassistant/sensor/homeassistant_sensor.h"
+#include "esphome/components/homeassistant/binary_sensor/homeassistant_binary_sensor.h"
+#include "esphome/components/ntc/ntc.h"
+#include "esphome/components/light/light_state.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/homeassistant/sensor/homeassistant_sensor.h"
+#include "esphome/components/homeassistant/binary_sensor/homeassistant_binary_sensor.h"
 // Custom Component Header
 #include "esphome/components/ventilation_group/ventilation_group.h"
 #include "esphome/components/ventilation_logic/ventilation_logic.h"
@@ -36,6 +43,11 @@ extern esphome::globals::GlobalsComponent<int> *fan_intensity_level;    ///< Fan
 extern esphome::globals::RestoringGlobalsComponent<bool> *co2_auto_enabled;      ///< CO2 auto-control enabled flag.
 extern esphome::globals::RestoringGlobalsComponent<int> *co2_min_fan_level;      ///< Min fan level for CO2 control (moisture protection).
 extern esphome::globals::RestoringGlobalsComponent<int> *co2_max_fan_level;      ///< Max fan level for CO2 control (noise limit).
+
+extern esphome::globals::GlobalsComponent<bool> *auto_mode_active;
+extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
+extern esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_val;
+extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_behavior_val;
 /// @}
 
 /// @name Template UI components
@@ -62,6 +74,12 @@ extern esphome::ledc::LEDCOutput *fan_pwm_primary;   ///< Primary PWM output (GP
 /// @name Sensors
 /// @{
 extern esphome::sensor::Sensor *co2_sensor;          ///< SCD41 CO2 sensor.
+extern esphome::sensor::Sensor *temperature;         ///< Room Temperature (SCD41)
+extern esphome::ntc::NTC *temp_zuluft;         ///< Supply Air Temperature (NTC Inside)
+extern esphome::ntc::NTC *temp_abluft;         ///< Exhaust Air Temperature (NTC Outside)
+extern esphome::sensor::Sensor *scd41_humidity;      ///< Indoor Humidity
+extern esphome::homeassistant::HomeassistantSensor *outdoor_humidity;    ///< Outdoor Humidity (HA)
+extern esphome::homeassistant::HomeassistantBinarySensor *presence_sensor; ///< Presence Sensor (HA)
 /// @}
 
 /// @name Status LEDs (monochromatic light components)
@@ -81,6 +99,69 @@ extern esphome::light::LightState *status_led_mode_vent; ///< Mode LED: Ventilat
 extern esphome::VentilationController *ventilation_ctrl;
 
 // --- Inline wrappers (called from YAML lambdas) -----------------------
+
+/// @name NTC Stabilization Logic
+/// @{
+
+// Stabilization parameter constants
+static const uint32_t NTC_WAIT_TIME_MS = 45000;      // Wait 45 seconds after direction change
+static const size_t NTC_WINDOW_SIZE = 10;            // Keep 10 samples (at 3s interval = 30s window)
+static const float NTC_MAX_DEVIATION = 0.3f;         // Max allowed deviation in window
+
+// State for each NTC sensor (0 = zuluft, 1 = abluft)
+static std::deque<float> ntc_history[2];
+static uint32_t last_direction_change_time = 0;
+
+/// Call this when fan direction (switch) changes
+inline void notify_fan_direction_changed() {
+    last_direction_change_time = millis();
+    ntc_history[0].clear();
+    ntc_history[1].clear();
+    ESP_LOGD("ntc_filter", "Fan direction changed. Resetting NTC history buffers.");
+}
+
+/// NTC Sliding Window Stabilization Filter
+/// @param sensor_idx 0 for temp_zuluft, 1 for temp_abluft
+/// @param new_value The raw value reported by the physical NTC component
+/// @return The original value if stable, else empty optional to discard update
+inline esphome::optional<float> filter_ntc_stable(int sensor_idx, float new_value) {
+    // 1. Check if we are still within the mandatory wait time
+    if (millis() - last_direction_change_time < NTC_WAIT_TIME_MS) {
+        return {}; // Discard value
+    }
+
+    // 2. Add current value to history window
+    auto &history = ntc_history[sensor_idx];
+    history.push_back(new_value);
+    
+    // Maintain maximum window size
+    if (history.size() > NTC_WINDOW_SIZE) {
+        history.pop_front();
+    }
+
+    // 3. Wait until the window is full for a reliable stabilization check
+    if (history.size() < NTC_WINDOW_SIZE) {
+        return {}; // Discard value while buffer fills
+    }
+
+    // 4. Calculate deviation
+    float min_val = history[0];
+    float max_val = history[0];
+    for (float v : history) {
+        if (v < min_val) min_val = v;
+        if (v > max_val) max_val = v;
+    }
+
+    // 5. Evaluate stability
+    if ((max_val - min_val) <= NTC_MAX_DEVIATION) {
+        // Temperature is stable!
+        return new_value;
+    } else {
+        // Still fluctuating, keep last state
+        return {}; 
+    }
+}
+/// @}
 
 
 /// @brief Returns a human-readable German CO2 classification.
@@ -128,6 +209,134 @@ inline void apply_co2_auto_control() {
     }
 }
 
+/// @brief Core logic for the new Standard-Automatik mode.
+inline void evaluate_auto_mode() {
+    if (!auto_mode_active->value() || !system_on->value() || !ventilation_enabled->value()) return;
+
+    auto *v = ventilation_ctrl;
+    int target_level = 1; // Default to level 1 for maximum efficiency
+    int internal_mode = v->state_machine.current_mode; // Copy current mode as starting point
+
+    // Determine current hardware direction to correctly map NTC sensors during MODE_VENTILATION
+    bool is_intake = v->state_machine.get_target_state().direction_in;
+
+    // --- 1. Compute Local Temperatures ---
+    float local_in = NAN;
+    float local_out = NAN;
+
+    // SCD41 is always a valid indoor temperature if available
+    if (temperature != nullptr && !std::isnan(temperature->state)) {
+        local_in = temperature->state;
+    }
+
+    if (internal_mode == esphome::MODE_VENTILATION) {
+        // Continuous flow mode: NTC sensors show true external/internal air depending on direction
+        if (is_intake) {
+            // Blowing IN: Exhaust NTC gets true outside air, Supply NTC gets mixed/flow air (ignore)
+            if (temp_abluft != nullptr) local_out = temp_abluft->state;
+        } else {
+            // Blowing OUT: Supply NTC gets true inside air, Exhaust NTC gets mixed/flow (ignore)
+            if (std::isnan(local_in) && temp_zuluft != nullptr) local_in = temp_zuluft->state;
+        }
+    } else if (internal_mode == esphome::MODE_ECO_RECOVERY) {
+        // WRG mode: Stable NTC values are valid representations (thanks to the 45s filter logic)
+        if (temp_abluft != nullptr) local_out = temp_abluft->state;
+        if (std::isnan(local_in) && temp_zuluft != nullptr) local_in = temp_zuluft->state;
+    }
+    
+    // Store in controller for ESP-NOW broadcast
+    v->local_t_in = local_in;
+    v->local_t_out = local_out;
+
+    // --- 2. Compute Effective Temperatures (Group-wide) ---
+    float eff_in = local_in;
+    float eff_out = local_out;
+    
+    uint32_t now = millis();
+    // Use peer indoor temp if local is missing and peer value is fresh (<5 mins)
+    if (std::isnan(eff_in) && !std::isnan(v->last_peer_t_in) && (now - v->last_peer_t_in_time < 300000)) {
+        eff_in = v->last_peer_t_in;
+    }
+    // Use peer outdoor temp if local is missing and peer value is fresh (<5 mins)
+    if (std::isnan(eff_out) && !std::isnan(v->last_peer_t_out) && (now - v->last_peer_t_out_time < 300000)) {
+        eff_out = v->last_peer_t_out;
+    }
+
+    // --- 3. Summer Cooling Logic ---
+    if (!std::isnan(eff_in) && !std::isnan(eff_out)) {
+        if (internal_mode != esphome::MODE_VENTILATION) {
+            // Check if we should ENGAGE cooling (Inside too warm, outside is cooler)
+            if (eff_in > 22.0f && eff_out < eff_in) {
+                internal_mode = esphome::MODE_VENTILATION;
+                ESP_LOGI("auto_mode", "Summer cooling engaged: In=%.1fC, Out=%.1fC", eff_in, eff_out);
+            } else if (internal_mode != esphome::MODE_ECO_RECOVERY) {
+                // Return to eco recovery
+                internal_mode = esphome::MODE_ECO_RECOVERY;
+            }
+        } else {
+            // Check if we should ABORT cooling (Outside got warmer than inside)
+            if (eff_out >= eff_in) {
+                internal_mode = esphome::MODE_ECO_RECOVERY;
+                ESP_LOGI("auto_mode", "Summer cooling aborted (Too warm outside): In=%.1fC, Out=%.1fC", eff_in, eff_out);
+            }
+        }
+    } else if (internal_mode != esphome::MODE_ECO_RECOVERY && internal_mode != esphome::MODE_VENTILATION) {
+         // Default to WRG
+         internal_mode = esphome::MODE_ECO_RECOVERY;
+    }
+
+    // --- 4. Air Quality logic (CO2) ---
+    if (co2_sensor != nullptr && !std::isnan(co2_sensor->state)) {
+        float co2_ppm = co2_sensor->state;
+        int co2_thresh = auto_co2_threshold_val->value();
+        if (co2_ppm > co2_thresh) {
+            // Proportional increase
+            int level_boost = (co2_ppm - co2_thresh) / 200 + 1; 
+            target_level = std::max(target_level, std::min(10, 1 + level_boost));
+            ESP_LOGD("auto_mode", "CO2 > %.0f -> Boost level to %d", (float)co2_thresh, target_level);
+        }
+    }
+
+    // 3. Humidity logic
+    if (scd41_humidity != nullptr && outdoor_humidity != nullptr) {
+        float in_hum = scd41_humidity->state;
+        float out_hum = outdoor_humidity->state;
+        int hum_thresh = auto_humidity_threshold_val->value();
+        
+        if (!std::isnan(in_hum) && !std::isnan(out_hum)) {
+            if (in_hum > hum_thresh && out_hum < in_hum) {
+                // Only increase if outdoor is drier
+                int level_boost = (in_hum - hum_thresh) / 5 + 1;
+                target_level = std::max(target_level, std::min(10, 1 + level_boost));
+                ESP_LOGD("auto_mode", "Humidity > %d%% (In: %.1f, Out: %.1f) -> Boost level to %d", hum_thresh, in_hum, out_hum, target_level);
+            }
+        }
+    }
+
+    // 4. Presence logic
+    if (presence_sensor != nullptr && presence_sensor->state) {
+        int behavior = auto_presence_behavior_val->value();
+        if (behavior == 0) { // Erhöhen
+            target_level = std::min(10, target_level + 1);
+        } else if (behavior == 1) { // Senken
+            target_level = std::max(1, target_level - 1);
+        }
+    }
+
+    // Apply the computed logic
+    if (v->state_machine.current_mode != internal_mode) {
+        v->set_mode((esphome::VentilationMode)internal_mode);
+    }
+    
+    if (fan_intensity_level->value() != target_level) {
+        fan_intensity_level->value() = target_level;
+        fan_intensity_display->publish_state(target_level);
+        ventilation_ctrl->set_fan_intensity(target_level);
+        fan_speed_update->execute();
+        update_leds->execute();
+        ESP_LOGI("auto_mode", "Automode updated fan level to %d", target_level);
+    }
+}
 
 /// @brief Sets fan PWM based on mode (4-pin/3-pin), speed, and direction.
 /// Handles specific logic for 4-pin PWM.
@@ -186,9 +395,10 @@ inline float calculate_ramp_down(int iteration) {
 
 /// @brief Applies the operating mode corresponding to the given index.
 /// Index mapping: 0 = Wärmerückgewinnung, 1 = Stoßlüftung,
-/// 2 = Durchlüften (uses vent_timer), 3 = Aus.
+/// 2 = Durchlüften (uses vent_timer), 3 = Automatik, 4 = Aus.
 inline void cycle_operating_mode(int mode_index) {
   auto *v = ventilation_ctrl;
+  auto_mode_active->value() = false; // Reset by default
   
   switch(mode_index) {
     case 0:  // Wärmerückgewinnung
@@ -200,7 +410,11 @@ inline void cycle_operating_mode(int mode_index) {
     case 2:  // Durchlüften — timer from vent_timer number component
       v->set_mode(esphome::MODE_VENTILATION, (uint32_t)(vent_timer->state * 60 * 1000));
       break;
-    case 3:  // Aus
+    case 3: // Automatik
+      auto_mode_active->value() = true;
+      v->set_mode(esphome::MODE_ECO_RECOVERY); // Standard start state
+      break;
+    case 4:  // Aus
       v->set_mode(esphome::MODE_OFF);
       break;
   }
@@ -291,15 +505,23 @@ inline void handle_espnow_receive(std::vector<uint8_t> data) {
         std::string mode_str = "Wärmerückgewinnung";
 
         if (v->state_machine.current_mode == esphome::MODE_OFF) {
-            new_mode_idx = 3; mode_str = "Aus";
+            new_mode_idx = 4; mode_str = "Aus";
             ventilation_enabled->value() = false;
             system_on->value() = false;
+            auto_mode_active->value() = false;
         } else {
             ventilation_enabled->value() = true;
             system_on->value() = true;
-            if (v->state_machine.current_mode == esphome::MODE_ECO_RECOVERY) { new_mode_idx = 0; mode_str = "Wärmerückgewinnung"; }
-            else if (v->state_machine.current_mode == esphome::MODE_STOSSLUEFTUNG) { new_mode_idx = 1; mode_str = "Stoßlüftung"; }
-            else if (v->state_machine.current_mode == esphome::MODE_VENTILATION) { new_mode_idx = 2; mode_str = "Durchlüften"; }
+            
+            if (auto_mode_active->value()) {
+                 new_mode_idx = 3; mode_str = "Automatik";
+            } else if (v->state_machine.current_mode == esphome::MODE_ECO_RECOVERY) { 
+                new_mode_idx = 0; mode_str = "Wärmerückgewinnung"; 
+            } else if (v->state_machine.current_mode == esphome::MODE_STOSSLUEFTUNG) { 
+                new_mode_idx = 1; mode_str = "Stoßlüftung"; 
+            } else if (v->state_machine.current_mode == esphome::MODE_VENTILATION) { 
+                new_mode_idx = 2; mode_str = "Durchlüften"; 
+            }
         }
 
         current_mode_index->value() = new_mode_idx;
@@ -349,6 +571,8 @@ inline void set_fan_intensity_slider(float value) {
 /// @brief Handles the mode select dropdown: maps string option to VentilationMode.
 inline void set_operating_mode_select(std::string x) {
     auto *v = ventilation_ctrl;
+    auto_mode_active->value() = false; // Reset by default
+    
     if (x == "Wärmerückgewinnung") {
         v->set_mode(esphome::MODE_ECO_RECOVERY);
     } else if (x == "Stoßlüftung") {
@@ -357,6 +581,10 @@ inline void set_operating_mode_select(std::string x) {
         // Use the configured timer duration (0 = Infinite)
         uint32_t duration = (uint32_t)(vent_timer->state * 60 * 1000);
         v->set_mode(esphome::MODE_VENTILATION, duration);
+    } else if (x == "Automatik") {
+        auto_mode_active->value() = true;
+        v->set_mode(esphome::MODE_ECO_RECOVERY);
+        evaluate_auto_mode(); // Force immediate evaluation
     } else if (x == "Aus") {
         v->set_mode(esphome::MODE_OFF);
     }
@@ -365,9 +593,9 @@ inline void set_operating_mode_select(std::string x) {
 
 // --- Button callback handlers ------------------------------------------
 
-/// @brief Mode button press: cycles mode index 0→1→2→3→0 and applies.
+/// @brief Mode button press: cycles mode index 0→1→2→3→4→0 and applies.
 inline void handle_button_mode_click() {
-    current_mode_index->value() = (current_mode_index->value() + 1) % 4;
+    current_mode_index->value() = (current_mode_index->value() + 1) % 5;
     cycle_operating_mode(current_mode_index->value());
     update_leds->execute();
 }

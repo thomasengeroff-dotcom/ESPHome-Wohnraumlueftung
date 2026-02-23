@@ -37,6 +37,8 @@ struct __attribute__((packed)) VentilationPacket {
   uint32_t cycle_pos_ms;           ///< Sender's position in the direction cycle.
   uint32_t remaining_duration_ms;  ///< Remaining ventilation timer (0 = infinite).
   bool phase_state;                ///< Sender's current global phase (A or B).
+  float t_in;                      ///< Sender's local indoor temperature (or NAN).
+  float t_out;                     ///< Sender's local outdoor temperature (or NAN).
 };
 
 // ---------------------------------------------------------
@@ -60,6 +62,16 @@ class VentilationController : public Component {
   
   uint32_t sync_interval_ms = 10800000;   ///< Auto-sync broadcast interval (default 3 h).
   uint8_t current_fan_intensity = 5;      ///< Cached fan intensity (1–10).
+
+  // --- TEMPERATURE SENSOR SHARING ---
+  float local_t_in = NAN;          ///< Local valid indoor temperature (from SCD41 or NTC logic).
+  float local_t_out = NAN;         ///< Local valid outdoor temperature (from NTC logic).
+  
+  float last_peer_t_in = NAN;      ///< Last valid indoor temperature received from a peer.
+  uint32_t last_peer_t_in_time = 0; ///< millis() when peer T_in was received.
+  
+  float last_peer_t_out = NAN;     ///< Last valid outdoor temperature received from a peer.
+  uint32_t last_peer_t_out_time = 0;///< millis() when peer T_out was received.
 
   // --- INTERNAL ---
   uint32_t last_sync_tx = 0;       ///< millis() of last sync broadcast.
@@ -178,6 +190,16 @@ class VentilationController : public Component {
           changed = true;
       }
       
+      // 4. Temperature sync
+      if (!std::isnan(pkt->t_in)) {
+          last_peer_t_in = pkt->t_in;
+          last_peer_t_in_time = millis();
+      }
+      if (!std::isnan(pkt->t_out)) {
+          last_peer_t_out = pkt->t_out;
+          last_peer_t_out_time = millis();
+      }
+      
       return changed;
   }
 
@@ -232,6 +254,9 @@ class VentilationController : public Component {
       
       pkt.cycle_pos_ms = state_machine.get_cycle_pos(millis());
       pkt.phase_state = state_machine.global_phase;
+      
+      pkt.t_in = local_t_in;
+      pkt.t_out = local_t_out;
       
       std::vector<uint8_t> data(sizeof(VentilationPacket));
       memcpy(data.data(), &pkt, sizeof(VentilationPacket));

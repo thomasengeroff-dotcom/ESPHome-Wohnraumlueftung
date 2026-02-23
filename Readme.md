@@ -37,6 +37,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ### ⚙️ Intelligente Betriebsmodi
 
+- 🤖 **Standard-Automatik**: Vollautomatische Steuerung für maximalen Komfort und Effizienz. Standardbetrieb in Wärmerückgewinnung mit dynamischer Anpassung an CO2 und Luftfeuchtigkeit unter Einbezug von Wetterdaten. Im Sommer automatische Querlüftung zur passiven Kühlung (wenn außen kühler als innen) und Berücksichtigung von Anwesenheit zur Anpassung der Lüftungsintensität.
 - 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll.
 - 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb.
 - 🔗 **Autarkes Mesh-Netzwerk**: Robuste Dezentralität durch direkte Peer-to-Peer Kommunikation (ESP-NOW). Der Gruppenbetrieb ist auch ohne zentrale WLAN-Infrastruktur oder externe Broker gewährleistet.
@@ -312,42 +313,56 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 
 Über die **Modus-Taste (M)** werden die vier Hauptprogramme gewählt. Die Anzeige erfolgt über die zwei Modus-LEDs (**L** = Links, **R** = Rechts):
 
-#### 1. Effizienzlüftung (WRG)
+#### 1. Wärmerückgewinnung (Eco Recovery / Standard)
 
-- **Anzeige:** LED **L** leuchtet.
-- **Funktion:** Optimierte Wärmerückgewinnung im zyklischen Push-Pull Betrieb.
-- **Zykluszeiten:** Die Reversierzeiten passen sich automatisch der Lüfterstufe an:
-  - Stufe 1: **70 Sek.**
-  - Stufe 2: **65 Sek.**
-  - Stufe 3: **60 Sek.**
-  - Stufe 4: **55 Sek.**
-  - Stufe 5: **50 Sek.**
-- **Synchronisation:** Paarzahlig aktive Stationen laufen im Gegentakt (Druckneutral).
+- **HA Entität:** `select.modus_lueftungsanlage` (Wert: `Eco Recovery`)
+- **Anzeige:** Grüne LEDs (Stufe 1-5).
+- **Funktion:** Maximal energieeffizienter Standardbetrieb. Die Luftrichtung wechselt zyklisch, um die Wärme der Abluft im Keramikspeicher zu speichern und an die frische Zuluft abzugeben. Wärmeverlust wird so um bis zu 85% reduziert.
+- **Zykluszeiten:** Die Reversierzeiten (Dauer einer Richtung) passen sich automatisch der gewählten Lüfterstufe an:
+  - Stufe 1: **70 Sek.**, Stufe 2: **65 Sek.**, Stufe 3: **60 Sek.**, Stufe 4: **55 Sek.**, Stufe 5: **50 Sek.**
+- **Synchronisation:** In einer konfigurierten `VentilationGroup` synchronisieren sich die Geräte via ESP-NOW. Ein Gerät (Phase A) bläst konstant hinein, während das Partnergerät (Phase B) hinausbläst. Dadurch laufen die Geräte im Gegentakt, heben sich luftdrucktechnisch auf und halten das Haus druckneutral.
 
 #### 2. Stoßlüftung
 
+- **HA Entität:** `button.stosslueftung_starten`
 - **Anzeige:** LED **R** leuchtet.
-- **Funktion:** Intensivlüftung für schnellen Luftaustausch.
-- **Ablauf:** 15 Minuten Effizienzlüftung (WRG), gefolgt von 105 Minuten Pause. Der 2-Stunden-Zyklus startet dann erneut mit umgekehrter Drehrichtung.
+- **Funktion:** Intensivlüftung für schnellen Luftaustausch (z. B. nach dem Duschen oder Kochen).
+- **Ablauf:** Das Gerät lüftet 15 Minuten lang intensiv mit Wärmerückgewinnung. Danach pausiert es für 105 Minuten, bevor der nächste 15-minütige Zyklus startet (insgesamt 2 Stunden Rhythmus).
+- **Besonderheit:** Jeder neue 15-Minuten-Zyklus beginnt mit umgekehrter anfänglicher Drehrichtung, um einer einseitigen Wärmekammer-Belastung entgegenzuwirken.
 
-#### 3. Querlüftung (Durchlüften)
+#### 3. Querlüftung (Sommerkühlung / Durchlüften)
 
+- **HA Entität:** `select.modus_lueftungsanlage` (Wert: `Ventilation`) zusammen mit `number.lueftungsdauer` (Timer, Standard: 30 Min, 0 = Endlos)
 - **Anzeige:** LED **L** & **R** leuchten.
-- **Funktion:** Dauerhafter Durchfluss ohne Richtungswechsel (keine WRG).
-- **Betrieb:** Eine Hälfte der Gruppe arbeitet als Zuluft, die andere als Abluft.
-- **Hinweis:** Nur im Gruppenmodus verfügbar.
+- **Funktion:** Dauerhafter Durchfluss ohne Richtungswechsel (keine Wärmerückgewinnung). Ideal, um an warmen Sommerabenden das Haus gezielt durch kühle Außenluft abzukühlen.
+- **Betrieb:** Eine Hälfte der Gruppe arbeitet konstant als Zuluft, die andere Hälfte als Abluft. Dies erzeugt einen kontinuierlichen, kühlenden Luftzug quer durch die Wohnräume.
+- **Hinweis:** Nur im Gruppenmodus sinnvoll.
 
-#### 4. Sensorlüftung (Automatik)
+#### 4. Sensorlüftung (Automatik - Feuchte)
 
+- **HA Entität:** (Veraltet / Primär durch "Standard-Automatik" abgelöst)
 - **Anzeige:** Beide LEDs **AUS**.
-- **Funktion:** Bedarfsgesteuerte Regelung über den integrierten Hygrosensor.
-- **Logik:** Das System schaltet bei Überschreitung von Schwellenwerten automatisch hoch:
+- **Funktion:** Bedarfsgesteuerte Regelung über den dedizierten, direkten Feuchtigkeitssensor.
+- **Logik:** Das System schaltet bei Überschreitung von festen Schwellenwerten (z. B. % r.F.) automatisch hoch:
   - **< 55% r.F.:** Stufe 1 (Standard)
-  - **>= 55% r.F.:** Stufe 2
-  - **>= 65% r.F.:** Stufe 3
-  - **>= 70% r.F.:** Stufe 4
-  - **>= 80% r.F.:** Stufe 5
+  - **>= 55% r.F.:** Stufe 2 .. bis .. **>= 80% r.F.:** Stufe 5
 - Die Rückschaltung erfolgt bei Unterschreitung von 54% r.F. (Hysterese). Die maximale Stufe kann manuell begrenzt werden.
+
+#### 5. Externe Standard-Automatik (Empfohlen)
+
+- **HA Entitäten:** Aktivierung via `switch.wohnraumlueftung_automatik` (Schiebeschalter)
+- **Sensoren & Grenzwerte:** `number.auto_co2_grenzwert`, `sensor.temperature` (SCD41 Innen), `sensor.temp_zuluft` & `sensor.temp_abluft` (NTCs), `sensor.scd41_humidity`
+- **Anzeige:** Konfigurierbar über Home Assistant (Vollständig automatisiert, keine Panel LEDs standardmäßig).
+- **Funktion:** Maximal effiziente, nutzerorientierte "Set-and-Forget" Steuerung. Nach initialer Konfiguration in Home Assistant regelt sich das System vollkommen autonom, basierend auf Temperatur, Luftqualität und optional Anwesenheit.
+- **Logik im Detail:**
+  - **Grundbetrieb:** Wärmerückgewinnung (`MODE_ECO_RECOVERY`) auf Stufe 1.
+  - **Sommer-Kühlfunktion (Dezentrales Thermometer via ESP-NOW):**
+    - Wenn die ermittelte Raumtemperatur über der Wohlfühlgrenze (standardmäßig 22°C) liegt und es draußen kühler ist als drinnen, wechselt das System automatisch und geräuschlos vom WRG-Modus in die **Querlüftung**, um das Haus passiv zu kühlen.
+    - **Genialer Gruppen-Clou:** Im Querlüftungsmodus (konstanter Luftstrom ohne Wechsel) misst das Gerät, das kalte Luft *ansaugt*, über seinen Zuluft/Abluft NTC-Sensor exakt die echte **Außentemperatur**. Das Gerät, das zeitgleich die warme Hausluft *rausbläst*, misst exakt die **Innentemperatur** (alternativ via hochpräzisem SCD41).
+    - Diese realen physikalischen Messwerte werden im Sekundentakt über das geschlossene *ESP-NOW* Netzwerk mit der gesamten Lüftungsgruppe geteilt.
+    - **Rückschalt-Sicherheitsnetz:** Jeder Lüfter bildet sekündlich einen effektiven Innen- und Außenwert aus den geteilten Gruppendaten. Sobald die Außentemperatur ansteigt und die effektive Innentemperatur übersteigt (z. B. am nächsten Morgen, wenn die Sonne aufgeht), greift die Automatik *sofort und gruppenweit synchronisiert* ein und beendet das Durchlüften. Alle Geräte der Gruppe wechseln nahtlos und dezentral zurück in die effiziente **Wärmerückgewinnung** (`Eco Recovery`).
+  - **Luftqualität (CO2 & Feuchtigkeit):** Steigen CO2-Werte (`number.auto_co2_grenzwert`) oder die absolute Feuchtigkeit (r.F.) über die in HA definierten Grenzwerte, wird die Lüfterstufe proportional vom Gerät selbstständig erhöht, bis das Ziel wieder erreicht ist.
+  - **Anwesenheitssteuerung:** Erkennt ein HA-Präsenzmelder Bewegung im Raum, kann die Automatik optional die Leistung drosseln (für einen ruhigen Schlafzimmerbetrieb) oder kurzfristig erhöhen (Bedarfsabdeckung). Dies wird über die Automation in HA konfiguriert.
 
 ---
 
@@ -433,9 +448,17 @@ Außen → Keramikspeicher → Innenraum (vorgewärmt)
 - 🌡️ **NTC Innen** misst vorgewärmte Zuluft (~16°C)
 - 🏠 Vorgewärmte Luft strömt in den Raum
 
-### NTC Sensoren
+### NTC Sensoren (Temperatur-Stabilisierung)
 
-Die NTC Sensoren messen die Temperatur am Keramikspeicher innen und außen. Um die Messung möglichst genau zu machen, werden sehr kleine NTC Sensoren genutzt, mit möglichst geringer Masse und hoher Genauigkeit. Dadurch wird die Anpassung an die wechselnde Temperatur je nach Lüftungsrichtung möglichst schnell und präzise.
+Die NTC Sensoren messen die Temperatur am Keramikspeicher innen und außen (`temp_zuluft` und `temp_abluft`). Da die Lüfterrichtung im Wärmerückgewinnungs-Modus zyklisch (z.B. alle 70 Sekunden) wechselt, benötigen die Sensoren aufgrund ihrer thermischen Masse eine gewisse Zeit, um sich an die neue Lufttemperatur anzupassen. Um die Messung möglichst genau zu machen, werden sehr kleine NTC Sensoren genutzt, mit möglichst geringer Masse und hoher Genauigkeit. Dadurch wird die Anpassung an die wechselnde Temperatur je nach Lüftungsrichtung möglichst schnell und präzise.
+Um fehlerhafte Zwischenwerte in Home Assistant zu vermeiden, nutzen beide Sensoren eine **intelligente Temperatur-Stabilisierung**:
+
+- Nach einem Richtungswechsel (Push/Pull) wird die Messwertübertragung für **45 Sekunden pausiert**.
+- Danach sammelt das System Messwerte in einem **30-Sekunden Sliding-Window**.
+- Erst wenn die Schwankung innerhalb dieses Fensters auf realistische **0,3 °C** oder weniger fällt, gilt der Wert als stabil und wird aktualisiert.
+
+*Hinweis zur Redundanz:* `temp_abluft` liefert bei nach innen gerichtetem Luftstrom die tatsächliche Außentemperatur. `temp_zuluft` liefert bei nach außen gerichtetem Luftstrom die Raumtemperatur und dient als Redundanz zum präziseren SCD41 Sensor.
+
 Konkret wird der folgende Sensor verwendet:
 
 | Hersteller | Artikelnummer | Bezugsquelle | Genauigkeit | Datenblatt |

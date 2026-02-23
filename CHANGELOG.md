@@ -19,9 +19,15 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   - 30s Regelintervall via `interval` Automation.
   - Dokumentation: `documentation/CO2-Automatik.md`.
   - **Unit Tests**: CO2-Logic Test Cases (`test_co2_logic`) hinzugefügt (Klassifikation, Schwellwerte, Hysterese, Min/Max-Clamping).
+- **Sommer-Kühlfunktion (Querlüftung) via ESP-NOW**:
+  - Erweiterung der "Standard-Automatik" um eine bedarfsgesteuerte passiv-kühlende Querlüftung an Sommermonaten.
+  - Dezentrales Thermometer-Netzwerk: Die echten physikalischen Temperaturdaten der NTC-Sensoren (`temp_zuluft`/`temp_abluft`) werden ausgelesen, wenn die Lüfter im Querlüften einen konstanten Luftstrom haben.
+  - Das `VentilationPacket` verteilt die präzisen Innen- und Außentemperaturen im Sekundentakt an die gesamte Lüftungsgruppe via ESP-NOW.
+  - Automatisches Rückschalt-Sicherheitsnetz: Die Automatik erkennt gruppenweit sofort einen Temperaturanstieg der Außenluft und schaltet nahtlos alle Lüfter in den effizienten `Eco Recovery` (WRG) Modus zurück.
 - **NTC Temperatursensoren (Analog)**:
   - Integration von NTC-Sensoren via ADC (GPIO4 am Slave / GPIO0/1 am Master).
   - Optimiertes Sampling: 1000ms Intervall mit Median- (Window 5) und Delta-Filter (0.2°C) für stabile Messwerte.
+  - C++ `filter_ntc_stable` Logik: Pausiert nach jedem Richtungswechsel für 45s (thermal adaptation) und sendet Messwerte erst bei <= 0.3°C Schwankung über 30s Window an Home Assistant, um springende Werte zu verhindern.
   - Korrekte `UPSTREAM`/`DOWNSTREAM` Konfiguration je nach Hardware-Setup.
   - Deprecation Fix: `attenuation` von 11db auf 12db aktualisiert.
 - **AI-Lüftungssteuerung (Konzept)**:
