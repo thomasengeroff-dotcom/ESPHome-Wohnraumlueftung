@@ -109,6 +109,16 @@ globals:
     initial_value: "0"
     restore_value: true
 
+  # PID Control Outputs (0.0 to 1.0)
+  - id: co2_pid_result
+    type: float
+    initial_value: "0.0"
+
+  - id: humidity_pid_result
+    type: float
+    initial_value: "0.0"
+
+
 # ---------------------------------------------------------
 # VENTILATION COMPONENT (External)
 # ---------------------------------------------------------
@@ -231,6 +241,23 @@ output:
     inverted: false
     min_power: 0%
     zero_means_zero: true
+
+  # --- PID Dummy Outputs (capturing the cooling demand 0.0 - 1.0) ---
+  - platform: template
+    id: pid_co2_output
+    type: float
+    write_action:
+      - globals.set:
+          id: co2_pid_result
+          value: !lambda "return state;"
+
+  - platform: template
+    id: pid_humidity_output
+    type: float
+    write_action:
+      - globals.set:
+          id: humidity_pid_result
+          value: !lambda "return state;"
 
 # ---------------------------------------------------------
 # LED LIGHTS (Monochromatic for Dimming)
@@ -483,6 +510,42 @@ fan:
     speed_count: 100 # 1-100% Granularity
 
 # ---------------------------------------------------------
+# PID CLIMATE CONTROLLERS (Internal)
+# ---------------------------------------------------------
+climate:
+  - platform: pid
+    name: "PID CO2 Automatik"
+    id: pid_co2
+    sensor: co2_sensor
+    default_target_temperature: 1000
+    cool_output: pid_co2_output
+    internal: true
+    control_parameters:
+      kp: 0.005 # Starke Änderung wenn CO2 ansteigt (zB. +200ppm -> 1.0 Output)
+      ki: 0.0001 # Langsames Nachregeln
+      kd: 0.0
+      output_averaging_samples: 5
+    deadband_parameters:
+      threshold_high: 50.0  # Beginne ab +50ppm über Zielwert
+      threshold_low: -100.0 # Aus bei -100ppm unter Zielwert
+
+  - platform: pid
+    name: "PID Feuchte Automatik"
+    id: pid_humidity
+    sensor: scd41_humidity
+    default_target_temperature: 60
+    cool_output: pid_humidity_output
+    internal: true
+    control_parameters:
+      kp: 0.1 # Starke Änderung wenn Feuchte ansteigt (zB. +10% -> 1.0 Output)
+      ki: 0.002
+      kd: 0.0
+      output_averaging_samples: 5
+    deadband_parameters:
+      threshold_high: 2.0  # Beginne ab +2% über Zielwert
+      threshold_low: -2.0  # Aus bei -2% unter Zielwert
+
+# ---------------------------------------------------------
 # UI CONTROLS (Home Assistant)
 # ---------------------------------------------------------
 # Manual Speed Slider
@@ -616,6 +679,9 @@ number:
       - lambda: |-
           id(auto_co2_threshold_val) = (int)x;
           id(auto_co2_threshold).publish_state(x);
+          auto call = id(pid_co2).make_call();
+          call.set_target_temperature(x);
+          call.perform();
 
   # Automatik Feuchte Grenzwert
   - platform: template
@@ -631,6 +697,9 @@ number:
       - lambda: |-
           id(auto_humidity_threshold_val) = (int)x;
           id(auto_humidity_threshold).publish_state(x);
+          auto call = id(pid_humidity).make_call();
+          call.set_target_temperature(x);
+          call.perform();
 
 # ---------------------------------------------------------
 # VENTILATION MODE SELECTION

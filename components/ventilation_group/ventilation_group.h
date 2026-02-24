@@ -39,6 +39,7 @@ struct __attribute__((packed)) VentilationPacket {
   bool phase_state;                ///< Sender's current global phase (A or B).
   float t_in;                      ///< Sender's local indoor temperature (or NAN).
   float t_out;                     ///< Sender's local outdoor temperature (or NAN).
+  float pid_demand;                ///< Sender's local evaluated PID cooling demand (0.0 to 1.0).
 };
 
 // ---------------------------------------------------------
@@ -72,6 +73,16 @@ class VentilationController : public Component {
   
   float last_peer_t_out = NAN;     ///< Last valid outdoor temperature received from a peer.
   uint32_t last_peer_t_out_time = 0;///< millis() when peer T_out was received.
+
+  // --- PID CONTROL SHARING ---
+  // Synchronizes the calculated continuous cooling/ventilation demand across the room.
+  // Crucial Benefit: If one device measures high CO2 (e.g., above a bed) while another
+  // measures low CO2 (e.g., near an open door), both devices share their calculated demand.
+  // The system then dynamically scales all fans to the identically highest required speed 
+  // necessary to clear the room, without fighting each other or creating noise artifacts.
+  float local_pid_demand = 0.0f;          ///< Local PID demand requirement (0.0 to 1.0)
+  float last_peer_pid_demand = 0.0f;      ///< Last valid PID demand received from a peer
+  uint32_t last_peer_pid_demand_time = 0; ///< millis() when peer PID demand was received
 
   // --- INTERNAL ---
   uint32_t last_sync_tx = 0;       ///< millis() of last sync broadcast.
@@ -200,6 +211,12 @@ class VentilationController : public Component {
           last_peer_t_out_time = millis();
       }
       
+      // 5. PID Demand sync
+      if (!std::isnan(pkt->pid_demand)) {
+          last_peer_pid_demand = pkt->pid_demand;
+          last_peer_pid_demand_time = millis();
+      }
+      
       return changed;
   }
 
@@ -257,6 +274,7 @@ class VentilationController : public Component {
       
       pkt.t_in = local_t_in;
       pkt.t_out = local_t_out;
+      pkt.pid_demand = local_pid_demand;
       
       std::vector<uint8_t> data(sizeof(VentilationPacket));
       memcpy(data.data(), &pkt, sizeof(VentilationPacket));

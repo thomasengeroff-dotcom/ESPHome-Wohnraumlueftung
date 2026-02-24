@@ -48,6 +48,8 @@ extern esphome::globals::GlobalsComponent<bool> *auto_mode_active;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_val;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_behavior_val;
+extern esphome::globals::GlobalsComponent<float> *co2_pid_result;
+extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
 /// @}
 
 /// @name Template UI components
@@ -214,7 +216,8 @@ inline void evaluate_auto_mode() {
     if (!auto_mode_active->value() || !system_on->value() || !ventilation_enabled->value()) return;
 
     auto *v = ventilation_ctrl;
-    int target_level = 1; // Default to level 1 for maximum efficiency
+    // Default to the configured base level from Home Assistant (Moisture protection / base ventilation)
+    int target_level = co2_min_fan_level->value(); 
     int internal_mode = v->state_machine.current_mode; // Copy current mode as starting point
 
     // Determine current hardware direction to correctly map NTC sensors during MODE_VENTILATION
@@ -285,35 +288,54 @@ inline void evaluate_auto_mode() {
          internal_mode = esphome::MODE_ECO_RECOVERY;
     }
 
-    // --- 4. Air Quality logic (CO2) ---
-    if (co2_sensor != nullptr && !std::isnan(co2_sensor->state)) {
-        float co2_ppm = co2_sensor->state;
-        int co2_thresh = auto_co2_threshold_val->value();
-        if (co2_ppm > co2_thresh) {
-            // Proportional increase
-            int level_boost = (co2_ppm - co2_thresh) / 200 + 1; 
-            target_level = std::max(target_level, std::min(10, 1 + level_boost));
-            ESP_LOGD("auto_mode", "CO2 > %.0f -> Boost level to %d", (float)co2_thresh, target_level);
-        }
+    // --- 4. Air Quality logic (CO2 & Humidity via PID) ---
+    float max_pid_demand = 0.0f;
+
+    if (co2_auto_enabled->value() && co2_pid_result != nullptr) {
+        max_pid_demand = std::max(max_pid_demand, co2_pid_result->value());
     }
 
-    // 3. Humidity logic
     if (scd41_humidity != nullptr && outdoor_humidity != nullptr) {
         float in_hum = scd41_humidity->state;
         float out_hum = outdoor_humidity->state;
-        int hum_thresh = auto_humidity_threshold_val->value();
         
         if (!std::isnan(in_hum) && !std::isnan(out_hum)) {
-            if (in_hum > hum_thresh && out_hum < in_hum) {
-                // Only increase if outdoor is drier
-                int level_boost = (in_hum - hum_thresh) / 5 + 1;
-                target_level = std::max(target_level, std::min(10, 1 + level_boost));
-                ESP_LOGD("auto_mode", "Humidity > %d%% (In: %.1f, Out: %.1f) -> Boost level to %d", hum_thresh, in_hum, out_hum, target_level);
+            if (out_hum < in_hum && humidity_pid_result != nullptr) {
+                // Only use humidity demand if outdoor is drier
+                max_pid_demand = std::max(max_pid_demand, humidity_pid_result->value());
             }
         }
     }
 
-    // 4. Presence logic
+    // Save local demand to controller for ESP-NOW broadcast
+    // Every second, this device tells the group how much ventilation it currently demands.
+    v->local_pid_demand = max_pid_demand;
+
+    // Compare with peer demand if fresh (<5 mins)
+    // Synchronized ESP-NOW PID Logic:
+    // If a peer device in the same room reports a higher air-clearing demand (because someone
+    // is breathing near it, or humidity spiked locally), we adopt that higher demand.
+    // This forces all devices in the room to scale up together symmetrically, preventing
+    // situations where one device runs loudly at 100% while the other idles at 10%.
+    if (!std::isnan(v->last_peer_pid_demand) && (now - v->last_peer_pid_demand_time < 300000)) {
+        max_pid_demand = std::max(max_pid_demand, v->last_peer_pid_demand);
+    }
+
+    if (max_pid_demand > 0.01f) {
+        int min_level = co2_min_fan_level->value();
+        int max_level = co2_max_fan_level->value();
+        
+        // Calculate proportional LED target level (1-10 display feedback)
+        // Note: The physical motor receives a precision float (0.0 - 1.0) via update_fan_logic()
+        // for absolutely silent, stepless transitions. This 'target_level' is kept just so the
+        // intensity LEDs on the unit faceplate show a representative average.
+        float scaled_level = min_level + max_pid_demand * (max_level - min_level);
+        target_level = std::max(target_level, (int)std::round(scaled_level));
+        ESP_LOGD("auto_mode", "PID Demand=%.2f (Local=%.2f, Peer=%.2f) -> Boost level to %d", 
+                  max_pid_demand, v->local_pid_demand, v->last_peer_pid_demand, target_level);
+    }
+
+    // 5. Presence logic
     if (presence_sensor != nullptr && presence_sensor->state) {
         int behavior = auto_presence_behavior_val->value();
         if (behavior == 0) { // Erhöhen
@@ -354,13 +376,49 @@ inline void set_fan_logic(float speed, int direction) {
 
 /// @brief Updates fan speed and direction based on intensity and mode.
 /// Calculates PWM using fan_intensity_level and fan_direction.
+/// In Automatik mode, seamlessly overrides PWM with precise PID demand.
 inline void update_fan_logic() {
     if (fan_intensity_level == nullptr) return;
 
     int intensity = fan_intensity_level->value();
     
-    // Convert intensity (1-10) to speed (0.0-1.0)
+    // Normal mapping from intensity (1-10) to speed (0.0-1.0)
     float speed = (intensity - 1.0f) / 9.0f;
+    
+    // Exact seamless speed for PID Automatik
+    if (auto_mode_active != nullptr && auto_mode_active->value()) {
+        float max_pid_demand = 0.0f;
+        if (co2_auto_enabled->value() && co2_pid_result != nullptr) {
+            max_pid_demand = std::max(max_pid_demand, co2_pid_result->value());
+        }
+        if (humidity_pid_result != nullptr) {
+             max_pid_demand = std::max(max_pid_demand, humidity_pid_result->value());
+        }
+        
+        // Also factor in the peer's demand via ESP-NOW!
+        // This guarantees that the physical fan PWM (0.0-1.0 float mapping) uses the
+        // IDENTICAL maximum demand value across all devices in the room, meaning they
+        // push/pull the exact same volumes of air and spin up identically.
+        if (ventilation_ctrl != nullptr) {
+            uint32_t now = millis();
+            if (!std::isnan(ventilation_ctrl->last_peer_pid_demand) && (now - ventilation_ctrl->last_peer_pid_demand_time < 300000)) {
+                max_pid_demand = std::max(max_pid_demand, ventilation_ctrl->last_peer_pid_demand);
+            }
+        }
+
+        if (max_pid_demand > 0.01f) {
+            float min_speed = (co2_min_fan_level->value() - 1.0f) / 9.0f;
+            float max_speed = (co2_max_fan_level->value() - 1.0f) / 9.0f;
+            
+            // Map the continuous demand [0..1] directly into the allowed PWM output window [min..max].
+            // This bypasses the rigid 1-10 intensity logic and generates a silent, precision speed.
+            speed = min_speed + max_pid_demand * (max_speed - min_speed);
+        } else {
+            // PID specifies no extra demand: remain strictly at the baseline.
+            speed = (co2_min_fan_level->value() - 1.0f) / 9.0f;
+        }
+    }
+
     if (speed < 0.0f) speed = 0.0f;
     if (speed > 1.0f) speed = 1.0f;
 

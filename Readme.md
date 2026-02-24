@@ -69,9 +69,9 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Implementierung folgt):
 
 - **🤖 Adaptive CO2-Regelung** ✅ *Implementiert*:
-  - Dynamische Anpassung der Lüfterleistung basierend auf Echtzeit-CO2-Werten (ppm) vom SCD41 Sensor.
-  - 6-stufige Schwellwerte nach DIN EN 13779 / Umweltbundesamt (600/800/1000/1200/1400 ppm) mit 100 ppm Hysterese.
-  - Konfigurierbarer **Max-Level** (Noise Control) begrenzt die Lüfterdrehzahl auch bei hohen CO2-Werten.
+  - Dynamische **stufenlose** Anpassung der Lüfterleistung basierend auf Echtzeit-CO2-Werten (ppm) vom SCD41 Sensor.
+  - Nutzung eines fortschrittlichen **PID-Reglers (Proportional-Integral-Derivative)** für eine **lautlose, kontinuierliche Steuerung**. Die PWM Leistung wird nahtlos im Hintergrund verstellt, ohne hörbare Drehlzahlsprünge.
+  - Konfigurierbarer **Min-/Max-Level** (Moisture / Noise Control) begrenzt das Anpassungsfenster der Automatik auf leise Drehzahlen.
   - Nur aktiv wenn SCD41 angeschlossen ist — automatische Erkennung. Lokal und remote aktivierbar.
   - Siehe [📄 CO2 Automatik Dokumentation](documentation/CO2-Automatik.md) für Details.
 
@@ -116,6 +116,10 @@ Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Imp
   - ✅ Modernisierte ESPHome API-Nutzung (`current_option()` statt deprecated `.state`)
   - ✅ Korrekte Template-Typen für Script-Komponenten (`RestartScript<>`, `SingleScript<>`)
   - ✅ Präzise Komponenten-Typen (`SpeedFan`, `LEDCOutput` statt generischer Basisklassen)
+
+### 🙏 Danksagungen / Credits
+
+Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins12)** für sein hervorragendes Projekt **[ESPHome Fan Controller](https://github.com/patrickcollins12/esphome-fan-controller)**. Seine Implementierung und Erläuterungen zur Nutzung des [ESPHome PID Climate](https://esphome.io/components/climate/pid/) Moduls für geräuschlose (lautlose) stufenlose PWM-Lüftersteuerungen dienten als maßgebliche Inspiration und Grundlage für die CO2- und Feuchtigkeitsautomatik in diesem Projekt.
 
 ---
 
@@ -182,6 +186,7 @@ Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](http
 | **BMP390** | Bosch Hochpräziser Barometrischer Drucksensor via I²C | [BMP3XX Component](https://esphome.io/components/sensor/bmp3xx.html) |
 | **NTCs** | 2x NTC 10k (Zuluft/Abluft) für Effizienzmessung | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
 | **I/O Expander** | **MCP23017** (I2C) für VentoMaxx Panel | [MCP23017](https://esphome.io/components/mcp23017.html) |
+| **LED Driver** | **PCA9685** (I2C) für dimmbare LEDs im VentoMaxx Panel | [PCA9685](https://esphome.io/components/output/pca9685.html) |
 
 > ℹ️ **Hinweis zu 3-Pin PWM Lüftern:**
 > Neben den klassischen 4-Pin PWM Lüftern gibt es auch spezielle Propeller/Lüfter, die **kein Tacho-Signal** besitzen und daher nur über **3 Pins** verfügen (GND, 12V, PWM). Diese können problemlos ohne physikalische Änderung an der Schaltung betrieben werden, indem der Tacho-Pin (Pin 3 am Terminal) einfach unbelegt bleibt. Beachten Sie jedoch, dass ohne Tacho-Signal keine direkte Überwachung der Drehzahl (RPM) oder Blockadeerkennung durch die Software möglich ist.
@@ -190,13 +195,15 @@ Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](http
 
 | Komponente | Beschreibung | Dokumentation |
 | :--- | :--- | :--- |
-| **VentoMaxx Panel** | Original Panel (14-Pin FFC). 3 Taster, 9 LEDs. | - |
+| **VentoMaxx Panel** | Original Panel (14-Pin FFC). 3 Taster, 9 LEDs (via PCA9685 dimmbar). | - |
 
 ---
 
 ## 🖱️ Eigene Platine - PCB
 
 Eine dedizierte Platine (PCB), die alle oben genannten Komponenten (XIAO, Traco, Transistoren, Anschlüsse für Sensoren) kompakt vereint, befindet sich aktuell in der Entwicklung.
+
+### Hinweise zur Entwicklung
 
 - **Professionelles Design**: Optimiert für den Einbau in Standard-Unterputzdosen oder Lüftergehäuse.
 - **Plug & Play**: Einfache Montage durch Steckverbinder (JST/Dupont).
@@ -252,7 +259,7 @@ graph TD
 
 ---
 
-## 💻 Installation & Software
+### Installation & Software
 
 ### Voraussetzungen
 
@@ -361,7 +368,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
     - **Genialer Gruppen-Clou:** Im Querlüftungsmodus (konstanter Luftstrom ohne Wechsel) misst das Gerät, das kalte Luft *ansaugt*, über seinen Zuluft/Abluft NTC-Sensor exakt die echte **Außentemperatur**. Das Gerät, das zeitgleich die warme Hausluft *rausbläst*, misst exakt die **Innentemperatur** (alternativ via hochpräzisem SCD41).
     - Diese realen physikalischen Messwerte werden im Sekundentakt über das geschlossene *ESP-NOW* Netzwerk mit der gesamten Lüftungsgruppe geteilt.
     - **Rückschalt-Sicherheitsnetz:** Jeder Lüfter bildet sekündlich einen effektiven Innen- und Außenwert aus den geteilten Gruppendaten. Sobald die Außentemperatur ansteigt und die effektive Innentemperatur übersteigt (z. B. am nächsten Morgen, wenn die Sonne aufgeht), greift die Automatik *sofort und gruppenweit synchronisiert* ein und beendet das Durchlüften. Alle Geräte der Gruppe wechseln nahtlos und dezentral zurück in die effiziente **Wärmerückgewinnung** (`Eco Recovery`).
-  - **Luftqualität (CO2 & Feuchtigkeit):** Steigen CO2-Werte (`number.auto_co2_grenzwert`) oder die absolute Feuchtigkeit (r.F.) über die in HA definierten Grenzwerte, wird die Lüfterstufe proportional vom Gerät selbstständig erhöht, bis das Ziel wieder erreicht ist.
+  - **Luftqualität (CO2 & Feuchtigkeit via PID):** Steigen CO2-Werte (`number.auto_co2_grenzwert`) oder die absolute Feuchtigkeit (r.F.) über die in HA definierten Grenzwerte, regeln interne **PID Controller** die Lüfter an. Der PID rechnet intern in 0.0 - 1.0 (0 bis 100% Demand) und passt folglich den PWM-Wert des Lüfters **völlig stufenlos und somit akustisch unbemerkt** an das veränderte Raumklima an. Eine Deadband-Logik verhindert ständiges rauf- und runterregeln, wenn sich der Wert in Ziellage befindet. Die LEDs am Gerät spiegeln den gerundeten 1-10 Wert als visuelles Feedback wieder.
   - **Anwesenheitssteuerung:** Erkennt ein HA-Präsenzmelder Bewegung im Raum, kann die Automatik optional die Leistung drosseln (für einen ruhigen Schlafzimmerbetrieb) oder kurzfristig erhöhen (Bedarfsabdeckung). Dies wird über die Automation in HA konfiguriert.
 
 ---
