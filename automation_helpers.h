@@ -55,9 +55,16 @@ extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
 /// @name Template UI components
 /// @{
 extern esphome::template_::TemplateSelect *selected_mode;       ///< Mode selector (WRG/Stoß/Durchlüften/Aus).
+extern esphome::template_::TemplateSelect *auto_presence_behavior; ///< Auto presence behavior selector.
 extern esphome::template_::TemplateNumber *vent_timer;          ///< Ventilation timer (minutes).
 extern esphome::template_::TemplateNumber *fan_intensity_display; ///< Fan intensity display number.
 extern esphome::template_::TemplateSwitch *co2_auto_switch;     ///< CO2 auto-control on/off switch.
+extern esphome::template_::TemplateNumber *co2_min_level_slider; ///< Min fan level for automated modes.
+extern esphome::template_::TemplateNumber *co2_max_level_slider; ///< Max fan level for automated modes.
+extern esphome::template_::TemplateNumber *auto_co2_threshold;   ///< CO2 automated threshold.
+extern esphome::template_::TemplateNumber *auto_humidity_threshold; ///< Humidity automated threshold.
+extern esphome::template_::TemplateNumber *cycle_duration_config; ///< Fan direction cycle duration in seconds.
+extern esphome::template_::TemplateNumber *sync_interval_config; ///< Time between auto-sync packets in minutes.
 /// @}
 
 /// @name Scripts
@@ -593,6 +600,91 @@ inline void handle_espnow_receive(std::vector<uint8_t> data) {
         update_leds->execute();
         fan_speed_update->execute();
     }
+    
+    // --- Configuration Settings Sync ---
+    // ESP-NOW payloads carry all user settings. If another node has different
+    // configuration values, we adopt them to ensure room-wide parity.
+    esphome::VentilationPacket *pkt = (esphome::VentilationPacket*)data.data();
+
+    // Guard against corrupt packets with out-of-range values that could crash/break logic
+    bool dirty = false;
+    
+    // 1. CO2 Automatik (Switch)
+    if (pkt->co2_auto_enabled != co2_auto_enabled->value()) {
+        co2_auto_enabled->value() = pkt->co2_auto_enabled;
+        co2_auto_switch->publish_state(pkt->co2_auto_enabled);
+        ESP_LOGI("vent_sync", "Synced co2_auto_enabled from peer: %d", pkt->co2_auto_enabled);
+        dirty = true;
+    }
+
+    // 2. CO2 Min/Max Levels (Sliders 1-10)
+    if (pkt->co2_min_fan_level >= 1 && pkt->co2_min_fan_level <= 10 && pkt->co2_min_fan_level != co2_min_fan_level->value()) {
+        co2_min_fan_level->value() = pkt->co2_min_fan_level;
+        co2_min_level_slider->publish_state(pkt->co2_min_fan_level);
+        ESP_LOGI("vent_sync", "Synced co2_min_fan_level from peer: %d", pkt->co2_min_fan_level);
+        dirty = true;
+    }
+
+    if (pkt->co2_max_fan_level >= 1 && pkt->co2_max_fan_level <= 10 && pkt->co2_max_fan_level != co2_max_fan_level->value()) {
+        co2_max_fan_level->value() = pkt->co2_max_fan_level;
+        co2_max_level_slider->publish_state(pkt->co2_max_fan_level);
+        ESP_LOGI("vent_sync", "Synced co2_max_fan_level from peer: %d", pkt->co2_max_fan_level);
+        dirty = true;
+    }
+
+    // 3. Automatik Thresholds (Numbers)
+    if (pkt->auto_co2_threshold_val >= 400 && pkt->auto_co2_threshold_val <= 5000 && pkt->auto_co2_threshold_val != auto_co2_threshold_val->value()) {
+        auto_co2_threshold_val->value() = pkt->auto_co2_threshold_val;
+        auto_co2_threshold->publish_state(pkt->auto_co2_threshold_val);
+        ESP_LOGI("vent_sync", "Synced auto_co2_threshold from peer: %d ppm", pkt->auto_co2_threshold_val);
+        dirty = true;
+    }
+
+    if (pkt->auto_humidity_threshold_val >= 0 && pkt->auto_humidity_threshold_val <= 100 && pkt->auto_humidity_threshold_val != auto_humidity_threshold_val->value()) {
+        auto_humidity_threshold_val->value() = pkt->auto_humidity_threshold_val;
+        auto_humidity_threshold->publish_state(pkt->auto_humidity_threshold_val);
+        ESP_LOGI("vent_sync", "Synced auto_humidity_threshold from peer: %d %%", pkt->auto_humidity_threshold_val);
+        dirty = true;
+    }
+
+    // 4. Presence Behavior (Select 0, 1, 2)
+    if (pkt->auto_presence_behavior_val <= 2 && pkt->auto_presence_behavior_val != auto_presence_behavior_val->value()) {
+        auto_presence_behavior_val->value() = pkt->auto_presence_behavior_val;
+        std::string act = "Ignorieren";
+        if (pkt->auto_presence_behavior_val == 0) act = "Intensität erhöhen";
+        else if (pkt->auto_presence_behavior_val == 1) act = "Intensität senken";
+        auto_presence_behavior->publish_state(act);
+        ESP_LOGI("vent_sync", "Synced auto_presence_behavior from peer: %s", act.c_str());
+        dirty = true;
+    }
+
+    // 5. System Timers
+    if (pkt->cycle_duration_sec >= 10 && pkt->cycle_duration_sec <= 3600) {
+        // Only update if different
+        if (v->state_machine.cycle_duration_ms != (uint32_t)(pkt->cycle_duration_sec * 1000)) {
+            v->set_cycle_duration(pkt->cycle_duration_sec * 1000); // Also handles logging
+            cycle_duration_config->publish_state(pkt->cycle_duration_sec);
+        }
+    }
+
+    if (pkt->sync_interval_min >= 1 && pkt->sync_interval_min <= 1440) {
+        if (v->sync_interval_ms != (uint32_t)(pkt->sync_interval_min * 60 * 1000)) {
+            v->set_sync_interval(pkt->sync_interval_min * 60 * 1000);
+            sync_interval_config->publish_state(pkt->sync_interval_min);
+        }
+    }
+
+    if (pkt->vent_timer_min <= 1440 && (uint32_t)(pkt->vent_timer_min * 60 * 1000) != v->state_machine.ventilation_duration_ms) {
+        v->state_machine.ventilation_duration_ms = pkt->vent_timer_min * 60 * 1000;
+        vent_timer->publish_state(pkt->vent_timer_min);
+        ESP_LOGI("vent_sync", "Synced vent_timer from peer: %d min", pkt->vent_timer_min);
+        // Note: setting the timer does not change the active mode.
+    }
+
+    // If any configs changed, re-evaluate standard logic immediately to reflect new boundaries.
+    if (dirty) {
+        evaluate_auto_mode();
+    }
 }
 
 /// @brief Updates the ventilation duration on-the-fly without switching mode.
@@ -693,4 +785,31 @@ inline void handle_button_level_click() {
     fan_speed_update->execute();
     update_leds->execute();
     ESP_LOGI("button", "Intensity level: %d", level);
+}
+
+/// @brief Central wrapper to create a fully populated VentilationPacket.
+/// Calls the standard C++ class method to build the base layout, and then appends
+/// the local Home Assistant configuration variables to ensure they traverse the network.
+inline std::vector<uint8_t> build_and_populate_packet(esphome::MessageType type) {
+    auto *v = ventilation_ctrl;
+    // Get the base vector containing the core logic payload
+    std::vector<uint8_t> data = v->build_packet(type);
+    
+    // Cast it to our known struct
+    esphome::VentilationPacket *pkt = (esphome::VentilationPacket*)data.data();
+
+    // Populate all HA configurations
+    pkt->co2_auto_enabled = co2_auto_enabled->value();
+    pkt->co2_min_fan_level = (uint8_t) co2_min_fan_level->value();
+    pkt->co2_max_fan_level = (uint8_t) co2_max_fan_level->value();
+    pkt->auto_co2_threshold_val = (uint16_t) auto_co2_threshold_val->value();
+    pkt->auto_humidity_threshold_val = (uint8_t) auto_humidity_threshold_val->value();
+    pkt->auto_presence_behavior_val = (uint8_t) auto_presence_behavior_val->value();
+    
+    // Timers
+    pkt->cycle_duration_sec = (uint16_t) (v->state_machine.cycle_duration_ms / 1000);
+    pkt->sync_interval_min = (uint16_t) (v->sync_interval_ms / 60 / 1000);
+    pkt->vent_timer_min = (uint16_t) (v->state_machine.ventilation_duration_ms / 60 / 1000);
+
+    return data;
 }

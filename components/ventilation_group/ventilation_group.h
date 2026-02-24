@@ -40,6 +40,17 @@ struct __attribute__((packed)) VentilationPacket {
   float t_in;                      ///< Sender's local indoor temperature (or NAN).
   float t_out;                     ///< Sender's local outdoor temperature (or NAN).
   float pid_demand;                ///< Sender's local evaluated PID cooling demand (0.0 to 1.0).
+  
+  // HA Configuration Sync Fields
+  bool co2_auto_enabled;               ///< True if CO2 Automatik is enabled
+  uint8_t co2_min_fan_level;           ///< Min fan level for automated modes (1-10)
+  uint8_t co2_max_fan_level;           ///< Max fan level for automated modes (1-10)
+  uint16_t auto_co2_threshold_val;     ///< CO2 PPM Threshold (400-2000)
+  uint8_t auto_humidity_threshold_val; ///< Humidity % Threshold (40-100)
+  uint8_t auto_presence_behavior_val;  ///< Presence policy (0=up, 1=down, 2=ignore)
+  uint16_t cycle_duration_sec;         ///< Duration of one fan direction cycle (seconds)
+  uint16_t sync_interval_min;          ///< How often devices auto-cast their state (minutes)
+  uint16_t vent_timer_min;             ///< Timer duration for Durchlüften mode (minutes)
 };
 
 // ---------------------------------------------------------

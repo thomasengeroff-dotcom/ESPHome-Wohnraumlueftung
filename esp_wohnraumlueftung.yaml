@@ -118,7 +118,6 @@ globals:
     type: float
     initial_value: "0.0"
 
-
 # ---------------------------------------------------------
 # VENTILATION COMPONENT (External)
 # ---------------------------------------------------------
@@ -526,7 +525,7 @@ climate:
       kd: 0.0
       output_averaging_samples: 5
     deadband_parameters:
-      threshold_high: 50.0  # Beginne ab +50ppm über Zielwert
+      threshold_high: 50.0 # Beginne ab +50ppm über Zielwert
       threshold_low: -100.0 # Aus bei -100ppm unter Zielwert
 
   - platform: pid
@@ -542,8 +541,8 @@ climate:
       kd: 0.0
       output_averaging_samples: 5
     deadband_parameters:
-      threshold_high: 2.0  # Beginne ab +2% über Zielwert
-      threshold_low: -2.0  # Aus bei -2% unter Zielwert
+      threshold_high: 2.0 # Beginne ab +2% über Zielwert
+      threshold_low: -2.0 # Aus bei -2% unter Zielwert
 
 # ---------------------------------------------------------
 # UI CONTROLS (Home Assistant)
@@ -963,7 +962,7 @@ interval:
             - espnow.send:
                 address: "FF:FF:FF:FF:FF:FF"
                 data: !lambda |-
-                  return ((esphome::VentilationController*)id(ventilation_ctrl))->build_packet(esphome::MSG_SYNC);
+                  return build_and_populate_packet(esphome::MSG_SYNC);
       - if:
           condition:
             lambda: "return ventilation_ctrl->state_machine.is_phase_a;"
