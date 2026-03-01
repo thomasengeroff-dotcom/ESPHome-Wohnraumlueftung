@@ -86,6 +86,21 @@ espnow:
             - logger.log: "Received ON signal - Green"
 
 # ---------------------------------------------------------
+# HLK-LD2450 Radar Setup (Test)
+# ---------------------------------------------------------
+uart:
+  - id: uart_ld2450
+    tx_pin: GPIO16 # TX from Xiao ESP32C6 to RX of LD2450
+    rx_pin: GPIO17 # RX from Xiao ESP32C6 to TX of LD2450
+    baud_rate: 256000
+    parity: NONE
+    stop_bits: 1
+
+ld2450:
+  - id: ld2450_radar
+    uart_id: uart_ld2450
+
+# ---------------------------------------------------------
 # Packet Transport Configuration
 # ---------------------------------------------------------
 packet_transport:
@@ -230,7 +245,7 @@ switch:
     inverted: false
 
   - platform: gpio
-    pin: GPIO17
+    pin: GPIO12
     name: "Ampel Grün"
     id: led_green
     inverted: false
@@ -363,7 +378,7 @@ mcp23017:
 # ---------------------------------------------------------
 output:
   - platform: ledc
-    pin: GPIO16
+    pin: GPIO6
     id: fan_pwm_output
     frequency: 2000Hz
 
@@ -384,9 +399,19 @@ number:
             level: !lambda "return x / 100.0;"
 
 # ---------------------------------------------------------
-# PHYSICAL BUTTONS (Binary Sensors)
+# PHYSICAL BUTTONS (Binary Sensors) & RADAR
 # ---------------------------------------------------------
 binary_sensor:
+  # HLK-LD2450 Radar Sensors
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    has_target:
+      name: "Radar Presence"
+    has_moving_target:
+      name: "Radar Moving Target"
+    has_still_target:
+      name: "Radar Still Target"
+
   - platform: gpio
     pin:
       mcp23xxx: mcp23017_hub
