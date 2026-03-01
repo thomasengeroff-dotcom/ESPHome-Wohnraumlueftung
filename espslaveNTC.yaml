@@ -203,6 +203,74 @@ sensor:
       - multiply: 0.5 # 2 pulses per revolution
     update_interval: 2s
 
+  # ---------------------------------------------------------
+  # HLK-LD2450 Advanced Sensors
+  # ---------------------------------------------------------
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    target_count:
+      name: "Radar Total Target Count"
+    still_target_count:
+      name: "Radar Still Target Count"
+    moving_target_count:
+      name: "Radar Moving Target Count"
+
+    # Target 1 (Primary)
+    target_1:
+      x:
+        name: "Radar Target 1 X"
+      y:
+        name: "Radar Target 1 Y"
+      speed:
+        name: "Radar Target 1 Speed"
+      angle:
+        name: "Radar Target 1 Angle"
+      distance:
+        name: "Radar Target 1 Distance"
+      resolution:
+        name: "Radar Target 1 Resolution"
+
+    # Target 2
+    target_2:
+      x:
+        name: "Radar Target 2 X"
+      y:
+        name: "Radar Target 2 Y"
+      speed:
+        name: "Radar Target 2 Speed"
+      angle:
+        name: "Radar Target 2 Angle"
+      distance:
+        name: "Radar Target 2 Distance"
+      resolution:
+        name: "Radar Target 2 Resolution"
+
+    # Target 3
+    target_3:
+      x:
+        name: "Radar Target 3 X"
+      y:
+        name: "Radar Target 3 Y"
+      speed:
+        name: "Radar Target 3 Speed"
+      angle:
+        name: "Radar Target 3 Angle"
+      distance:
+        name: "Radar Target 3 Distance"
+      resolution:
+        name: "Radar Target 3 Resolution"
+
+    # Zones Data
+    zone_1:
+      target_count:
+        name: "Radar Zone 1 Target Count"
+    zone_2:
+      target_count:
+        name: "Radar Zone 2 Target Count"
+    zone_3:
+      target_count:
+        name: "Radar Zone 3 Target Count"
+
 # ---------------------------------------------------------
 # TEXT SENSORS
 # ---------------------------------------------------------
@@ -228,6 +296,16 @@ text_sensor:
         return {"Error"};
       }
 
+  # ---------------------------------------------------------
+  # HLK-LD2450 Info Sensors
+  # ---------------------------------------------------------
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    version:
+      name: "Radar Firmware Version"
+    mac_address:
+      name: "Radar Bluetooth MAC"
+
 # ---------------------------------------------------------
 # SENSOR & AKTOR (Switches/LEDs)
 # ---------------------------------------------------------
@@ -249,6 +327,16 @@ switch:
     name: "Ampel Grün"
     id: led_green
     inverted: false
+
+  # ---------------------------------------------------------
+  # HLK-LD2450 Switches
+  # ---------------------------------------------------------
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    bluetooth:
+      name: "Radar Bluetooth Enable"
+    multi_target:
+      name: "Radar Multi Target Tracking"
 
   # --------------------
   # VentoMaxx Panel LEDs
@@ -382,6 +470,9 @@ output:
     id: fan_pwm_output
     frequency: 2000Hz
 
+# ---------------------------------------------------------
+# HLK-LD2450 Configuration & Zones
+# ---------------------------------------------------------
 number:
   - platform: template
     name: "Fan PWM Duty Cycle"
@@ -397,6 +488,56 @@ number:
         - output.set_level:
             id: fan_pwm_output
             level: !lambda "return x / 100.0;"
+
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    presence_timeout:
+      name: "Radar Presence Timeout"
+    zone_1:
+      x1:
+        name: "Radar Zone 1 X1"
+      y1:
+        name: "Radar Zone 1 Y1"
+      x2:
+        name: "Radar Zone 1 X2"
+      y2:
+        name: "Radar Zone 1 Y2"
+    zone_2:
+      x1:
+        name: "Radar Zone 2 X1"
+      y1:
+        name: "Radar Zone 2 Y1"
+      x2:
+        name: "Radar Zone 2 X2"
+      y2:
+        name: "Radar Zone 2 Y2"
+    zone_3:
+      x1:
+        name: "Radar Zone 3 X1"
+      y1:
+        name: "Radar Zone 3 Y1"
+      x2:
+        name: "Radar Zone 3 X2"
+      y2:
+        name: "Radar Zone 3 Y2"
+
+select:
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    baud_rate:
+      name: "Radar Baud Rate"
+    zone_type:
+      name: "Radar Zone Type"
+
+button:
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    factory_reset:
+      name: "Radar Factory Reset"
+      entity_category: "config"
+    restart:
+      name: "Radar Device Restart"
+      entity_category: "config"
 
 # ---------------------------------------------------------
 # PHYSICAL BUTTONS (Binary Sensors) & RADAR
