@@ -120,3 +120,14 @@ switch:
     id: pca9685_oe
     restore_mode: ALWAYS_ON
     internal: true
+
+# ---------------------------------------------------------
+# UART FOR HLK-LD2450 RADAR
+# ---------------------------------------------------------
+uart:
+  - id: uart_ld2450
+    tx_pin: GPIO16 # TX from Xiao to RX of LD2450
+    rx_pin: GPIO17 # RX from Xiao to TX of LD2450
+    baud_rate: 256000
+    parity: NONE
+    stop_bits: 1

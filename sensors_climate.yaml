@@ -156,6 +156,12 @@ sensor:
       then:
         - script.execute: update_leds # Update LEDs on RPM change (optional feedback)
 
+  # HLK-LD2450 Sensor
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    target_count:
+      name: "Radar Total Target Count"
+
 # ---------------------------------------------------------
 # TEXT SENSORS (Status & Classification)
 # ---------------------------------------------------------
@@ -168,3 +174,21 @@ text_sensor:
     update_interval: 30s
     lambda: |-
       return get_co2_classification(id(co2_sensor).state);
+
+# ---------------------------------------------------------
+# HLK-LD2450 RADAR
+# ---------------------------------------------------------
+ld2450:
+  - id: ld2450_radar
+    uart_id: uart_ld2450
+
+binary_sensor:
+  - platform: ld2450
+    ld2450_id: ld2450_radar
+    has_target:
+      name: "Radar Presence"
+      id: radar_presence
+    has_moving_target:
+      name: "Radar Moving Target"
+    has_still_target:
+      name: "Radar Still Target"

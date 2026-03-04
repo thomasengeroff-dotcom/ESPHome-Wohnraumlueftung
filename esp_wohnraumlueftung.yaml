@@ -29,6 +29,7 @@ packages:
   sensors: !include sensors_climate.yaml
   ui: !include ui_controls.yaml
   logic: !include logic_automation.yaml
+  diagnostics_display: !include display_diagnostics.yaml
 
 external_components:
   - source:
@@ -121,6 +122,17 @@ globals:
   - id: humidity_pid_result
     type: float
     initial_value: "0.0"
+
+  # Filter Maintenance Tracking
+  - id: filter_operating_hours
+    type: float
+    initial_value: "0.0"
+    restore_value: true
+
+  - id: filter_last_change_ts
+    type: int
+    initial_value: "0"
+    restore_value: true
 
 # ---------------------------------------------------------
 # VENTILATION COMPONENT (External)

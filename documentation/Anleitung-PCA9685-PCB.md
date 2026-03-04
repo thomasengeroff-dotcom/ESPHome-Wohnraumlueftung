@@ -8,7 +8,7 @@ Wir verwenden einen **PCA9685** für **dimmbare LEDs** und direkte **GPIOs des E
 * **ALT**: MCP23017 (16 GPIOs für Taster & LEDs) -> Nur An/Aus für LEDs.
 * **NEU**:
   * **PCA9685 (I2C PWM Driver)**: Steuert die LEDs und ermöglicht echtes **Dimmen** (Soft-Fade Effekte).
-  * **Direkte GPIOs**: Die 3 Taster (Power, Mode, Level) werden direkt an freie Pins des XIAO Connectors angeschlossen.
+  * **MCP23017 (I2C I/O Expander)**: Fragt die Taster ab (GPA0-GPA2) und stellt freie Anschlüsse für mögliche Erweiterungen zur Verfügung (GPB0-GPB5 auf Pin Header). Dies spart direkte GPIO-Pins des ESP32.
 
 ## 2. Benötigte Komponenten (BOM)
 
@@ -42,16 +42,16 @@ Wir verwenden einen **PCA9685** für **dimmbare LEDs** und direkte **GPIOs des E
 
 | Funktion | PCA9685 Kanal | TSSOP-28 Pin | Signal Name |
 | :--- | :--- | :--- | :--- |
-| **LED Power** | Channel 6 | Pin 12 | LED_PWRV |
+| **LED Power** | Channel 8 | Pin 15 | LED_PWRV |
 | **LED Master** | Channel 7 | Pin 13 | LED_MSTV |
-| **LED L1** | Channel 8 | Pin 15 | LED_L1V |
+| **LED L1** | Channel 1 | Pin 7 | LED_L1V |
 | **LED L2** | Channel 9 | Pin 16 | LED_L2V |
-| **LED L3** | Channel 10 | Pin 17 | LED_L3V |
+| **LED L3** | Channel 3 | Pin 9 | LED_L3V |
 | **LED L4** | Channel 11 | Pin 18 | LED_L4V |
-| **LED L5** | Channel 12 | Pin 19 | LED_L5V |
+| **LED L5** | Channel 5 | Pin 11 | LED_L5V |
 | **LED WRG** | Channel 13 | Pin 20 | LED_WRGV |
 | **LED Vent** | Channel 15 | Pin 22 | LED_VENV |
-| *Unbenutzt* | Ch 0-5, 14 | - | - |
+| *Unbenutzt* | Ch 0, 2, 4, 6, 10, 12, 14 | - | - |
 
 > ✅ **Bestätigung für Common Cathode (Gemeinsames GND)**:
 >
@@ -63,18 +63,23 @@ Wir verwenden einen **PCA9685** für **dimmbare LEDs** und direkte **GPIOs des E
 **Achtung bei 3.3V Logic:**
 Schließe VDD des PCA9685 an 3.3V an. Der Chip treibt die LEDs direkt aus VDD. Daher ist die Entkopplung (siehe unten) extrem wichtig.
 
-### C. Taster (Direkt an ESP32)
+### C. Taster (Bedieneinheit via MCP23017)
 
-Die Taster-Pins vom FFC gehen direkt an den XIAO.
-**WICHTIG:** Da du externe Pullups verbaut hast, sind die Pins "Active Low" (Gedrückt = GND).
+Die Taster-Pins vom FFC gehen auf den **MCP23017 I2C Expander** (Adresse `0x20`).
+**WICHTIG:** Die Taster sind mit externen 10kΩ Pull-Up-Widerständen beschaltet und reagieren somit "Active Low" (Gedrückt = GND).
 
-| Funktion | FFC Pin | XIAO Pin | ESP32 GPIO | Pullup |
+| Funktion | FFC Pin | MCP23017 Pin | Port/Bit | Pullup |
 | :--- | :--- | :--- | :--- | :--- |
-| **BTN Power** | Pin 2 | **D8** | GPIO19 | **10k an 3.3V** |
-| **BTN Mode** | Pin 4 | **D9** | GPIO20 | **10k an 3.3V** |
-| **BTN Level** | Pin 3 | **D10** | GPIO18 | **10k an 3.3V** |
+| **BTN Power** | Pin 2 | **Pin 21** | **GPA0** | **10k an 3.3V** |
+| **BTN Mode** | Pin 4 | **Pin 22** | **GPA1** | **10k an 3.3V** |
+| **BTN Level** | Pin 3 | **Pin 23** | **GPA2** | **10k an 3.3V** |
 | **GND** | PIN 1 | - | - | - |
 | **GND** | PIN 14 | - | - | - |
+
+**Freie GPB-Ports (Expansion Header):**
+Die Pins **GPB0 bis GPB5** (Pins 1-5 und 25-28) sind auf einen separaten Pin Header herausgeführt, um spätere Erweiterungen (z.B. externe Hardware-Taster) leicht anbinden zu können.
+
+**Gesamte Pin-Belegung (XIAO ESP32-C6):**
 
 **Gesamte Pin-Belegung (XIAO ESP32-C6):**
 
@@ -82,17 +87,17 @@ Die Taster-Pins vom FFC gehen direkt an den XIAO.
 | :--- | :--- |
 | **D0 (GPIO0)** | NTC Sensor Innen (ADC) |
 | **D1 (GPIO1)** | NTC Sensor Außen (ADC) |
-| **D2 (GPIO2)** | *Frei* |
-| **D3 (GPIO21)** | PCA9685_OE (PCA9685 Output Enable) |
-| **D4 (GPIO22)** | I2C SDA (BME680, PCA9685) |
-| **D5 (GPIO23)** | I2C SCL (BME680, PCA9685) |
-| **D6 (GPIO16)**| Lüfter PWM |
-| **D7 (GPIO17)**| Lüfter Tacho |
-| **D8 (GPIO19)**| Taster Power |
-| **D9 (GPIO20)**| Taster Mode |
-| **D10 (GPIO18)**| Taster Level |
+| **D2 (GPIO2)** | MCP23017_RESET (Output) |
+| **D3 (GPIO21)** | PCA9685_OE (Output Enable) |
+| **D4 (GPIO22)** | I2C SDA |
+| **D5 (GPIO23)** | I2C SCL |
+| **D6 (GPIO16)** | Radar RX (Geplant) |
+| **D7 (GPIO17)** | Radar TX (Geplant) |
+| **D8 (GPIO19)** | Lüfter PWM |
+| **D9 (GPIO20)** | Lüfter Tacho |
+| **D10 (GPIO18)** | *Unbelegt* |
 
-> ✅ **Lösung**: Durch die Nutzung der rückseitigen/kleinen Pads D8-D10 für die Taster bleiben D0 und D1 für die analogen Temperatursensoren frei. Das Design ist somit **konfliktfrei**.
+> ✅ **Lösung**: Durch die Auslagerung der Taster auf den MCP23017 bleiben die ESP32-Pins D6/D7 für das MR24HPC1-Radar frei. Die analogen Temperatursensoren belegen weiterhin sicher D0 und D1. Das Design ist somit **konfliktfrei**.
 
 ## 4. PCB Layout Empfehlungen
 
@@ -104,8 +109,8 @@ Die Taster-Pins vom FFC gehen direkt an den XIAO.
 
 ## Software Konfiguration (ESPHome)
 
-In der `yaml` wird der `mcp23017` Block entfernt und durch `pca9685` ersetzt.
-Die `binary_sensor` (Taster) wechseln von `platform: gpio (mcp)` zu `platform: gpio (internal)`.
+In der `yaml` wird der Block für den alten **PCA9685** hinzugefügt (I2C `0x40`) und **der MCP23017 bleibt** unter der Adresse `0x20` aktiv.
+Die `binary_sensor` (Taster) verwenden als Plattform weiterhin `gpio`, beziehen sich nun jedoch auf den Hub des `mcp23017` statt interner Pins.
 
 ### Beispiel Ausschnitt
 
@@ -114,6 +119,10 @@ i2c:
   sda: GPIO22
   scl: GPIO23
 
+mcp23017:
+  - id: mcp23017_hub
+    address: 0x20
+
 pca9685:
   - id: 'pwm_hub'
     frequency: 1000Hz # Gute Frequenz für LEDs (flimmerfrei)
@@ -121,8 +130,10 @@ pca9685:
 binary_sensor:
   - platform: gpio
     pin:
-      number: GPIO0
-      mode: INPUT_PULLUP
+      mcp23xxx: mcp23017_hub
+      number: 0 # GPA0
+      mode:
+        input: true
       inverted: true
     name: "Button Power"
     # ...

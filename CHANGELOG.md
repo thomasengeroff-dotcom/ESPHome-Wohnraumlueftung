@@ -8,6 +8,33 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Added
 
+- **HLK-LD2450 Radar-Anwesenheitserkennung**: Integration des mmWave-Radarsensors über UART (TX: GPIO16, RX: GPIO17, 256000 Baud).
+  - Sensoren in Home Assistant: Radar Moving Target, Radar Presence, Radar Still Target, Radar Total Target Count.
+  - `has_state()` Safety-Guard: System funktioniert fehlerfrei auch ohne angeschlossenen Radar-Sensor.
+  - Bedarfsgesteuerte Lüftungsanpassung bei erkannter Anwesenheit mit 4 konfigurierbaren Profilen.
+- **Radar Anwesenheits-Profile**: Dropdown `Anwesenheitsverhalten` in Home Assistant mit 4 Optionen:
+  - *Keine Anpassung* (Default) — kein Einfluss auf Lüfterleistung.
+  - *Intensiv (z.B. für Büro)* — Lüfterstufe +3 bei Anwesenheit.
+  - *Normal (z.B. für Wohnraum)* — Lüfterstufe +1 bei Anwesenheit.
+  - *Gering (z.B. für Schlafzimmer)* — Lüfterstufe -1 bei Anwesenheit.
+- **Master LED Fehleranzeige**: `status_led_master` blinkt via Strobe-Effekt (500ms on/off) bei:
+  - WiFi-Verbindungsverlust (via `esphome::wifi::global_wifi_component->is_connected()`).
+  - Keine ESP-NOW Nachrichten von Peer-Geräten innerhalb von 5 Minuten (`last_peer_pid_demand_time`).
+  - LED schaltet sich bei normalem Betrieb automatisch ab.
+  - `check_master_led_error()` Inline-Funktion in `automation_helpers.h`, aufgerufen alle 5 Sekunden.
+- **Prädiktiver Filterwechsel-Alarm**: Automatisches Wartungs-Management für rechtzeitige Filterwechsel.
+  - Persistentes Tracking der Lüfter-Betriebsstunden (`filter_operating_hours`, `restore_value`) und Kalenderzeit seit letztem Wechsel (`filter_last_change_ts`).
+  - Alarm-Bedingungen: Betriebsstunden > 8760h (365 Tage) ODER Kalenderzeit > 3 Jahre (94608000s).
+  - `binary_sensor.filterwechsel_alarm` (device_class: problem) — wird `ON` bei Filterwechselbedarf.
+  - `sensor.filter_betriebstage` — zeigt Laufzeit in Tagen seit letztem Filterwechsel.
+  - `button.filter_gewechselt_reset` — setzt nach Filterwechsel alle Zähler zurück.
+  - 60s Tracking-Intervall in `logic_automation.yaml` (zählt nur bei aktivem Lüfter).
+  - HA Automation-Beispiel für Push-Benachrichtigungen in `Readme.md` dokumentiert.
+- **OLED Diagnose-Display** (`display_diagnostics.yaml`): Integration eines SH1106 1.3" OLED (128x64, I²C 0x3C) mit 3 automatisch wechselnden Diagnoseseiten (alle 5s):
+  - *System Info*: Aktueller Betriebsmodus und Lüfterstufe (1-10).
+  - *Klima Daten*: Innen-/Außentemperatur (NTC) und CO2-Wert (ppm, SCD41) — mit `isnan`/`has_state()` Guards für fehlende Sensoren.
+  - *Netzwerk*: IP-Adresse, WiFi-Signalstärke (dBm) und Uptime (Tage).
+  - Google Fonts (Roboto) in 3 Größen (10/14/20px) für optimale Lesbarkeit.
 - **Globale Konfigurations-Synchronisation via ESP-NOW**: Alle in Home Assistant (oder über das Panel) vorgenommenen Einstellungen (CO2 Automatik, Lüfter Min/Max-Level, CO2/Feuchte/Präsenz-Grenzwerte, Timer, Zykluszeiten) werden nun automatisch und nahtlos über das ESP-NOW Netzwerk an die gesamte Lüftungsgruppe übertragen.
   - Verhindert asynchrones Verhalten von Geräten im selben Raum. Wird ein Timer oder ein Grenzwert auf Gerät A geändert, übernimmt Gerät B diesen sofort.
   - Sende-Optimierung: Konfigurationen werden nur bei tatsächlicher Änderung übermittelt.
@@ -45,6 +72,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Changed
 
+- **Readme.md Restrukturierung**: Implementierte Features (CO2-Regelung, Radar-Anwesenheit, Wartungs-Management, Master LED Fehleranzeige) aus dem Roadmap-Bereich in eine eigene Sektion "✅ Implementierte Erweiterungen" verschoben. Roadmap enthält nun ausschließlich geplante Features.
+  - Inhaltsverzeichnis erweitert.
+  - Projektstruktur aktualisiert (u.a. `display_diagnostics.yaml` ergänzt).
+  - Korrektur: "5 Lüfterstufen" → "10 Geschwindigkeitsstufen".
+  - Typo-Fix: "Drehlzahlsprünge" → "Drehzahlsprünge".
+  - HA Filterwechsel-Automation YAML-Beispiel für Push-Benachrichtigungen hinzugefügt.
 - **YAML Modularisierung**: Die umfangreiche Hauptkonfiguration `esp_wohnraumlueftung.yaml` wurde extrem verschlankt und zur besseren Wartung in vier logische Setup-Module aufgebrochen (`hardware_io.yaml`, `sensors_climate.yaml`, `ui_controls.yaml`, `logic_automation.yaml`). Die Teildateien werden via `packages:` nahtlos in die verbleibende Hauptdatei eingebunden.
 - **BOM (Bill of Materials) Update**: Die Komponentenlisten (CSV) wurden auf den neuesten Stand gebracht und mit aktuellen Daten von JLCPCB/LCSC (Preise, Warenbestände, erweiterte Bauteile wie z.B. PCA9685PW) abgeglichen und aktualisiert.
 - **Auto-Modus Basis-Level**: Die Automatik (CO2/Feuchte) nutzt nun strikt den eingestellten Wert des "CO2 Min Lüfterstufe" Sliders aus Home Assistant als absolutes Grundrauschen (Moisture Protection), auf den sie bei fallenden Werten zurückfällt.
@@ -76,12 +109,15 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Cleanup**: `esp_wohnraumlueftung.yaml` bereinigt und Inline-Logik durch einfache Funktionsaufrufe ersetzt.
 - **Readme**: Update mit Verweis auf KI-Lüftungskonzept.
 - **Dokumentation**: NTC-Sensor-Spezifikationen in `Readme.md` tabellarisch dargestellt und Datenblatt-Link ergänzt.
+- **ESPHome Build (März 2026)**: Erfolgreicher Kompiliertest aller neuen Features (Radar, Master LED, Filterwechsel-Alarm). RAM: 12.5%, Flash: 69.1%.
 
 ### Fixed
 
 - **BMP390 Konfiguration**: I2C-Adresse für BMP390 in `esp_wohnraumlueftung.yaml` fest auf `0x76` korrigiert und ungültige `bmp3xx_i2c` Top-Level-Konfiguration entfernt.
 - **Kompilierung**: `RestoringGlobalsComponent` Typ-Konflikt in `automation_helpers.h` behoben (`co2_auto_enabled`, `co2_min/max_fan_level`).
 - **Validierung**: `switch.template` Fehler bei `co2_auto_switch` korrigiert (redundante `component.update` Calls entfernt).
+- **WiFi-Check auf ESP-IDF**: `WiFi.isConnected()` (Arduino-only) durch `esphome::wifi::global_wifi_component->is_connected()` ersetzt, um Kompatibilität mit ESP-IDF Framework sicherzustellen.
+- **Display Typ-Fehler**: `current_option()` Rückgabetyp in `display_diagnostics.yaml` korrigiert (gibt `std::string` zurück, nicht `const char*`).
 
 ## [0.4.0] - 2026-02-15
 

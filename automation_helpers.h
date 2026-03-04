@@ -21,12 +21,7 @@
 #include "esphome/components/light/light_state.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/homeassistant/sensor/homeassistant_sensor.h"
-#include "esphome/components/homeassistant/binary_sensor/homeassistant_binary_sensor.h"
 #include "esphome/components/ntc/ntc.h"
-#include "esphome/components/light/light_state.h"
-#include "esphome/components/binary_sensor/binary_sensor.h"
-#include "esphome/components/homeassistant/sensor/homeassistant_sensor.h"
-#include "esphome/components/homeassistant/binary_sensor/homeassistant_binary_sensor.h"
 // Custom Component Header
 #include "esphome/components/ventilation_group/ventilation_group.h"
 #include "esphome/components/ventilation_logic/ventilation_logic.h"
@@ -88,7 +83,7 @@ extern esphome::ntc::NTC *temp_zuluft;         ///< Supply Air Temperature (NTC 
 extern esphome::ntc::NTC *temp_abluft;         ///< Exhaust Air Temperature (NTC Outside)
 extern esphome::sensor::Sensor *scd41_humidity;      ///< Indoor Humidity
 extern esphome::homeassistant::HomeassistantSensor *outdoor_humidity;    ///< Outdoor Humidity (HA)
-extern esphome::homeassistant::HomeassistantBinarySensor *presence_sensor; ///< Presence Sensor (HA)
+extern esphome::binary_sensor::BinarySensor *radar_presence; ///< Presence Sensor (Radar)
 /// @}
 
 /// @name Status LEDs (monochromatic light components)
@@ -99,7 +94,7 @@ extern esphome::light::LightState *status_led_l3;        ///< Level indicator LE
 extern esphome::light::LightState *status_led_l4;        ///< Level indicator LED 4.
 extern esphome::light::LightState *status_led_l5;        ///< Level indicator LED 5.
 extern esphome::light::LightState *status_led_power;     ///< Power status LED.
-extern esphome::light::LightState *status_led_master;    ///< Master status LED (reserved).
+extern esphome::light::LightState *status_led_master;    ///< Master status LED (error indicator).
 extern esphome::light::LightState *status_led_mode_wrg;  ///< Mode LED: Wärmerückgewinnung.
 extern esphome::light::LightState *status_led_mode_vent; ///< Mode LED: Ventilation.
 /// @}
@@ -343,13 +338,16 @@ inline void evaluate_auto_mode() {
     }
 
     // 5. Presence logic
-    if (presence_sensor != nullptr && presence_sensor->state) {
+    if (radar_presence != nullptr && radar_presence->has_state() && radar_presence->state) {
         int behavior = auto_presence_behavior_val->value();
-        if (behavior == 0) { // Erhöhen
+        if (behavior == 1) { // Intensiv (Büro)
+            target_level = std::min(10, target_level + 3);
+        } else if (behavior == 2) { // Normal (Wohnraum)
             target_level = std::min(10, target_level + 1);
-        } else if (behavior == 1) { // Senken
+        } else if (behavior == 3) { // Gering (Schlafzimmer)
             target_level = std::max(1, target_level - 1);
         }
+        // behavior == 0 (Keine Anpassung) requires no change to target_level
     }
 
     // Apply the computed logic
@@ -551,6 +549,39 @@ inline void update_leds_logic() {
   }
 }
 
+/// @brief Checks for error conditions and blinks the Master LED accordingly.
+/// Error conditions: WiFi disconnected OR no ESP-NOW peer message within 5 minutes.
+/// Uses the "Error Blink" strobe effect defined on the status_led_master light.
+inline void check_master_led_error() {
+    bool has_error = false;
+
+    // 1. Check WiFi connectivity (ESPHome API, works on both Arduino and ESP-IDF)
+    if (!esphome::wifi::global_wifi_component->is_connected()) {
+        has_error = true;
+    }
+
+    // 2. Check ESP-NOW peer freshness (5 minutes = 300000ms)
+    if (ventilation_ctrl != nullptr) {
+        uint32_t now = millis();
+        // If we have never received a peer message, or it's been > 5 minutes
+        if (ventilation_ctrl->last_peer_pid_demand_time == 0 ||
+            (now - ventilation_ctrl->last_peer_pid_demand_time > 300000)) {
+            has_error = true;
+        }
+    }
+
+    // 3. Apply or remove the blink effect
+    if (has_error) {
+        // Only activate if not already blinking (avoid re-triggering every interval)
+        auto call = status_led_master->turn_on();
+        call.set_effect("Error Blink");
+        call.perform();
+    } else {
+        // All clear: turn off the Master LED
+        status_led_master->turn_off().perform();
+    }
+}
+
 /// @brief Handles an incoming ESP-NOW packet.
 /// Delegates parsing to VentilationController, then updates UI globals,
 /// select component, LEDs, and fan speed if state changed.
@@ -592,7 +623,7 @@ inline void handle_espnow_receive(std::vector<uint8_t> data) {
         current_mode_index->value() = new_mode_idx;
 
         // Update Select Component if different
-        if (selected_mode->current_option() != mode_str) {
+        if (std::string(selected_mode->current_option()) != mode_str) {
             selected_mode->publish_state(mode_str);
         }
 
@@ -647,12 +678,13 @@ inline void handle_espnow_receive(std::vector<uint8_t> data) {
         dirty = true;
     }
 
-    // 4. Presence Behavior (Select 0, 1, 2)
-    if (pkt->auto_presence_behavior_val <= 2 && pkt->auto_presence_behavior_val != auto_presence_behavior_val->value()) {
+    // 4. Presence Behavior (Select 0, 1, 2, 3)
+    if (pkt->auto_presence_behavior_val <= 3 && pkt->auto_presence_behavior_val != auto_presence_behavior_val->value()) {
         auto_presence_behavior_val->value() = pkt->auto_presence_behavior_val;
-        std::string act = "Ignorieren";
-        if (pkt->auto_presence_behavior_val == 0) act = "Intensität erhöhen";
-        else if (pkt->auto_presence_behavior_val == 1) act = "Intensität senken";
+        std::string act = "Keine Anpassung";
+        if (pkt->auto_presence_behavior_val == 1) act = "Intensiv (z.B. für Büro)";
+        else if (pkt->auto_presence_behavior_val == 2) act = "Normal (z.B. für Wohnraum)";
+        else if (pkt->auto_presence_behavior_val == 3) act = "Gering (z.B. für Schlafzimmer)";
         auto_presence_behavior->publish_state(act);
         ESP_LOGI("vent_sync", "Synced auto_presence_behavior from peer: %s", act.c_str());
         dirty = true;

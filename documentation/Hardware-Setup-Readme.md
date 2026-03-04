@@ -3,7 +3,7 @@
 Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den Prototypen (Breadboard) und die Design-Vorgaben für das finale PCB (EasyEDA).
 
 > [!IMPORTANT]
-> **Pin-Referenz**: Die Pin-Belegung basiert auf der direkten Ansteuerung der **Buttons via ESP32 GPIOs** und der **LEDs via PCA9685 I2C PWM Driver**. Das Front-Panel wird über einen 14-Pin FFC Connector angeschlossen.
+> **Pin-Referenz**: Die Pin-Belegung basiert auf der **Ansteuerung der Buttons via MCP23017 I2C Expander** und der **LEDs via PCA9685 I2C PWM Driver**. Das Front-Panel wird über einen 14-Pin FFC Connector angeschlossen.
 
 ---
 
@@ -12,12 +12,13 @@ Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den 
 * **MCU**: Seeed Studio XIAO ESP32C6
 * **Netzteil (High Voltage)**: XP Power ECE10US12 oder TRACO POWER TMPS 10-112 (230V AC -> 12V DC, 10W)
   * *Hinweis*: Der XP Power ECE10US12 ist eine Alternative zum TRACO POWER TMPS 10-112. Grundriss und Pin-Belegung sind identisch.
+  * **Empfehlung**: Das **TRACO POWER TMPS 10-112 ist zu bevorzugen**. Es besitzt neben der Standard-IT-Zulassung (EN/UL 62368-1) zusätzlich die **Haushaltsgerätenorm EN 60335-1**. Zudem bietet es eine etwas höhere Spitzenlast (1080 mA vs. 1000 mA) und eine minimal bessere Effizienz (84% vs. 83%), was es für den 24/7-Einsatz in der Wohnraumlüftung robuster und normgerechter macht.
 * **Logic Power (5V/MCU Supply)**: **Diodes Inc. AP63205WU-7** (12V -> 5V, 2A)
   * *Versorgung*: Speist den XIAO ESP32C6 (via 5V Pin).
 * **Peripheral Power (3.3V Buck)**: **Diodes Inc. AP63203WU-7** (12V -> 3.3V, 2A)
   * *Versorgung*: Speist alle Sensoren (BME680), PCA9685 PWM Driver und Front-Panel LEDs.
   * *Hinweis*: Der interne 3.3V LDO des ESP32 wird **nicht** genutzt (Pin open).
-* **Sicherung**: 1A Slow Blow (Träge)
+* **Sicherung**: 1,6A Slow Blow (Träge), z.B.: <https://www.mouser.de/ProductDetail/Littelfuse/021501.6HXP?qs=qI%252BDxnNls1%252B5BKXaCJ2cdg%3D%3D>
 * **Varistor**: S10K275 (Überspannungsschutz Eingang)
 * **Pufferung**:
   * 470µF / 25V Elko (12V Rail) - **C1**
@@ -43,7 +44,7 @@ Dieses Dokument spezifiziert die Hardware-Komponenten, die Verkabelung für den 
   * *Interface*: **Universal-Interface im 4-Pin Mode** (Direktes PWM, Tacho, 12V Dauerplus).
   * *Vorteil*: Extrem leise Umschaltung und optimierte Strömungskennlinie für Pendellüfter.
 * **BME680**: ⚠️ *NICHT IN BOM* - Bosch Umweltsensor (I2C) - Temperatur, Feuchte, Druck, IAQ --> kann extern angeschlossen werden oder jeder andere I2C Sensor verwendet werden.
-* **Front-Panel**: 9 LEDs (via PCA9685) und 3 Buttons (direkt an ESP32) über 14-Pin FFC Connector.
+* **Front-Panel**: 9 LEDs (via PCA9685) und 3 Buttons (via MCP23017) über 14-Pin FFC Connector.
 * **LED Driver**: **PCA9685PW** (I2C, 0x40) - 16-Kanal PWM Driver für dimmbare LEDs.
 * **SCD41**: ⚠️ *NICHT IN BOM* - CO2 Sensor (I2C, 0x62) über 4-Pin Header H2. --> kann extern angeschlossen werden oder jeder andere I2C Sensor verwendet werden.
 * **NTC-Sensorik**: 2x 10kΩ NTC (Beta 3435)
@@ -179,7 +180,7 @@ Das Front-Panel wird über ein 14-Pin Flachbandkabel (0.5mm Pitch) angeschlossen
 **Anschluss-Logik**:
 
 * **LEDs**: Angesteuert via PCA9685 PWM Outputs (Channels 6-15) mit 470Ω/10kΩ Vorwiderständen.
-* **Buttons**: Direkt an ESP32 GPIOs (D8, D9, D10) mit 10kΩ Pullups, schalten gegen GND.
+* **Buttons**: Abgefragt über den MCP23017 I/O Expander (GPA0-GPA2) mit 10kΩ Pullups, schalten gegen GND.
 * **Connector**: FPC 0.5-14P (U17) - SHOU HAN FPC 0.5-14P LTH2.0
 
 ---

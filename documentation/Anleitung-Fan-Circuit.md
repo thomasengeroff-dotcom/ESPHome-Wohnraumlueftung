@@ -61,20 +61,9 @@ Laut Nutzer-Validierung:
 
 ---
 
-## 3. Anleitung für EasyEDA Pro (Umbau)
+## 3. Anleitung für EasyEDA Pro
 
-Hier sind die Schritte, um das alte "Hybrid-Design" (Dual-GND) zu entfernen und das neue "Universal Design" zu implementieren.
-
-### Schritt 1: Entfernen (Alte Hybrid-Komponenten)
-
-Lösche folgende Bauteile und Leiterbahnen aus dem Schaltplan und PCB:
-
-- ❌ **Q4, Q5**: Die beiden Low-Side MOSFETs für die GND-Umschaltung.
-- ❌ **JP1, JP2, JP3**: Die Jumper-Blöcke zur Modus-Wahl.
-- ❌ **L1, C27**: LC-Filter Komponenten (falls noch vorhanden).
-- ❌ **R18, R19**: Die Gate-Widerstände für Q4/Q5.
-
-### Schritt 2: Hinzufügen (Universal Circuit)
+### Schritt 1: Hinzufügen (Universal Circuit)
 
 Wir benötigen nur einen einzigen MOSFET für den PWM-Kanal.
 
@@ -86,7 +75,7 @@ Wir benötigen nur einen einzigen MOSFET für den PWM-Kanal.
 4. **Drain**: Verbinde Drain von Q_PWM direkt mit **Terminal Pin 4 (PWM)**.
 5. **Schutz**: (Optional aber empfohlen) Füge eine kleine **Schottky-Diode (z.B. B5819WS)** zwischen Drain (Kathode) und GND (Anode) als ESD/Induktionsschutz hinzu, falls lange Kabel wirken.
 
-### Schritt 3: Tacho & Power
+### Schritt 2: Tacho & Power
 
 1. **Terminal Pin 1**: Direkt an **GND Plane**.
 2. **Terminal Pin 2**: Direkt an **+12V**.

@@ -1,0 +1,68 @@
+# ---------------------------------------------------------
+# Oled Display (SH1106 1.3" 128x64)
+# ---------------------------------------------------------
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 10
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 14
+  - file: "gfonts://Roboto"
+    id: font_large
+    size: 20
+
+# Create a time component to trigger the page switching
+time:
+  - platform: sntp
+    id: sntp_time
+
+display:
+  - platform: ssd1306_i2c
+    model: "SH1106 128x64"
+    address: 0x3C
+    id: oled_display
+    pages:
+      # Page 1: System Status
+      - id: page_system
+        lambda: |-
+          it.printf(0, 0, id(font_large), "System Info");
+          it.printf(0, 25, id(font_medium), "Modus: %s", id(selected_mode).current_option());
+          it.printf(0, 45, id(font_medium), "Lüfter: %d/10", id(fan_intensity_level));
+
+      # Page 2: Climate Data
+      - id: page_climate
+        lambda: |-
+          it.printf(0, 0, id(font_large), "Klima Daten");
+
+          if (!std::isnan(id(temp_zuluft).state)) {
+            it.printf(0, 25, id(font_medium), "Innen: %.1f°C", id(temp_zuluft).state);
+          } else {
+            it.printf(0, 25, id(font_medium), "Innen: N/A");
+          }
+
+          if (!std::isnan(id(temp_abluft).state)) {
+            it.printf(0, 45, id(font_medium), "Außen: %.1f°C", id(temp_abluft).state);
+          } else {
+            it.printf(0, 45, id(font_medium), "Außen: N/A");
+          }
+
+          if (id(co2_sensor).has_state()) {
+             // Print CO2 right aligned
+             it.printf(128, 25, id(font_medium), TextAlign::TOP_RIGHT, "%.0f ppm", id(co2_sensor).state);
+          }
+
+      # Page 3: Network Data
+      - id: page_network
+        lambda: |-
+          it.printf(0, 0, id(font_large), "Netzwerk");
+          it.printf(0, 25, id(font_small), "IP: %s", id(sensor_ip_address).state.c_str());
+          it.printf(0, 40, id(font_small), "WiFi: %.0f dBm", id(sensor_wifi_signal).state);
+          it.printf(0, 55, id(font_small), "Uptime: %.1f d", id(sensor_uptime).state);
+
+interval:
+  - interval: 5s
+    then:
+      - display.page.show_next: oled_display
+      - component.update: oled_display

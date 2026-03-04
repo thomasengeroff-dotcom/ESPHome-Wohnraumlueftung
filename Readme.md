@@ -17,6 +17,8 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 ## 📑 Inhaltsverzeichnis
 
 - [Leistungsmerkmale](#-leistungsmerkmale)
+- [Implementierte Erweiterungen](#-implementierte-erweiterungen)
+- [Roadmap & Zukünftige Erweiterungen](#️-roadmap--zukünftige-erweiterungen)
 - [Vergleich mit VentoMaxx](#-vergleich-mit-ventomaxx-v-wrg)
 - [ESP-NOW & Autonomie](#-esp-now-kabellose-autonomie)
 - [Hardware & BOM](#️-hardware--bill-of-materials-bom)
@@ -38,6 +40,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 ### ⚙️ Intelligente Betriebsmodi
 
 - 🤖 **Standard-Automatik**: Vollautomatische Steuerung für maximalen Komfort und Effizienz. Standardbetrieb in Wärmerückgewinnung mit dynamischer Anpassung an CO2 und Luftfeuchtigkeit unter Einbezug von Wetterdaten. Im Sommer automatische Querlüftung zur passiven Kühlung (wenn außen kühler als innen) und Berücksichtigung von Anwesenheit zur Anpassung der Lüftungsintensität.
+Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenheit im Raum zu messen und die Lüftungsintensität entsprechend der Voreinstellungen anzupassen.
 - 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll.
 - 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb.
 - 🔗 **Autarkes Mesh-Netzwerk**: Robuste Dezentralität durch direkte Peer-to-Peer Kommunikation (ESP-NOW). Der Gruppenbetrieb ist auch ohne zentrale WLAN-Infrastruktur oder externe Broker gewährleistet.
@@ -49,16 +52,17 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 - 🏔️ **Luftdruckmessung via BMP390**: Der hochpräzise Barometer-Sensor ermöglicht lokale Wettertrend-Analysen, Sturmwarnungen (Rapid Pressure Drop) und liefert gleichzeitig die exakten Höhendaten für die Autokalibrierung und barometrische Kompensation des SCD41 CO2-Sensors.
 - 📊 **Automatische Intensitätsregelung**: Das System kann die Lüfterleistung automatisch bei steigendem CO2-Gehalt für optimale Raumluftqualität erhöhen.
 - 🏎️ **Closed-Loop Drehzahlüberwachung**: Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung.
+- 📡 **Radar Anwesenheits Sensorik**: Mittels des HLK-LD2450 Radar Sensors wird die Anwesenheit in der Raum gemessen und die Lüftungsintensität entsprechend angepasst. Es kann eingestellt werden, ob die Lüftung intensiver (z.B. für Büro), normal (z.B. für Wohnraum) oder geringer (z.B. für Schlafzimmer) betrieben werden soll.
 
-### 🖥️ Human-Machine Interface (HMI)
+### 🖥️ Bedienung am Lüftungsgerät
 
 - 🚥 **Original VentoMaxx Panel**: Nutzung des originalen Bedienfelds mit 9 LEDs und 3 Tastern mit überwiegend identischer Funktionalität bzw. Bedienung wie beim Original.
 - 🔘 **Intuitive Steuerung**:
   - **Power**: System Ein/Aus/Reset.
   - **Modus**: Wechsel zwischen Wärmerückgewinnung (Winter), Querlüftung (Sommer) und dynamischer Lüftung basierend auf CO2-Gehalt und Feuchte.
-  - **Stufe +**: 5 Lüfterstufen (zyklisch).
+  - **Stufe +**: 10 Geschwindigkeitsstufen (zyklisch, angezeigt über 5 LEDs mit halber/voller Helligkeit).
 - 🔆 **LED Feedback**: Anzeige von Modus, aktueller Lüfterstufe (1-5) und Status.
-  - Master Led wird derzeit nicht genutzt. Kann aber für zukünftige Funktionen genutzt werden zB. für die Anzeige von Fehlern oder Warnungen.
+  - Master Led wird derzeit für Fehleranzeige genutzt: Sie blinkt, wenn das Lüftungsgerät keine Verbindung zum Netzwerk hat oder keine ESP-NOW Nachrichten von anderen Geräten empfängt.
 
 ### 🏠 Integration
 
@@ -67,27 +71,41 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 **Intuitive Gruppensteuerung**: Durch das "Group-Controller" Konzept via ESP-NOW können mehrere Geräte in einem Raum als eine einzige visuelle Einheit im Home Assistant Dashboard (z.B. mittels Mushroom Cards) abgebildet werden. Dies reduziert den WLAN-Traffic, erhöht die Stabilität und macht die Bedienung extrem einfach (hoher WAF).
 👉 *Details, Konzept und YAML-Beispiele für ESPHome und das HA Dashboard finden Sie im Ordner [ha_integration_example](ha_integration_example/).*
 
-### ️ Roadmap & Zukünftige Erweiterungen
+### ✅ Implementierte Erweiterungen
 
-Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Implementierung folgt):
-
-- **🤖 Adaptive CO2-Regelung** ✅ *Implementiert*:
+- **🤖 Adaptive CO2-Regelung**:
   - Dynamische **stufenlose** Anpassung der Lüfterleistung basierend auf Echtzeit-CO2-Werten (ppm) vom SCD41 Sensor.
-  - Nutzung eines fortschrittlichen **PID-Reglers (Proportional-Integral-Derivative)** für eine **lautlose, kontinuierliche Steuerung**. Die PWM Leistung wird nahtlos im Hintergrund verstellt, ohne hörbare Drehlzahlsprünge.
+  - Nutzung eines fortschrittlichen **PID-Reglers (Proportional-Integral-Derivative)** für eine **lautlose, kontinuierliche Steuerung**. Die PWM Leistung wird nahtlos im Hintergrund verstellt, ohne hörbare Drehzahlsprünge.
   - Konfigurierbarer **Min-/Max-Level** (Moisture / Noise Control) begrenzt das Anpassungsfenster der Automatik auf leise Drehzahlen.
   - Nur aktiv wenn SCD41 angeschlossen ist — automatische Erkennung. Lokal und remote aktivierbar.
   - Siehe [📄 CO2 Automatik Dokumentation](documentation/CO2-Automatik.md) für Details.
+
+- **🚶 Radar-basierte Anwesenheitserkennung**:
+  - Integration eines mmWave-Radarsensors (HLK-LD2450) über den vorgesehenen UART-Pin-Header auf der Platine.
+  - Da die dezentralen Lüftungsgeräte ohnehin in jedem relevanten Raum optimal positioniert sind, dienen sie gleichzeitig als perfekter Standort für eine raumgenaue Präsenzerfassung, die nahtlos an Home Assistant übergeben wird.
+  - **Bedarfsgesteuerte Regelung**: Über Home Assistant lässt sich konfigurieren, inwieweit die Lüftung bei erkannter Anwesenheit reagieren soll (z. B. Lüfterdrehzahl drosseln zur Lärmreduzierung im Schlafzimmer, intensivieren für Büros). Optionen: Keine Anpassung (Default), Intensiv, Normal, Gering.
+
+- **🧹 Wartungs-Management (Prädiktiver Filterwechsel-Alarm)**:
+  - Automatisches Tracking der Lüfter-Betriebsstunden und Kalenderzeit seit letztem Filterwechsel.
+  - Alarm bei Betriebsstunden > 365 Tage Laufzeit oder > 3 Jahre Kalenderzeit.
+  - Digitale Benachrichtigung über Home Assistant Binary Sensor (`binary_sensor.filterwechsel_alarm`).
+  - Reset-Button nach Filterwechsel (`button.filter_gewechselt_reset`) setzt alle Zähler zurück.
+  - Siehe [🧹 Filterwechsel-Alarm in Home Assistant einrichten](#-filterwechsel-alarm-in-home-assistant-einrichten) für HA Automation-Beispiel.
+
+- **� Master LED Fehleranzeige**:
+  - Die Master LED blinkt (Strobe-Effekt), wenn keine WiFi-Verbindung besteht oder keine ESP-NOW Nachrichten von Peer-Geräten innerhalb von 5 Minuten empfangen wurden.
+  - Bei normalem Betrieb ist die LED aus.
+
+### 🗺️ Roadmap & Zukünftige Erweiterungen
+
+Die Firmware ist für folgende weitere "Advanced Automation"-Funktionen vorbereitet:
 
 - **🌙 Intelligenter Nachtmodus**:
   - Zeitgesteuerte Drosselung der Lüfterleistung zur Geräuschminimierung in Ruhephasen.
   - Flexibles Zeitmanagement und Definition spezifischer Nacht-Profile.
   - Lokal und remote aktivierbar.
 
-- **🧹 Wartungs-Management**:
-  - Prädiktiver Filterwechsel-Alarm basierend auf Betriebsstunden und Zeitintervallen.
-  - Lokale Visualisierung und digitale Benachrichtigung im Smart Home Dashboard.
-
-- **💧 Feuchte-Management**:
+- **�💧 Feuchte-Management**:
   - Automatisierte Entfeuchtungslogik zur Schimmelprävention basierend auf absoluter und relativer Feuchte.
   - Intelligente Hysterese-Steuerung zur Vermeidung von "Rapid Cycling".
   - Lokal und remote aktivierbar.
@@ -99,11 +117,6 @@ Die Firmware ist für folgende "Advanced Automation"-Funktionen vorbereitet (Imp
 - **KI-gestützte Lüftungssteuerung**:
   - Proaktive KI-gestützte Lüftungssteuerung basierend auf historischen Daten und externen Prognosen (Wetter, CO2, Feuchte). Siehe [📄 KI-gestützte Lüftungssteuerung](documentation/KI-gestützte-Lüftungssteuerung.md) für Details.
 
-- **🚶 Radar-basierte Anwesenheitserkennung**:
-  - Integration eines 24GHz mmWave-Radarsensors (MR24HPC1) über den vorgesehenen UART-Pin-Header auf der Platine.
-  - Da die dezentralen Lüftungsgeräte ohnehin in jedem relevanten Raum optimal positioniert sind, dienen sie gleichzeitig als perfekter Standort für eine raumgenaue Präsenzerfassung, die nahtlos an Home Assistant übergeben wird.
-  - **Bedarfsgesteuerte Regelung**: Über Home Assistant lässt sich konfigurieren, inwieweit die Lüftung bei erkannter Anwesenheit reagieren soll (z. B. Lüfterdrehzahl drosseln zur Lärmreduzierung im Schlafzimmer).
-  
 ### 🔧 Aktuelle technische Verbesserungen
 
 - **Hardware-Upgrade: SCD41 CO2-Sensor & BMP390 (Februar 2026)**:
@@ -149,8 +162,9 @@ Während die originale VentoMaxx-Lösung keine Integration in ein Smart Home Sys
 
 1. **Echte CO2-Messung statt Schätzwerte**: Der SCD41 misst den tatsächlichen CO2-Gehalt (400-5000 ppm) mittels **photoacoustic sensing** - nicht nur VOC-basierte Näherungswerte. Bei erhöhtem CO2 schaltet das System automatisch hoch.
 2. **Keine neuen Kabel**: Durch **ESP-NOW** synchronisieren sich Geräte in einem Raum (z.B. paarweiser Push-Pull Betrieb) komplett kabellos über Funk. Das Ganze funktioniert sogar, wenn das lokale WLAN ausfällt, da die Kommunikation direkt über die Wi-Fi-Radio-Hardware (MAC-Ebene) erfolgt, ohne dass eine Verbindung zu einem Access Point erforderlich ist.
-3. **Wartungs-Intelligenz**: Durch die **Tacho-Auswertung** erkennt das System, ob ein Lüfter blockiert oder verschmutzt ist, und meldet dies proaktiv an Home Assistant.
+3. **Wartungs-Intelligenz**: Durch die **Tacho-Auswertung** erkennt das System sofern ein 4-PIN PWM Lüfter angeschlossen ist, ob ein Lüfter blockiert oder verschmutzt ist, und meldet dies proaktiv an Home Assistant. Sofern kein 4-PIN PWM Lüfter angeschlossen ist, wird dies ignoriert.
 4. **Zukunftssicher**: Dank **Over-the-Air (OTA)** Updates können neue Funktionen oder verbesserte Regelalgorithmen (z.B. für Wärmerückgewinnung) jederzeit eingespielt werden.
+5. **Erweiterbar**: Durch die Verwendung von ESPHome können weitere Sensoren oder Aktoren einfach hinzugefügt werden. So können z.B. Präsenzmelder oder andere Sensoren einfach in das System integriert werden. Außerdem stehen freie I2C und UART-Schnittstellen zur Verfügung, um weitere Sensoren oder Aktoren anzuschließen.
 
 ---
 
@@ -391,7 +405,47 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 #### Automatische Funktionen
 
 - **Nachtmodus (geplant)**: Dimmt die LEDs automatisch basierend auf Uhrzeit.
-- **Filter-Alarm**: Power-LED blinkt rot (geplant), wenn Filterwechsel nötig.
+- **Filterwechsel-Alarm**: Prädiktive Wartungsbenachrichtigung (siehe unten).
+
+#### 🧹 Filterwechsel-Alarm in Home Assistant einrichten
+
+Das System trackt automatisch die Betriebsstunden des Lüfters und löst einen Alarm aus, wenn:
+
+- **Betriebsstunden > 365 Tage** (8760h Laufzeit), oder
+- **Kalenderzeit > 3 Jahre** seit dem letzten Filterwechsel.
+
+**Verfügbare Entitäten:**
+
+| Entität | Typ | Beschreibung |
+|---|---|---|
+| `binary_sensor.filterwechsel_alarm` | Binary Sensor | `ON` = Filterwechsel empfohlen |
+| `sensor.filter_betriebstage` | Sensor | Lüfter-Laufzeit in Tagen seit letztem Wechsel |
+| `button.filter_gewechselt_reset` | Button | Nach Filterwechsel drücken → setzt Zähler zurück |
+
+**Beispiel: Push-Benachrichtigung via HA Automation**
+
+Fügen Sie folgende Automation in Ihre Home Assistant `automations.yaml` ein:
+
+```yaml
+automation:
+  - alias: "Filterwechsel Benachrichtigung"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.esptest_filterwechsel_alarm
+        to: "on"
+    action:
+      - service: notify.mobile_app_<ihr_geraet>
+        data:
+          title: "🧹 Filterwechsel empfohlen"
+          message: >-
+            Die Lüftungsanlage hat {{ states('sensor.esptest_filter_betriebstage') }} Betriebstage
+            seit dem letzten Filterwechsel erreicht. Bitte Filter prüfen und wechseln.
+          data:
+            tag: "filterwechsel"
+            importance: high
+```
+
+> 💡 **Nach dem Filterwechsel:** Drücken Sie den Button `Filter gewechselt (Reset)` in Home Assistant, um die Betriebsstunden und den Kalender-Timer zurückzusetzen.
 
 ---
 
@@ -552,9 +606,10 @@ Diese Dokumentation enthält:
 ESPHome-Wohnraumlueftung/
 ├── esp_wohnraumlueftung.yaml      # Hauptkonfiguration (minimal)
 ├── hardware_io.yaml               # Hardware-Schnittstellen (I2C, MCP, PCA, LEDs)
-├── sensors_climate.yaml           # Sensorauswertung (SCD41, NTCs, BMP390)
-├── ui_controls.yaml               # Home Assistant GUI-Elemente (Slider, Selects)
-├── logic_automation.yaml          # Steuerungslogik, PIDs, Intervalle
+├── sensors_climate.yaml           # Sensorauswertung (SCD41, NTCs, BMP390, LD2450)
+├── ui_controls.yaml               # Home Assistant GUI-Elemente (Slider, Selects, Filter-Alarm)
+├── logic_automation.yaml          # Steuerungslogik, PIDs, Intervalle, Wartungs-Tracking
+├── display_diagnostics.yaml       # OLED-Display Diagnoseseiten
 ├── esp32c6_common.yaml            # Gemeinsame ESP32-C6 Einstellungen
 ├── device_config.yaml             # Dynamische Gerätekonfiguration
 ├── espslaveNTC.yaml               # Firmware für Slave-Geräte (Empfänger)
