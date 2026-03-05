@@ -31,7 +31,14 @@ light:
     id: status_led_mode_wrg # ID expected by automation_helpers.h
     internal: true
     default_transition_length: 0.5s
-    gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
+    gamma_correct: 1.0
+    effects:
+      - pulse:
+          name: "Automatik Pulse"
+          transition_length: 1s
+          update_interval: 2s
+          min_brightness: 15%
+          max_brightness: 100%
   - platform: monochromatic
     output: out_led_vent
     name: "Status LED Mode Vent"

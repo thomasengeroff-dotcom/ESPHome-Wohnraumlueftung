@@ -62,9 +62,12 @@ extern esphome::template_::TemplateNumber *cycle_duration_config; ///< Fan direc
 extern esphome::template_::TemplateNumber *sync_interval_config; ///< Time between auto-sync packets in minutes.
 /// @}
 
+extern esphome::globals::GlobalsComponent<bool> *ui_active;     ///< UI active flag (30s dimming).
+
 /// @name Scripts
 /// @{
 extern esphome::script::RestartScript<> *update_leds;         ///< Refreshes all status LEDs.
+extern esphome::script::RestartScript<> *ui_timeout_script;   ///< UI 30s timeout script.
 extern esphome::script::RestartScript<> *fan_speed_update;    ///< Re-applies fan speed.
 extern esphome::script::SingleScript<float, int> *set_fan_speed_and_direction; ///< Sets PWM + direction.
 /// @}
@@ -484,34 +487,44 @@ inline void cycle_operating_mode(int mode_index) {
 }
 
 
+void check_master_led_error();
+
 /// @brief Refreshes all status LEDs based on system_on, current mode, and fan level.
 /// Maps fan intensity 1–10 onto the 5 level LEDs and toggles the two mode LEDs.
 inline void update_leds_logic() {
   auto *v = ventilation_ctrl;
   int current_mode = v->state_machine.current_mode;
 
-  // 1. Power LED (Always ON if system is ON)
-  if (system_on->value()) {
+  // 1. Power LED (Always ON if system is ON and UI is active)
+  if (system_on->value() && ui_active->value()) {
     status_led_power->turn_on();
   } else {
-     // Optional: Blink or Off? Let's keep it OFF for now
     status_led_power->turn_off();
   }
 
   // 2. Mode LEDs
   status_led_mode_wrg->turn_off();
   status_led_mode_vent->turn_off();
-  
+
   if (system_on->value()) {
-    if (current_mode == esphome::MODE_ECO_RECOVERY) {
-      // WRG: Left LED on
-      status_led_mode_wrg->turn_on();
+    if (auto_mode_active->value()) {
+      // Smart-Automatik: Left LED pulses slowly to distinguish from manual WRG
+      auto call = status_led_mode_wrg->turn_on();
+      call.set_effect("Automatik Pulse");
+      call.perform();
+    } else if (current_mode == esphome::MODE_ECO_RECOVERY) {
+      // Manual WRG: Left LED solid on
+      auto call = status_led_mode_wrg->turn_on();
+      call.set_effect("None");
+      call.perform();
     } else if (current_mode == esphome::MODE_STOSSLUEFTUNG) {
       // Stoßlüftung: Right LED on
       status_led_mode_vent->turn_on();
     } else if (current_mode == esphome::MODE_VENTILATION) {
-      // Durchlüften: Both LEDs on
-      status_led_mode_wrg->turn_on();
+      // Durchlüften: Both LEDs on (solid)
+      auto call_wrg = status_led_mode_wrg->turn_on();
+      call_wrg.set_effect("None");
+      call_wrg.perform();
       status_led_mode_vent->turn_on();
     }
     // MODE_OFF: Both LEDs off (already reset above)
@@ -525,7 +538,7 @@ inline void update_leds_logic() {
   status_led_l4->turn_off();
   status_led_l5->turn_off();
 
-  if (!system_on->value() || current_mode == esphome::MODE_OFF) return;
+  if (!ui_active->value() || !system_on->value() || current_mode == esphome::MODE_OFF) return;
 
   int level = fan_intensity_level->value();
   
@@ -547,6 +560,9 @@ inline void update_leds_logic() {
        case 9: status_led_l5->turn_on(); break;
      }
   }
+
+  // Also ensure the Master LED evaluates its UI status immediately
+  check_master_led_error();
 }
 
 /// @brief Checks for error conditions and blinks the Master LED accordingly.
@@ -577,8 +593,14 @@ inline void check_master_led_error() {
         call.set_effect("Error Blink");
         call.perform();
     } else {
-        // All clear: turn off the Master LED
-        status_led_master->turn_off().perform();
+        // All clear: check if UI is active so we can show Master status, else turn off
+        if (ui_active->value()) {
+            auto call = status_led_master->turn_on();
+            call.set_effect("None");
+            call.perform();
+        } else {
+            status_led_master->turn_off().perform();
+        }
     }
 }
 
@@ -779,27 +801,37 @@ inline void set_operating_mode_select(std::string x) {
 inline void handle_button_mode_click() {
     current_mode_index->value() = (current_mode_index->value() + 1) % 5;
     cycle_operating_mode(current_mode_index->value());
-    update_leds->execute();
+    ui_timeout_script->execute();
 }
 
-/// @brief Power button press: toggles ventilation_enabled on/off.
-/// ON restores previous mode + fan speed; OFF stops fan and PWM outputs.
-inline void handle_button_power_click() {
-    ventilation_enabled->value() = !ventilation_enabled->value();
-    if (ventilation_enabled->value()) {
-        // Power ON: Restore previous mode and fan speed
-        ESP_LOGI("power", "System ON - restoring mode %d", current_mode_index->value());
+/// @brief Power button short press: turns ventilation_enabled ON.
+/// Restores previous mode + fan speed.
+inline void handle_button_power_short_click() {
+    if (!ventilation_enabled->value()) {
+        ventilation_enabled->value() = true;
+        ESP_LOGI("power", "System turned ON by short press - restoring mode %d", current_mode_index->value());
         cycle_operating_mode(current_mode_index->value());
         fan_speed_update->execute();
+        ui_timeout_script->execute();
     } else {
-        // Power OFF: Stop fan and set mode to OFF
-        ESP_LOGI("power", "System OFF");
+        ESP_LOGD("power", "System already ON, ignoring short press");
+    }
+}
+
+/// @brief Power button long press (>=5s): turns ventilation_enabled OFF.
+/// Stops fan and PWM outputs.
+inline void handle_button_power_long_click() {
+    if (ventilation_enabled->value()) {
+        ventilation_enabled->value() = false;
+        ESP_LOGI("power", "System turned OFF by long press (>5s)");
         auto *v = ventilation_ctrl;
         v->set_mode(esphome::MODE_OFF);
         lueftung_fan->turn_off();
         fan_pwm_primary->set_level(0.0);
+        ui_timeout_script->execute();
+    } else {
+        ESP_LOGD("power", "System already OFF, ignoring long press");
     }
-    update_leds->execute();
 }
 
 /// @brief Level button press: cycles fan intensity 1→10→1 and updates UI + hardware.
@@ -815,7 +847,7 @@ inline void handle_button_level_click() {
     
     ventilation_ctrl->set_fan_intensity(level);
     fan_speed_update->execute();
-    update_leds->execute();
+    ui_timeout_script->execute();
     ESP_LOGI("button", "Intensity level: %d", level);
 }
 

@@ -134,6 +134,20 @@ script:
       - lambda: |-
           update_leds_logic();
 
+  # Auto-Dimming UI Timer (30s)
+  - id: ui_timeout_script
+    mode: restart
+    then:
+      - globals.set:
+          id: ui_active
+          value: "true"
+      - script.execute: update_leds
+      - delay: 30s
+      - globals.set:
+          id: ui_active
+          value: "false"
+      - script.execute: update_leds
+
   # Unified Fan Speed and Direction Control
   - id: set_fan_speed_and_direction
     parameters:
@@ -168,10 +182,22 @@ binary_sensor:
       - delayed_on: 25ms # Ignores any bouncing that is shorter than 25ms.
       - delayed_off: 25ms # Prevents "ghost presses" when releasing the button.
     on_click:
-      then:
-        - lambda: |-
-            handle_button_power_click();
-
+      - min_length: 50ms
+        max_length: 4999ms
+        then:
+          - lambda: |-
+              handle_button_power_short_click();
+      - min_length: 5000ms
+        max_length: 9999ms
+        then:
+          - lambda: |-
+              handle_button_power_long_click();
+      - min_length: 10000ms
+        max_length: 60000ms
+        then:
+          - lambda: |-
+              handle_button_power_long_click();
+          - button.press: system_reboot
   # Button Mode (Right) - Mode Control (MCP23017 GPA1)
   - platform: gpio
     pin:
@@ -213,11 +239,16 @@ binary_sensor:
         then:
           - lambda: |-
               handle_button_level_click();
-      # Long press (≥1s): Toggle system power
+      # Long press (≥1s): Turn off system power
       - timing:
           - ON for at least 1s
         then:
-          - lambda: handle_button_power_click();
+          - lambda: handle_button_power_long_click();
+
+button:
+  - platform: restart
+    id: system_reboot
+    name: "System Reboot"
 
 # ---------------------------------------------------------
 # VENTILATION CONTROL

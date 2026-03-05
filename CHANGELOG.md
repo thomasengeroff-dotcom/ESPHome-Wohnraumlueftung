@@ -8,6 +8,20 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Added
 
+- **Smart-Automatik als Standard-Startmodus**: Der intelligente Automatik-Modus (Modus-Index 3) ist jetzt der Standard-Startmodus beim ersten Start oder nach Factory Reset.
+  - `current_mode_index` Default geändert: `0` (WRG) → `3` (Automatik).
+  - `co2_auto_enabled` Default geändert: `false` → `true` (CO2-Regelung standardmäßig aktiv).
+  - Alle Smart-Features (CO2-PID, Feuchte-PID, Radar-Anwesenheit, Sommer-Kühlung) sind damit out-of-the-box aktiv.
+- **LED_WRG Puls-Effekt für Automatik-Modus**: Im Smart-Automatik Modus pulsiert `LED_WRG` (links) langsam (2s Zyklus, 15%-100%), um sich optisch vom manuellen Wärmerückgewinnung-Modus (Dauerleuchten) zu unterscheiden.
+  - Neuer ESPHome Effekt `"Automatik Pulse"` auf `status_led_mode_wrg` in `ui_controls.yaml` definiert.
+  - `update_leds_logic()` in `automation_helpers.h` prüft `auto_mode_active` und setzt den Effekt entsprechend.
+- **Erweiterte Power-Button Logik (Haltedauer)**: Der physische Power-Button reagiert nun unterschiedlich basierend auf der Druckdauer (native ESPHome `on_click` Längenmessung):
+  - *Kurzer Druck (0.05s - 4.9s)*: Schaltet das System EIN (falls es aus war).
+  - *Langer Druck (5.0s - 9.9s)*: Schaltet das System AUS (Lüfter und PWM-Signale werden gestoppt).
+  - *Sehr langer Druck (ab 10.0s)*: Schaltet das System AUS und löst einen Neustart (Reboot) des ESP32 aus.
+- **30s LED Auto-Dimming**: Alle LEDs (Modus, Intensität, Power, Master) werden 30 Sekunden nach dem letzten Tastendruck sanft auf 0% gedimmt, um ein störendes Dauerleuchten zu vermeiden.
+  - Das Drücken eines beliebigen Buttons am Bedienfeld weckt die UI auf und startet den Timer neu.
+  - *Ausnahme:* Die Master-LED dimmt nicht herunter, wenn sie durch einen Fehlerzustand (wie Verbindungsverlust) blinkt.
 - **HLK-LD2450 Radar-Anwesenheitserkennung**: Integration des mmWave-Radarsensors über UART (TX: GPIO16, RX: GPIO17, 256000 Baud).
   - Sensoren in Home Assistant: Radar Moving Target, Radar Presence, Radar Still Target, Radar Total Target Count.
   - `has_state()` Safety-Guard: System funktioniert fehlerfrei auch ohne angeschlossenen Radar-Sensor.
