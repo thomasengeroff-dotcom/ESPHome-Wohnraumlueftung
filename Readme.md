@@ -92,9 +92,56 @@ Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenhei
   - Reset-Button nach Filterwechsel (`button.filter_gewechselt_reset`) setzt alle Zähler zurück.
   - Siehe [🧹 Filterwechsel-Alarm in Home Assistant einrichten](#-filterwechsel-alarm-in-home-assistant-einrichten) für HA Automation-Beispiel.
 
-- **� Master LED Fehleranzeige**:
+- **Master LED Fehleranzeige**:
   - Die Master LED blinkt (Strobe-Effekt), wenn keine WiFi-Verbindung besteht oder keine ESP-NOW Nachrichten von Peer-Geräten innerhalb von 5 Minuten empfangen wurden.
   - Bei normalem Betrieb ist die LED aus.
+
+- **💧 Feuchte-Management**:
+  - Automatisierte Entfeuchtungslogik zur Schimmelprävention: Bei Überschreitung des konfigurierbaren Feuchte-Grenzwerts (40-100%, Default 60%) regelt ein **PID-Regler** (`pid_humidity`) die Lüfterleistung stufenlos hoch.
+  - **Intelligente Hysterese** via PID-Deadband (`±2%`) und Output-Averaging (5 Samples) verhindert "Rapid Cycling".
+  - **Outdoor-Check**: Es wird nur entfeuchtet, wenn die Außenluft trockener ist als die Innenluft (`out_hum < in_hum`).
+  - Zielwert konfigurierbar über `Automatik: Feuchte Grenzwert` Slider in Home Assistant — wird automatisch via ESP-NOW an alle Geräte der Gruppe synchronisiert.
+  - Aktiv im Standard-Automatik und Effiziente Wärmerückgewinnung Modus.
+
+  > **⚙️ Voraussetzung: `sensor.outdoor_humidity` in Home Assistant**
+  >
+  > Das Feuchte-Management benötigt eine Außenluftfeuchtigkeit aus Home Assistant. Der ESPHome-Code erwartet die Entity-ID `sensor.outdoor_humidity` (konfiguriert in `sensors_climate.yaml`). Es gibt zwei Wege, diesen Sensor bereitzustellen:
+  >
+  > **Option A: Wetterdienst-Integration** (kein zusätzlicher Sensor nötig)
+  >
+  > Installieren Sie eine Wetter-Integration (z.B. [OpenWeatherMap](https://www.home-assistant.io/integrations/openweathermap/), [Met.no](https://www.home-assistant.io/integrations/met/)) und erstellen Sie in `configuration.yaml` einen Template-Sensor:
+  >
+  > ```yaml
+  > template:
+  >   - sensor:
+  >       - name: "Outdoor Humidity"
+  >         unique_id: outdoor_humidity
+  >         unit_of_measurement: "%"
+  >         state: "{{ state_attr('weather.home', 'humidity') }}"
+  >         device_class: humidity
+  > ```
+  >
+  > **Option B: Physischer Außensensor** (z.B. ESP32 + BME280/SHT31 auf Balkon/Terrasse)
+  >
+  > Wenn der Außensensor bereits als HA-Entity existiert (z.B. `sensor.balkon_sht31_humidity`), erstellen Sie einen Alias:
+  >
+  > ```yaml
+  > template:
+  >   - sensor:
+  >       - name: "Outdoor Humidity"
+  >         unique_id: outdoor_humidity
+  >         unit_of_measurement: "%"
+  >         state: "{{ states('sensor.balkon_sht31_humidity') }}"
+  >         device_class: humidity
+  > ```
+  >
+  > **Alternativ:** Ändern Sie direkt die `entity_id` in `sensors_climate.yaml` auf Ihren Sensor:
+>
+  > ```yaml
+  > entity_id: sensor.balkon_sht31_humidity  # statt sensor.outdoor_humidity
+  > ```
+  >
+  > 💡 **Ohne `sensor.outdoor_humidity`** funktioniert die Entfeuchtung trotzdem — der Outdoor-Check wird dann übersprungen und der PID regelt rein nach dem Innenfeuchte-Grenzwert.
 
 ### 🗺️ Roadmap & Zukünftige Erweiterungen
 
@@ -104,12 +151,6 @@ Die Firmware ist für folgende weitere "Advanced Automation"-Funktionen vorberei
   - Zeitgesteuerte Drosselung der Lüfterleistung zur Geräuschminimierung in Ruhephasen.
   - Flexibles Zeitmanagement und Definition spezifischer Nacht-Profile.
   - Lokal und remote aktivierbar.
-
-- **�💧 Feuchte-Management**:
-  - Automatisierte Entfeuchtungslogik zur Schimmelprävention basierend auf absoluter und relativer Feuchte.
-  - Intelligente Hysterese-Steuerung zur Vermeidung von "Rapid Cycling".
-  - Lokal und remote aktivierbar.
-  - Zielwert für maximale Luftfeuchtigkeit konfigurierbar.
 
 - **Unterdruckwächter**:
   - Zum Differenzdruckausgleich bei gleichzeitigem Betrieb von Kamin-/Holzofen und Lüftungsanlage. Erweiterung der Hardware durch einen potentialfreien Kontakt, an welchem der Unterdruckwächter angeschlossen wird.
@@ -141,30 +182,20 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 
 ## 🔄 Vergleich mit VentoMaxx V-WRG
 
-Diese Lösung wurde als smarter Ersatz für die herkömmliche [VentoMaxx V-WRG / WRG PLUS](https://www.ventomaxx.de/dezentrale-lueftung-produktuebersicht/aktive-luefter-mit-waermerueckgewinnung/) Steuerung entwickelt. Einen detaillierten Funktionsvergleich finden Sie in **[Comparison-VentoMaxx.md](documentation/Comparison-VentoMaxx.md)**.
+Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PLUS](https://www.ventomaxx.de/dezentrale-lueftung-produktuebersicht/aktive-luefter-mit-waermerueckgewinnung/) Steuerung — mechanisch kompatibel, funktional massiv erweitert:
 
-Während die originale VentoMaxx-Lösung keine Integration in ein Smart Home System ermöglicht, bietet dieser ESPHome-Ansatz ein völlig neues Level an Flexibilität und Integrität. Da hier diese Lösung auf ESPHome basiert, kann sie mit jeder Home Assistant Version verwendet werden und bietet eine native Integration in Home Assistant.
+| | VentoMaxx (Original) | ESPHome Smart WRG |
+| :--- | :---: | :---: |
+| Betriebsmodi | 3 | **5+** (inkl. Automatiken) |
+| Sensorik | 0-1 (opt. VOC) | **6** (CO2, Temp, Feuchte, Druck, Radar, Tacho) |
+| Lüfterregelung | 3 feste Stufen | **10 Stufen + stufenlos (PID)** |
+| Smart Home | ❌ | ✅ Home Assistant (nativ) |
+| Wartungsalarm | Timer-LED | ✅ Prädiktiv + Push |
+| Synchronisation | Steuerkabel | ✅ Kabellos (ESP-NOW) |
+| Updates | Servicetechniker | ✅ Over-the-Air (OTA) |
+| Lizenz | Proprietär | ✅ Open Source (MIT) |
 
-### Funktionsvergleich
-
-| Feature             | VentoMaxx V-WRG (Standard)     | ESPHome Smart WRG (Dieses Projekt)           |
-| :------------------ | :----------------------------- | :------------------------------------------- |
-| **Konnektivität**   | Kabelgebunden / Inselbetrieb   | **WiFi 6 & ESP-NOW Mesh**                    |
-| **Smart Home**      | Nein (oder teure Zusatzmodule) | **Nativ Home Assistant (API)**               |
-| **Visualisierung**  | Status-LEDs (Original Panel)   | **Status-LEDs + Home Assistant Dashboard**   |
-| **Sensorik**        | Optional CO2 (rudimentär)      | **SCD41 (Echtes CO2, Temp, Hum)**            |
-| **Bedienung**       | Wandschalter / Fernbedienung   | **Original Panel, App & Automatik**          |
-| **Synchronisierung**| Physisches Steuerkabel         | **Kabellos & Intelligent via ESP-NOW**       |
-| **Konfiguration**   | DIP-Schalter / Potentiometer   | **Dynamisch per Software (Floor/Room IDs)**  |
-| **Kosten**          | Hochpreisig (Industriestandard)| **Preiswert & Unbegrenzt erweiterbar**       |
-
-### 🚀 Warum diese Lösung überlegen ist
-
-1. **Echte CO2-Messung statt Schätzwerte**: Der SCD41 misst den tatsächlichen CO2-Gehalt (400-5000 ppm) mittels **photoacoustic sensing** - nicht nur VOC-basierte Näherungswerte. Bei erhöhtem CO2 schaltet das System automatisch hoch.
-2. **Keine neuen Kabel**: Durch **ESP-NOW** synchronisieren sich Geräte in einem Raum (z.B. paarweiser Push-Pull Betrieb) komplett kabellos über Funk. Das Ganze funktioniert sogar, wenn das lokale WLAN ausfällt, da die Kommunikation direkt über die Wi-Fi-Radio-Hardware (MAC-Ebene) erfolgt, ohne dass eine Verbindung zu einem Access Point erforderlich ist.
-3. **Wartungs-Intelligenz**: Durch die **Tacho-Auswertung** erkennt das System sofern ein 4-PIN PWM Lüfter angeschlossen ist, ob ein Lüfter blockiert oder verschmutzt ist, und meldet dies proaktiv an Home Assistant. Sofern kein 4-PIN PWM Lüfter angeschlossen ist, wird dies ignoriert.
-4. **Zukunftssicher**: Dank **Over-the-Air (OTA)** Updates können neue Funktionen oder verbesserte Regelalgorithmen (z.B. für Wärmerückgewinnung) jederzeit eingespielt werden.
-5. **Erweiterbar**: Durch die Verwendung von ESPHome können weitere Sensoren oder Aktoren einfach hinzugefügt werden. So können z.B. Präsenzmelder oder andere Sensoren einfach in das System integriert werden. Außerdem stehen freie I2C und UART-Schnittstellen zur Verfügung, um weitere Sensoren oder Aktoren anzuschließen.
+� **Den vollständigen Feature-für-Feature Vergleich mit allen technischen Details finden Sie in [📄 Comparison-VentoMaxx.md](documentation/Comparison-VentoMaxx.md).**
 
 ---
 
