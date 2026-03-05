@@ -1,6 +1,6 @@
 # 🌬️ Smarte dezentrale Wohnraumlüftung mit Wärmerückgewinnung auf Basis von ESP32-C6 und ESPHome
 
-Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses Projekt erstezt die Steuerung der VentoMaxx V-WRG Serie mittels eines eigens dafür entwickelten PCB und steuert damit einen reversierbaren 12V Lüfter (Push-Pull) zur Wärmerückgewinnung, überwacht die Luftqualität (CO2, Feuchte und Temperatur), berechnet die effektive Wärmerückgewinnung und nutzt das **originale VentoMaxx Bedienpanel** für eine nahtlose Integration und intuitive Steuerung.
+Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses Projekt erstezt die Steuerung der VentoMaxx V-WRG Serie mittels eines eigens dafür entwickelten PCB und steuert damit einen reversierbaren 12V Lüfter (Push-Pull) zur Wärmerückgewinnung, überwacht die Luftqualität (CO2, Feuchte und Temperatur), berechnet die effektive Wärmerückgewinnung und nutzt das **originale VentoMaxx Bedienpanel** für eine nahtlose Integration, intuitive Steuerung und vieles mehr.
 
 > 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit 12V Lüftern (3-PIN oder 4-PIN PWM). Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist damit explizit für die VentoMaxx V-WRG Serie optimiert und muss für andere Hersteller ggf. angepasst werden. Das PCB ist so konzipiert, dass es in das Gehäuse der VentoMaxx V-WRG Serie passt und die vorhandenen Befestigungspunkte nutzt.
 
@@ -55,6 +55,8 @@ Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenhei
 - 📡 **Radar Anwesenheits Sensorik**: Mittels des HLK-LD2450 Radar Sensors wird die Anwesenheit in der Raum gemessen und die Lüftungsintensität entsprechend angepasst. Es kann eingestellt werden, ob die Lüftung intensiver (z.B. für Büro), normal (z.B. für Wohnraum) oder geringer (z.B. für Schlafzimmer) betrieben werden soll.
 
 ### 🖥️ Bedienung am Lüftungsgerät
+
+![Bedienung am Lüftungsgerät](images/Ventomax%20V-WRG-1/PXL_20260128_232625674.jpg)
 
 - 🚥 **Original VentoMaxx Panel**: Nutzung des originalen Bedienfelds mit 9 LEDs und 3 Tastern mit überwiegend identischer Funktionalität bzw. Bedienung wie beim Original.
 - 🔘 **Intuitive Steuerung**:
@@ -146,6 +148,42 @@ Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenhei
   >
   > 💡 **Ohne `sensor.outdoor_humidity`** funktioniert die Entfeuchtung trotzdem — der Outdoor-Check wird dann übersprungen und der PID regelt rein nach dem Innenfeuchte-Grenzwert.
 
+## 🔄 Vergleich mit VentoMaxx V-WRG
+
+Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PLUS](https://www.ventomaxx.de/dezentrale-lueftung-produktuebersicht/aktive-luefter-mit-waermerueckgewinnung/) Steuerung — mechanisch kompatibel, funktional massiv erweitert:
+
+| | VentoMaxx (Original) | ESPHome Smart WRG |
+| :--- | :---: | :---: |
+| Betriebsmodi | 3 | **5+** (inkl. Automatiken) |
+| Sensorik | 0-1 (opt. VOC) | **6** (CO2, Temp, Feuchte, Druck, Radar, Tacho) |
+| Lüfterregelung | 3 feste Stufen | **10 Stufen + stufenlos (PID)** |
+| Smart Home | ❌ | ✅ Home Assistant (nativ) |
+| Wartungsalarm | Timer-LED | ✅ Prädiktiv + Push |
+| Synchronisation | Steuerkabel | ✅ Kabellos (ESP-NOW) |
+| Updates | Servicetechniker | ✅ Over-the-Air (OTA) |
+| Lizenz | Proprietär | ✅ Open Source (MIT) |
+
+� **Den vollständigen Feature-für-Feature Vergleich mit allen technischen Details finden Sie in [📄 Comparison-VentoMaxx.md](documentation/Comparison-VentoMaxx.md).**
+
+---
+
+## 📡 ESP-NOW: Kabellose Autonomie
+
+Die Geräte kommunizieren über die [ESPHome ESP-NOW Komponente](https://esphome.io/components/espnow.html). **ESP-NOW** ist ein von Espressif entwickeltes, verbindungsloses Protokoll, das eine direkte Kommunikation zwischen ESP32-Geräten ohne Umweg über einen WLAN-Router ermöglicht.
+
+### Vorteile im Überblick
+
+- 🌐 **WLAN-Unabhängigkeit**: Die Geräte benötigen keinen WLAN-Router (Access Point) für die Synchronisation. Die Kommunikation erfolgt direkt auf der MAC-Ebene (2,4 GHz Radio). Fällt das lokale WLAN aus, arbeitet die Lüftungsgruppe ungestört weiter.
+- 🛡️ **Hohe Zuverlässigkeit**: Durch die direkte Punkt-zu-Punkt-Kommunikation ist das System immun gegen Überlastungen oder Störungen im herkömmlichen WLAN-Netzwerk.
+- ⚡ **Extrem geringe Latenz**: Da keine Verbindung aufgebaut oder verwaltet werden muss (handshake-frei), werden Synchronisationsbefehle nahezu verzögerungsfrei übertragen. Dies ist entscheidend für den exakten Richtungswechsel synchronisierter Lüfterpaare.
+- 🔌 **Keine Steuerleitungen**: Es müssen keine Datenkabel durch Wände gezogen werden. Die Synchronisation erfolgt "Out-of-the-box" über Funk.
+- 📡 **Automatisches Software-Filtering**: Durch den Broadcast-Modus und die projektinterne Filterung (Floor/Room ID) finden sich Geräte im gleichen Raum automatisch.
+- ⚙️ **Globale Konfigurations-Synchronisation**: Änderungen an Einstellungen (z. B. CO2-Grenzwerte, Timer, Automatik-Modi) an einem Gerät via Home Assistant oder Bedienpanel werden in Echtzeit drahtlos an alle anderen Geräte in derselben Raumgruppe gespiegelt. So laufen alle Lüfter stets mit identischen Parametern, ohne dass jedes Gerät einzeln konfiguriert werden muss.
+
+Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](https://esphome.io/components/espnow.html).
+
+---
+
 ### 🗺️ Roadmap & Zukünftige Erweiterungen
 
 Die Firmware ist für folgende weitere "Advanced Automation"-Funktionen vorbereitet:
@@ -183,39 +221,17 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 
 ---
 
-## 🔄 Vergleich mit VentoMaxx V-WRG
+## 🖱️ Eigene Platine - PCB
 
-Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PLUS](https://www.ventomaxx.de/dezentrale-lueftung-produktuebersicht/aktive-luefter-mit-waermerueckgewinnung/) Steuerung — mechanisch kompatibel, funktional massiv erweitert:
+Eine dedizierte Platine (PCB), die alle benötigten Komponenten (XIAO, Traco, Transistoren, Anschlüsse für Sensoren) kompakt vereint, befindet sich aktuell in der Entwicklung.
 
-| | VentoMaxx (Original) | ESPHome Smart WRG |
-| :--- | :---: | :---: |
-| Betriebsmodi | 3 | **5+** (inkl. Automatiken) |
-| Sensorik | 0-1 (opt. VOC) | **6** (CO2, Temp, Feuchte, Druck, Radar, Tacho) |
-| Lüfterregelung | 3 feste Stufen | **10 Stufen + stufenlos (PID)** |
-| Smart Home | ❌ | ✅ Home Assistant (nativ) |
-| Wartungsalarm | Timer-LED | ✅ Prädiktiv + Push |
-| Synchronisation | Steuerkabel | ✅ Kabellos (ESP-NOW) |
-| Updates | Servicetechniker | ✅ Over-the-Air (OTA) |
-| Lizenz | Proprietär | ✅ Open Source (MIT) |
+![PCB Prototype](EasyEDA-Pro/PCB%20Prototype%20Images/Screenshot%202026-03-01%20175142.png)
 
-� **Den vollständigen Feature-für-Feature Vergleich mit allen technischen Details finden Sie in [📄 Comparison-VentoMaxx.md](documentation/Comparison-VentoMaxx.md).**
+### Hinweise zur Entwicklung
 
----
-
-## 📡 ESP-NOW: Kabellose Autonomie
-
-Die Geräte kommunizieren über die [ESPHome ESP-NOW Komponente](https://esphome.io/components/espnow.html). **ESP-NOW** ist ein von Espressif entwickeltes, verbindungsloses Protokoll, das eine direkte Kommunikation zwischen ESP32-Geräten ohne Umweg über einen WLAN-Router ermöglicht.
-
-### Vorteile im Überblick
-
-- 🌐 **WLAN-Unabhängigkeit**: Die Geräte benötigen keinen WLAN-Router (Access Point) für die Synchronisation. Die Kommunikation erfolgt direkt auf der MAC-Ebene (2,4 GHz Radio). Fällt das lokale WLAN aus, arbeitet die Lüftungsgruppe ungestört weiter.
-- 🛡️ **Hohe Zuverlässigkeit**: Durch die direkte Punkt-zu-Punkt-Kommunikation ist das System immun gegen Überlastungen oder Störungen im herkömmlichen WLAN-Netzwerk.
-- ⚡ **Extrem geringe Latenz**: Da keine Verbindung aufgebaut oder verwaltet werden muss (handshake-frei), werden Synchronisationsbefehle nahezu verzögerungsfrei übertragen. Dies ist entscheidend für den exakten Richtungswechsel synchronisierter Lüfterpaare.
-- 🔌 **Keine Steuerleitungen**: Es müssen keine Datenkabel durch Wände gezogen werden. Die Synchronisation erfolgt "Out-of-the-box" über Funk.
-- 📡 **Automatisches Software-Filtering**: Durch den Broadcast-Modus und die projektinterne Filterung (Floor/Room ID) finden sich Geräte im gleichen Raum automatisch.
-- ⚙️ **Globale Konfigurations-Synchronisation**: Änderungen an Einstellungen (z. B. CO2-Grenzwerte, Timer, Automatik-Modi) an einem Gerät via Home Assistant oder Bedienpanel werden in Echtzeit drahtlos an alle anderen Geräte in derselben Raumgruppe gespiegelt. So laufen alle Lüfter stets mit identischen Parametern, ohne dass jedes Gerät einzeln konfiguriert werden muss.
-
-Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](https://esphome.io/components/espnow.html).
+- **Professionelles Design**: Optimiert für den Einbau in Standard-Unterputzdosen oder Lüftergehäuse.
+- **Plug & Play**: Einfache Montage durch Steckverbinder (JST/Dupont).
+- **Bezug**: Informationen zum Layout (EasyEDA/KiCad) und Bestellmöglichkeiten werden dem Projekt hinzugefügt, sobald die Prototypen-Phase abgeschlossen ist.
 
 ---
 
@@ -241,27 +257,14 @@ Weitere Informationen finden Sie in der [offiziellen ESPHome Dokumentation](http
 | **LED Driver** | **PCA9685** (I2C) für dimmbare LEDs im VentoMaxx Panel | [PCA9685](https://esphome.io/components/output/pca9685.html) |
 
 > ℹ️ **Hinweis zu 3-Pin PWM Lüftern:**
-> Neben den klassischen 4-Pin PWM Lüftern gibt es auch spezielle Propeller/Lüfter, die **kein Tacho-Signal** besitzen und daher nur über **3 Pins** verfügen (GND, 12V, PWM). Diese können problemlos ohne physikalische Änderung an der Schaltung betrieben werden, indem der Tacho-Pin (Pin 3 am Terminal) einfach unbelegt bleibt. Beachten Sie jedoch, dass ohne Tacho-Signal keine direkte Überwachung der Drehzahl (RPM) oder Blockadeerkennung durch die Software möglich ist.
+> Neben den klassischen 4-Pin PWM Lüftern gibt es auch spezielle Propeller/Lüfter, die **kein Tacho-Signal** besitzen und daher nur über **3 Pins** verfügen (GND, 12V, PWM). Dies ist auch der Fall für den von Ventomaxx verbauten EBM-Papst Lüfter.
+Diese können problemlos ohne physikalische Änderung an der Schaltung betrieben werden, indem der Tacho-Pin (Pin 3 am Terminal) einfach unbelegt bleibt. Beachten Sie jedoch, dass ohne Tacho-Signal keine direkte Überwachung der Drehzahl (RPM) oder Blockadeerkennung durch die Software möglich ist.
 
 ### 🖱️ User Interface
 
 | Komponente | Beschreibung | Dokumentation |
 | :--- | :--- | :--- |
 | **VentoMaxx Panel** | Original Panel (14-Pin FFC). 3 Taster, 9 LEDs (via PCA9685 dimmbar). | - |
-
----
-
-## 🖱️ Eigene Platine - PCB
-
-Eine dedizierte Platine (PCB), die alle oben genannten Komponenten (XIAO, Traco, Transistoren, Anschlüsse für Sensoren) kompakt vereint, befindet sich aktuell in der Entwicklung.
-
-![PCB Prototype](EasyEDA-Pro/PCB%20Prototype%20Images/Screenshot%202026-03-01%20175142.png)
-
-### Hinweise zur Entwicklung
-
-- **Professionelles Design**: Optimiert für den Einbau in Standard-Unterputzdosen oder Lüftergehäuse.
-- **Plug & Play**: Einfache Montage durch Steckverbinder (JST/Dupont).
-- **Bezug**: Informationen zum Layout (EasyEDA/KiCad) und Bestellmöglichkeiten werden dem Projekt hinzugefügt, sobald die Prototypen-Phase abgeschlossen ist.
 
 ---
 
@@ -279,8 +282,8 @@ Das System basiert auf dem [Seeed XIAO ESP32C6](https://esphome.io/components/es
 | **D3** | GPIO21 | Output | **PCA9685 OE** (Output Enable) |
 | **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | SCD41, BMP390, PCA9685, MCP23017 |
 | **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | SCD41, BMP390, PCA9685, MCP23017 |
-| **D6** | GPIO16 | [UART RX](https://esphome.io/components/uart.html) | **MR24HPC1 Radar RX** |
-| **D7** | GPIO17 | [UART TX](https://esphome.io/components/uart.html) | **MR24HPC1 Radar TX** |
+| **D6** | GPIO16 | [UART RX](https://esphome.io/components/uart.html) | **HLK-LD2450 Radar RX** |
+| **D7** | GPIO17 | [UART TX](https://esphome.io/components/uart.html) | **HLK-LD2450 Radar TX** |
 | **D8** | GPIO19 | [PWM Output](https://esphome.io/components/output/ledc.html) | **Fan PWM Primary** |
 | **D9** | GPIO20 | [Pulse Counter](https://esphome.io/components/sensor/pulse_counter.html) | **Fan Tacho** (Pullup via 3V3) |
 | **D10** | GPIO18 | - | Unbelegt (NC) |
@@ -361,7 +364,9 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 #### Tastenbelegung
 
 | Taste | Funktion | Bedienung |
+| :--- | :--- | :--- |
 | **Power (I/O)** | System Ein/Aus | • Kurz drücken: Ein / Aus<br>• Lang (>5s): Aus<br>• Sehr lang (>10s): Geräte-Neustart (Reboot) |
+| **Modus (M)** | Betriebsmodus | • Kurz drücken: Zykliert durch Automatik → WRG → Stoßlüftung → Durchlüften → Aus |
 | **Stufe (+)** | Lüfterstärke | • Kurz drücken: Zykliert durch 10 Geschwindigkeitsstufen (angezeigt über 5 LEDs). |
 
 #### Status-LEDs (Feedback)
@@ -370,8 +375,8 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 | :--- | :---: | :--- | :--- |
 | **Power** | 🟢 1x | LED Panel | Leuchtet, wenn System EIN **und** UI aktiv. Geht nach 30s aus. |
 | **Master** | 🟢 1x | LED Panel | Leuchtet bei aktivem UI (kein Fehler). Blinkt dauerhaft bei Fehler (WLAN-/ESP-NOW-Verbindungsverlust) — unabhängig vom UI-Timeout. |
-| **Modus L** (`LED_WRG`) | 🟢 1x | Links | Wärmerückgewinnung oder Durchlüften aktiv. |
-| **Modus R** (`LED_VEN`) | 🟢 1x | Rechts | Stoßlüftung oder Durchlüften aktiv. |
+| **Modus L** (`LED_WRG`) | 🟢 1x | Links | **Pulsiert** im Smart-Automatik Modus. Dauerhaft an bei WRG oder Durchlüften. |
+| **Modus R** (`LED_VEN`) | 🟢 1x | Rechts | Dauerhaft an bei Stoßlüftung oder Durchlüften. |
 | **Intensität** | 🟢 5x | LED Panel | Zeigt aktuelle Lüfterstufe 1–10 (halbe/volle Helligkeit für 10 Stufen über 5 LEDs). Nur bei aktivem UI sichtbar. |
 
 **Modus-LED Zuordnung (bei aktivem UI):**
@@ -457,10 +462,35 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 
 #### Verfügbare Steuerungen
 
-- **Lüfter**: Slider 0-100% (Panel-Stufen entsprechen ~20% Schritten)
-- **Modus**: Auswahl (Eco Recovery / Ventilation / Off)
+- **Lüfter**: Slider 0-100% (entspricht intern den 10 Stufen des Bedienpanels)
+- **Modus**: Auswahl (Smart-Automatik / Eco Recovery / Ventilation / Off)
 - **Timer**: Konfiguration für "Durchlüften" (Standard: 30 Min)
+- **CO2-Grenzwert**: `number.auto_co2_grenzwert` (Standard aktiv)
 - **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und **CO2-Gehalt (ppm)**
+
+#### 📊 Lüftergeschwindigkeit pro Stufe (ebm-papst VarioPro PWM-Kennlinie)
+
+Der ebm-papst 4412 F/2 GLL (VarioPro) wird über ein **einzelnes PWM-Signal** gesteuert, das gleichzeitig Drehzahl und Richtung kodiert:
+
+| | **50 % PWM** | **50 % → 0 % PWM** | **50 % → 100 % PWM** |
+|---|---|---|---|
+| **Funktion** | Lüfter **STOP** | Richtung A (Abluft) | Richtung B (Zuluft) |
+| **Drehzahl** | 0 RPM | steigt mit Abstand zu 50% | steigt mit Abstand zu 50% |
+
+| Stufe | Drehzahl | PWM Dir A (Abluft) | PWM Dir B (Zuluft) |
+| :---: | :---: | :---: | :---: |
+| **1** | 10 % | 45 % | 55 % |
+| **2** | 20 % | 40 % | 60 % |
+| **3** | 30 % | 35 % | 65 % |
+| **4** | 40 % | 30 % | 70 % |
+| **5** | 50 % | 25 % | 75 % |
+| **6** | 60 % | 20 % | 80 % |
+| **7** | 70 % | 15 % | 85 % |
+| **8** | 80 % | 10 % | 90 % |
+| **9** | 90 % | 5 % | 95 % |
+| **10** | 100 % | 0 % | 100 % |
+
+> °️ **Mindestdrehzahl:** Stufe 1 entspricht 10 % Drehzahl (PWM nie auf 50 % = Stopp). Im Automatik-Modus (PID) wird die Drehzahl stufenlos zwischen `co2_min_fan_level` und `co2_max_fan_level` geregelt.
 
 #### Automatische Funktionen
 
@@ -733,7 +763,7 @@ binary_sensor:
   - platform: gpio
     on_press:
       - lambda: |-
-          id(current_mode_index) = (id(current_mode_index) + 1) % 4;
+          id(current_mode_index) = (id(current_mode_index) + 1) % 5;
           cycle_operating_mode(id(current_mode_index));
           id(update_leds).execute();
 
@@ -754,7 +784,6 @@ Für eine umfassende Anleitung zur Fehlerbehebung, siehe die dedizierte [Trouble
 
 - ESPHome YAML Fehler
 - I²C Bus Probleme
-- APDS9960 Proximity-Sensor
 - SCD41 CO2-Sensor Kalibrierung
 - ESP-NOW Synchronisation
 - Kompilierungsfehler

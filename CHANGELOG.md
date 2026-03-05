@@ -8,6 +8,15 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Added
 
+- **ebm-papst VarioPro: Korrektes Single-PWM-Mapping** (`set_fan_logic()` in `automation_helpers.h`):
+  - Der Lüfter 4412 F/2 GLL nutzt **ein einzelnes PWM-Signal** für Drehzahl und Richtung: `50 % = Stopp`, `< 50 % = Richtung A (Abluft)`, `> 50 % = Richtung B (Zuluft)`.
+  - Vorher wurde 0–100 % direkt ausgegeben (Lüfter drehte immer in Richtung B, kein Stopp möglich).
+  - Neu: `direction 0 → pwm = 0.5 - (speed × 0.5)`, `direction 1 → pwm = 0.5 + (speed × 0.5)`.
+  - Soft-Stop-Zone: Unterhalb von 5 % Drehzahl wird immer exakt 50 % PWM ausgegeben (sicheres Stoppen ohne Kriechen).
+- **Mindestdrehzahl Stufe 1 (10 %)** (`update_fan_logic()` in `automation_helpers.h`):
+  - Das alte lineare Mapping `(intensity - 1) / 9` lieferte für Stufe 1 `speed = 0.0`, was in der Soft-Stop-Zone lag und den Lüfter stoppte.
+  - Neu: `speed = 0.10 + ((intensity - 1) / 9) × 0.90` — Stufe 1 entspricht nun 10 % Drehzahl, Stufe 10 = 100 %.
+- **Richtungssteuerung dynamisch** (`update_fan_logic()`): Richtung wird jetzt aus dem `fan_direction`-Switch gelesen (vorher hardcoded `direction = 0`).
 - **Smart-Automatik als Standard-Startmodus**: Der intelligente Automatik-Modus (Modus-Index 3) ist jetzt der Standard-Startmodus beim ersten Start oder nach Factory Reset.
   - `current_mode_index` Default geändert: `0` (WRG) → `3` (Automatik).
   - `co2_auto_enabled` Default geändert: `false` → `true` (CO2-Regelung standardmäßig aktiv).

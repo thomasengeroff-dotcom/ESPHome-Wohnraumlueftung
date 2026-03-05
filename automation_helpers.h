@@ -368,32 +368,54 @@ inline void evaluate_auto_mode() {
     }
 }
 
-/// @brief Sets fan PWM based on mode (4-pin/3-pin), speed, and direction.
-/// Handles specific logic for 4-pin PWM.
-/// @param speed      Target speed duty cycle (0.0 to 1.0).
-/// @param direction  Target direction (0 = Direction A/In, 1 = Direction B/Out).
+/// @brief Sets fan PWM for the ebm-papst VarioPro reversible fan.
+/// This fan uses a SINGLE PWM signal for both speed and direction:
+///   - 50.0% duty cycle = STOP (neutral zone)
+///   - 50% → 0%  = Direction A (e.g. Abluft/Rausblasen), speed increases toward 0%
+///   - 50% → 100% = Direction B (e.g. Zuluft/Reinblasen), speed increases toward 100%
+/// @param speed     Target speed as duty cycle fraction (0.0 = stopped, 1.0 = full speed).
+/// @param direction Target direction: 0 = Direction A (pwm 50%→0%), 1 = Direction B (pwm 50%→100%).
 inline void set_fan_logic(float speed, int direction) {
-    if (fan_pwm_primary == nullptr) {
-        return; // Safety guard
+    if (fan_pwm_primary == nullptr) return;
+
+    // Clamp speed to valid range
+    speed = std::max(0.0f, std::min(1.0f, speed));
+
+    // Soft-stop zone: below 5% speed always output exactly 50% (safe stop, no creeping)
+    if (speed < 0.05f) {
+        fan_pwm_primary->set_level(0.5f);
+        return;
     }
 
-    // Single-PWM Mode (Simplification for direct MOSFET drive)
-    // Directly map speed (0.0 to 1.0) to PWM duty cycle
-    fan_pwm_primary->set_level(speed);
+    float pwm;
+    if (direction == 0) {
+        // Direction A: 50% (stop) → 0% (full speed)
+        pwm = 0.5f - (speed * 0.5f);
+    } else {
+        // Direction B: 50% (stop) → 100% (full speed)
+        pwm = 0.5f + (speed * 0.5f);
+    }
+
+    fan_pwm_primary->set_level(pwm);
 }
 
 /// @brief Updates fan speed and direction based on intensity and mode.
-/// Calculates PWM using fan_intensity_level and fan_direction.
-/// In Automatik mode, seamlessly overrides PWM with precise PID demand.
+/// Reads fan_direction switch for direction, calculates speed from intensity/PID,
+/// then calls set_fan_logic() which maps both into the single VarioPro PWM signal.
 inline void update_fan_logic() {
     if (fan_intensity_level == nullptr) return;
 
     int intensity = fan_intensity_level->value();
-    
-    // Normal mapping from intensity (1-10) to speed (0.0-1.0)
-    float speed = (intensity - 1.0f) / 9.0f;
-    
-    // Exact seamless speed for PID Automatik
+
+    // Mapping: Stufe 1 → 10% Mindestdrehzahl, Stufe 10 → 100% Volldrehzahl
+    // Formel: speed = 0.10 + ((intensity - 1) / 9) * 0.90
+    // Stufe 1=10%, 2=20%, 3=30%, 4=40%, 5=50%, 6=60%, 7=70%, 8=80%, 9=90%, 10=100%
+    // PWM Dir A (Abluft): pwm = 0.5 - (speed * 0.5)  z.B. Stufe 1 → 45%, Stufe 10 → 0%
+    // PWM Dir B (Zuluft): pwm = 0.5 + (speed * 0.5)  z.B. Stufe 1 → 55%, Stufe 10 → 100%
+    static const float SPEED_MIN = 0.10f;  // Mindestdrehzahl (Stufe 1)
+    float speed = SPEED_MIN + ((intensity - 1.0f) / 9.0f) * (1.0f - SPEED_MIN);
+
+    // In Automatik mode: override speed with precise PID demand
     if (auto_mode_active != nullptr && auto_mode_active->value()) {
         float max_pid_demand = 0.0f;
         if (co2_auto_enabled->value() && co2_pid_result != nullptr) {
@@ -402,11 +424,8 @@ inline void update_fan_logic() {
         if (humidity_pid_result != nullptr) {
              max_pid_demand = std::max(max_pid_demand, humidity_pid_result->value());
         }
-        
-        // Also factor in the peer's demand via ESP-NOW!
-        // This guarantees that the physical fan PWM (0.0-1.0 float mapping) uses the
-        // IDENTICAL maximum demand value across all devices in the room, meaning they
-        // push/pull the exact same volumes of air and spin up identically.
+
+        // Also factor in the peer's PID demand via ESP-NOW for group synchronization
         if (ventilation_ctrl != nullptr) {
             uint32_t now = millis();
             if (!std::isnan(ventilation_ctrl->last_peer_pid_demand) && (now - ventilation_ctrl->last_peer_pid_demand_time < 300000)) {
@@ -417,21 +436,20 @@ inline void update_fan_logic() {
         if (max_pid_demand > 0.01f) {
             float min_speed = (co2_min_fan_level->value() - 1.0f) / 9.0f;
             float max_speed = (co2_max_fan_level->value() - 1.0f) / 9.0f;
-            
-            // Map the continuous demand [0..1] directly into the allowed PWM output window [min..max].
-            // This bypasses the rigid 1-10 intensity logic and generates a silent, precision speed.
+            // Map continuous PID demand [0..1] into allowed PWM window [min..max]
             speed = min_speed + max_pid_demand * (max_speed - min_speed);
         } else {
-            // PID specifies no extra demand: remain strictly at the baseline.
+            // No PID demand: stay at baseline minimum
             speed = (co2_min_fan_level->value() - 1.0f) / 9.0f;
         }
     }
 
-    if (speed < 0.0f) speed = 0.0f;
-    if (speed > 1.0f) speed = 1.0f;
+    speed = std::max(0.0f, std::min(1.0f, speed));
 
-    // Single PWM hardware assumes direction is fixed or handled mechanically/elsewhere
-    int direction = 0;
+    // Read current direction from the fan_direction switch:
+    // OFF = Direction A (e.g. Abluft/Rausblasen, PWM < 50%)
+    // ON  = Direction B (e.g. Zuluft/Reinblasen, PWM > 50%)
+    int direction = (fan_direction != nullptr && fan_direction->state) ? 1 : 0;
 
     set_fan_logic(speed, direction);
 }
