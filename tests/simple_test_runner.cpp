@@ -99,6 +99,51 @@ bool test_min_speed_mapping() {
     return true;
 }
 
+// ============================================================
+// [Unreleased] Dynamischer Zyklus (Level 1: 70s -> Level 10: 50s)
+// y = 70000 - ((x - 1) * 20000 / 9)
+// ============================================================
+int calc_dynamic_cycle_duration(int intensity) {
+    return 70000 - ((intensity - 1) * 20000 / 9);
+}
+
+bool test_dynamic_cycle_duration() {
+    TEST_ASSERT(calc_dynamic_cycle_duration(1) == 70000);
+    TEST_ASSERT(calc_dynamic_cycle_duration(10) == 50000);
+    // Level 5 (ca. Mitte) = 70000 - (4 * 20000 / 9) = 70000 - 8888 = 61111
+    TEST_ASSERT(calc_dynamic_cycle_duration(5) > 61000 && calc_dynamic_cycle_duration(5) < 62000);
+    return true;
+}
+
+// ============================================================
+// [Unreleased] Radar Presence Slider Logic (-5 bis +5)
+// ============================================================
+int apply_presence_slider(int fan_level, int auto_presence_val) {
+    if (auto_presence_val > 0) {
+        return std::min(10, fan_level + auto_presence_val);
+    } else if (auto_presence_val < 0) {
+        return std::max(1, fan_level + auto_presence_val); // auto_presence_val ist negativ
+    }
+    return fan_level;
+}
+
+bool test_presence_slider_logic() {
+    // Keine Änderung
+    TEST_ASSERT(apply_presence_slider(5, 0) == 5);
+    
+    // Positive Anpassung (Boost)
+    TEST_ASSERT(apply_presence_slider(5, 3) == 8);
+    TEST_ASSERT(apply_presence_slider(8, 3) == 10); // Clamped
+    TEST_ASSERT(apply_presence_slider(10, 3) == 10); // Clamped
+    
+    // Negative Anpassung (Reduce)
+    TEST_ASSERT(apply_presence_slider(5, -2) == 3);
+    TEST_ASSERT(apply_presence_slider(2, -3) == 1); // Clamped
+    TEST_ASSERT(apply_presence_slider(1, -5) == 1); // Clamped
+    
+    return true;
+}
+
 bool test_fan_logic() {
     TEST_ASSERT(VentilationLogic::is_fan_slider_off(0.5f) == true);
     TEST_ASSERT(VentilationLogic::is_fan_slider_off(1.5f) == false);
@@ -339,6 +384,8 @@ int main() {
     std::cout << "Running [Unreleased] Tests..." << std::endl;
     if (test_ebmpapst_pwm_mapping()){ std::cout << "[PASS] ebm-papst Single-PWM Mapping" << std::endl; } else { std::cout << "[FAIL] ebm-papst Single-PWM Mapping" << std::endl; all_passed = false; }
     if (test_min_speed_mapping()) { std::cout << "[PASS] Mindestdrehzahl Stufe 1 (10%)" << std::endl; } else { std::cout << "[FAIL] Mindestdrehzahl Stufe 1 (10%)" << std::endl; all_passed = false; }
+    if (test_dynamic_cycle_duration()) { std::cout << "[PASS] Dynamic Cycle Duration" << std::endl; } else { std::cout << "[FAIL] Dynamic Cycle Duration" << std::endl; all_passed = false; }
+    if (test_presence_slider_logic()) { std::cout << "[PASS] Presence Slider Logic (-5 to +5)" << std::endl; } else { std::cout << "[FAIL] Presence Slider Logic (-5 to +5)" << std::endl; all_passed = false; }
 
     std::cout << "Running VentilationStateMachine Tests..." << std::endl;
     if (test_mode_off())          { std::cout << "[PASS] Mode OFF" << std::endl; }                else { std::cout << "[FAIL] Mode OFF" << std::endl;                all_passed = false; }
