@@ -235,6 +235,22 @@ number:
           call.set_target_temperature(x);
           call.perform();
 
+  # -- Verhalten der Anwesenheit (Radar) Slider --
+  - platform: template
+    name: "Anwesenheit Lüfter-Anpassung"
+    id: auto_presence_slider
+    icon: mdi:fan-auto
+    min_value: -5
+    max_value: 5
+    step: 1
+    entity_category: config
+    lambda: "return id(auto_presence_val);"
+    set_action:
+      - lambda: |-
+          id(auto_presence_val) = x;
+          id(auto_presence_slider).publish_state(x);
+          evaluate_auto_mode(); // Force re-eval
+
 # ---------------------------------------------------------
 # VENTILATION MODE SELECTION
 # ---------------------------------------------------------
@@ -253,28 +269,6 @@ select:
     set_action:
       - lambda: |-
           set_operating_mode_select(x.c_str());
-
-  # Automatik: Verhalten bei Anwesenheit
-  - platform: template
-    name: "Automatik: Bei Anwesenheit"
-    id: auto_presence_behavior
-    icon: "mdi:account"
-    options:
-      - "Keine Anpassung"
-      - "Intensiv (z.B. für Büro)"
-      - "Normal (z.B. für Wohnraum)"
-      - "Gering (z.B. für Schlafzimmer)"
-    lambda: |-
-      if (id(auto_presence_behavior_val) == 1) return std::string("Intensiv (z.B. für Büro)");
-      if (id(auto_presence_behavior_val) == 2) return std::string("Normal (z.B. für Wohnraum)");
-      if (id(auto_presence_behavior_val) == 3) return std::string("Gering (z.B. für Schlafzimmer)");
-      return std::string("Keine Anpassung");
-    set_action:
-      - lambda: |-
-          if (x == "Intensiv (z.B. für Büro)") id(auto_presence_behavior_val) = 1;
-          else if (x == "Normal (z.B. für Wohnraum)") id(auto_presence_behavior_val) = 2;
-          else if (x == "Gering (z.B. für Schlafzimmer)") id(auto_presence_behavior_val) = 3;
-          else id(auto_presence_behavior_val) = 0;
 
 # ---------------------------------------------------------
 # FILTER MAINTENANCE

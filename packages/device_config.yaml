@@ -20,7 +20,7 @@ number:
     id: config_floor_id
     icon: "mdi:office-building"
     min_value: 0
-    max_value: 99
+    max_value: 9
     step: 1
     initial_value: ${default_floor_id}
     optimistic: true
@@ -39,7 +39,7 @@ number:
     id: config_room_id
     icon: "mdi:door"
     min_value: 0
-    max_value: 99
+    max_value: 10
     step: 1
     initial_value: ${default_room_id}
     optimistic: true
@@ -58,7 +58,7 @@ number:
     id: config_device_id
     icon: "mdi:numeric"
     min_value: 1
-    max_value: 99
+    max_value: 25
     step: 1
     initial_value: ${default_device_id}
     optimistic: true

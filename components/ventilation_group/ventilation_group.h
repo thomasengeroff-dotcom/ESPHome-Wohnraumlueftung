@@ -23,6 +23,8 @@ enum MessageType {
   MSG_STATE = 3        ///< Mode or fan-intensity change notification.
 };
 
+/// Ensure breaking packet schema changes are detected across nodes
+static const uint8_t PROTOCOL_VERSION = 3;
 /// @brief Binary packet exchanged between peer devices via ESP-NOW.
 /// Layout is packed and must be identical on all firmware builds.
 struct __attribute__((packed)) VentilationPacket {
@@ -32,7 +34,8 @@ struct __attribute__((packed)) VentilationPacket {
   uint8_t device_id;               ///< Unique sender ID (used to ignore own packets).
   uint8_t msg_type;                ///< MessageType enum value.
   uint8_t current_mode;            ///< VentilationMode enum value.
-  uint8_t fan_intensity;           ///< Fan intensity level (1–10).
+  
+  // Live Data Synced States
   uint32_t timestamp_ms;           ///< Sender's millis() at packet creation.
   uint32_t cycle_pos_ms;           ///< Sender's position in the direction cycle.
   uint32_t remaining_duration_ms;  ///< Remaining ventilation timer (0 = infinite).
@@ -41,16 +44,21 @@ struct __attribute__((packed)) VentilationPacket {
   float t_out;                     ///< Sender's local outdoor temperature (or NAN).
   float pid_demand;                ///< Sender's local evaluated PID cooling demand (0.0 to 1.0).
   
-  // HA Configuration Sync Fields
-  bool co2_auto_enabled;               ///< True if CO2 Automatik is enabled
-  uint8_t co2_min_fan_level;           ///< Min fan level for automated modes (1-10)
-  uint8_t co2_max_fan_level;           ///< Max fan level for automated modes (1-10)
-  uint16_t auto_co2_threshold_val;     ///< CO2 PPM Threshold (400-2000)
-  uint8_t auto_humidity_threshold_val; ///< Humidity % Threshold (40-100)
-  uint8_t auto_presence_behavior_val;  ///< Presence policy (0=up, 1=down, 2=ignore)
-  uint16_t cycle_duration_sec;         ///< Duration of one fan direction cycle (seconds)
-  uint16_t sync_interval_min;          ///< How often devices auto-cast their state (minutes)
-  uint16_t vent_timer_min;             ///< Timer duration for Durchlüften mode (minutes)
+  // Control & Settings Synced States
+  uint8_t fan_intensity;           ///< Current 1-10 level
+  
+  // Automatik Config payload
+  bool co2_auto_enabled;               ///< Is CO2 control active?
+  uint8_t co2_min_fan_level;           ///< 1-10 minimum level
+  uint8_t co2_max_fan_level;           ///< 1-10 maximum level
+  uint16_t auto_co2_threshold_val;     ///< Setpoint, e.g. 1000 ppm (16-bit)
+  uint8_t auto_humidity_threshold_val; ///< Setpoint, e.g. 60 % (8-bit)
+  int8_t auto_presence_val;            ///< Presence compensation (-5 to +5)
+  
+  // Timer Settings payload
+  uint16_t cycle_duration_sec;    ///< WRG cycle direction timer
+  uint16_t sync_interval_min;     ///< ESP-NOW Broadcast Interval
+  uint16_t vent_timer_min;        ///< Duration for Stoß/Durchlüften mode (minutes)
 };
 
 // ---------------------------------------------------------

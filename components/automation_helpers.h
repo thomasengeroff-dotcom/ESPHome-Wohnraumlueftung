@@ -42,7 +42,7 @@ extern esphome::globals::RestoringGlobalsComponent<int> *co2_max_fan_level;     
 extern esphome::globals::GlobalsComponent<bool> *auto_mode_active;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_val;
-extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_behavior_val;
+extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_val;
 extern esphome::globals::GlobalsComponent<float> *co2_pid_result;
 extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
 /// @}
@@ -50,12 +50,13 @@ extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
 /// @name Template UI components
 /// @{
 extern esphome::template_::TemplateSelect *selected_mode;       ///< Mode selector (WRG/Stoß/Durchlüften/Aus).
-extern esphome::template_::TemplateSelect *auto_presence_behavior; ///< Auto presence behavior selector.
+// auto_presence_behavior removed
 extern esphome::template_::TemplateNumber *vent_timer;          ///< Ventilation timer (minutes).
 extern esphome::template_::TemplateNumber *fan_intensity_display; ///< Fan intensity display number.
 extern esphome::template_::TemplateSwitch *co2_auto_switch;     ///< CO2 auto-control on/off switch.
 extern esphome::template_::TemplateNumber *co2_min_level_slider; ///< Min fan level for automated modes.
 extern esphome::template_::TemplateNumber *co2_max_level_slider; ///< Max fan level for automated modes.
+extern esphome::template_::TemplateNumber *auto_presence_slider; ///< Presence compensation slider.
 extern esphome::template_::TemplateNumber *auto_co2_threshold;   ///< CO2 automated threshold.
 extern esphome::template_::TemplateNumber *auto_humidity_threshold; ///< Humidity automated threshold.
 extern esphome::template_::TemplateNumber *cycle_duration_config; ///< Fan direction cycle duration in seconds.
@@ -342,15 +343,10 @@ inline void evaluate_auto_mode() {
 
     // 5. Presence logic
     if (radar_presence != nullptr && radar_presence->has_state() && radar_presence->state) {
-        int behavior = auto_presence_behavior_val->value();
-        if (behavior == 1) { // Intensiv (Büro)
-            target_level = std::min(10, target_level + 3);
-        } else if (behavior == 2) { // Normal (Wohnraum)
-            target_level = std::min(10, target_level + 1);
-        } else if (behavior == 3) { // Gering (Schlafzimmer)
-            target_level = std::max(1, target_level - 1);
+        int presence_comp = auto_presence_val->value();
+        if (presence_comp != 0) {
+            target_level = std::max(1, std::min(10, target_level + presence_comp));
         }
-        // behavior == 0 (Keine Anpassung) requires no change to target_level
     }
 
     // Apply the computed logic
@@ -718,15 +714,11 @@ inline void handle_espnow_receive(std::vector<uint8_t> data) {
         dirty = true;
     }
 
-    // 4. Presence Behavior (Select 0, 1, 2, 3)
-    if (pkt->auto_presence_behavior_val <= 3 && pkt->auto_presence_behavior_val != auto_presence_behavior_val->value()) {
-        auto_presence_behavior_val->value() = pkt->auto_presence_behavior_val;
-        std::string act = "Keine Anpassung";
-        if (pkt->auto_presence_behavior_val == 1) act = "Intensiv (z.B. für Büro)";
-        else if (pkt->auto_presence_behavior_val == 2) act = "Normal (z.B. für Wohnraum)";
-        else if (pkt->auto_presence_behavior_val == 3) act = "Gering (z.B. für Schlafzimmer)";
-        auto_presence_behavior->publish_state(act);
-        ESP_LOGI("vent_sync", "Synced auto_presence_behavior from peer: %s", act.c_str());
+    // 4. Presence Compensation Slider (-5 to +5)
+    if (pkt->auto_presence_val >= -5 && pkt->auto_presence_val <= 5 && pkt->auto_presence_val != auto_presence_val->value()) {
+        auto_presence_val->value() = pkt->auto_presence_val;
+        auto_presence_slider->publish_state(pkt->auto_presence_val);
+        ESP_LOGI("vent_sync", "Synced auto_presence_val from peer: %d", pkt->auto_presence_val);
         dirty = true;
     }
 
@@ -886,7 +878,7 @@ inline std::vector<uint8_t> build_and_populate_packet(esphome::MessageType type)
     pkt->co2_max_fan_level = (uint8_t) co2_max_fan_level->value();
     pkt->auto_co2_threshold_val = (uint16_t) auto_co2_threshold_val->value();
     pkt->auto_humidity_threshold_val = (uint8_t) auto_humidity_threshold_val->value();
-    pkt->auto_presence_behavior_val = (uint8_t) auto_presence_behavior_val->value();
+    pkt->auto_presence_val = (int8_t) auto_presence_val->value();
     
     // Timers
     pkt->cycle_duration_sec = (uint16_t) (v->state_machine.cycle_duration_ms / 1000);
