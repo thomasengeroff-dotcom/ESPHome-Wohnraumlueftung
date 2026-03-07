@@ -102,7 +102,12 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   - Typo-Fix: "Drehlzahlsprünge" → "Drehzahlsprünge".
   - HA Filterwechsel-Automation YAML-Beispiel für Push-Benachrichtigungen hinzugefügt.
   - **Feuchte-Management** als bereits implementiert erkannt und von Roadmap → Implementierte Erweiterungen verschoben: PID-Regler (`pid_humidity`) mit Deadband-Hysterese (±2%), konfigurierbarem Grenzwert (40-100%, HA Slider), Outdoor-Feuchte-Vergleich und ESP-NOW Synchronisation.
-- **YAML Modularisierung**: Die umfangreiche Hauptkonfiguration `esp_wohnraumlueftung.yaml` wurde extrem verschlankt und zur besseren Wartung in vier logische Setup-Module aufgebrochen (`hardware_io.yaml`, `sensors_climate.yaml`, `ui_controls.yaml`, `logic_automation.yaml`). Die Teildateien werden via `packages:` nahtlos in die verbleibende Hauptdatei eingebunden.
+- **Projektstruktur & Modularisierung (ESPHome Best-Practices)**: Das gesamte Projekt wurde extrem verschlankt und nach offiziellen ESPHome Best-Practices in saubere Verzeichnisse restrukturiert:
+  - `packages/`: Die fünf in sich geschlossenen Logikbausteine (`hardware_io.yaml`, `sensors_climate.yaml`, `ui_controls.yaml`, `logic_automation.yaml`, `display_diagnostics.yaml` sowie die Basis-Konfigs) wurden hierhin verschoben.
+  - `components/`: Die `automation_helpers.h` befindet sich nun korrekt im Komponenten-Ordner neben den C++-Klassen (`ventilation_logic`, `ventilation_group`).
+  - `experimental/`: Entwicklungs-Boards, Test-Knoten und Demo-Setups (`espslavetest.yaml`, `integration_test.yaml`, `espslaveNTC.yaml`) isoliert, um das Hauptverzeichnis sauber zu halten.
+  - `assets/`: Ablageort für lokale Ressourcen (z. B. Fonts).
+  - Keine "Mischung" von C++ und YAML im Root-Ordner mehr.
 - **BOM (Bill of Materials) Update**: Die Komponentenlisten (CSV) wurden auf den neuesten Stand gebracht und mit aktuellen Daten von JLCPCB/LCSC (Preise, Warenbestände, erweiterte Bauteile wie z.B. PCA9685PW) abgeglichen und aktualisiert.
 - **Auto-Modus Basis-Level**: Die Automatik (CO2/Feuchte) nutzt nun strikt den eingestellten Wert des "CO2 Min Lüfterstufe" Sliders aus Home Assistant als absolutes Grundrauschen (Moisture Protection), auf den sie bei fallenden Werten zurückfällt.
 - **C++ Refactoring**: `evaluate_auto_mode()` und `update_fan_logic()` in `automation_helpers.h` komplett neu geschrieben, um float-basierte PID-Werte und Peer-Network-Demands (`last_peer_pid_demand`) zusammenzuführen, aufzulösen und auf das tatsächliche physische PWM-Signal sowie die 1-10 Indikator-LEDs zu mappen.

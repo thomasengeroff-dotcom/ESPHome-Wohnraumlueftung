@@ -15,16 +15,16 @@ substitutions:
 
 # Include common settings
 packages:
-  common: !include esp32c6_common.yaml
+  common: !include ../packages/esp32c6_common.yaml
 
 external_components:
   - source:
       type: local
-      path: components
+      path: ../components
 
 esphome:
   includes:
-    - automation_helpers.h
+    - ../components/automation_helpers.h
   on_boot:
     priority: 600
     then:

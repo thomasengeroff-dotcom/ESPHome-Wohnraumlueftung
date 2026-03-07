@@ -23,13 +23,13 @@ substitutions:
 # ---------------------------------------------------------
 # Include common settings (WiFi, Logger, API) and device-specific configs
 packages:
-  common: !include esp32c6_common.yaml
-  device_config_pkg: !include device_config.yaml
-  hardware: !include hardware_io.yaml
-  sensors: !include sensors_climate.yaml
-  ui: !include ui_controls.yaml
-  logic: !include logic_automation.yaml
-  diagnostics_display: !include display_diagnostics.yaml
+  common: !include packages/esp32c6_common.yaml
+  device_config_pkg: !include packages/device_config.yaml
+  hardware: !include packages/hardware_io.yaml
+  sensors: !include packages/sensors_climate.yaml
+  ui: !include packages/ui_controls.yaml
+  logic: !include packages/logic_automation.yaml
+  diagnostics_display: !include packages/display_diagnostics.yaml
 
 external_components:
   - source:
@@ -38,7 +38,7 @@ external_components:
 
 esphome:
   includes:
-    - automation_helpers.h # Helper functions logic
+    - components/automation_helpers.h # Helper functions logic
   on_boot:
     priority: 600
     then:

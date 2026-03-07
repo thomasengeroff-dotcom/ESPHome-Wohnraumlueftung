@@ -695,23 +695,28 @@ Diese Dokumentation enthält:
 ```text
 ESPHome-Wohnraumlueftung/
 ├── esp_wohnraumlueftung.yaml      # Hauptkonfiguration (minimal)
-├── hardware_io.yaml               # Hardware-Schnittstellen (I2C, MCP, PCA, LEDs)
-├── sensors_climate.yaml           # Sensorauswertung (SCD41, NTCs, BMP390, LD2450)
-├── ui_controls.yaml               # Home Assistant GUI-Elemente (Slider, Selects, Filter-Alarm)
-├── logic_automation.yaml          # Steuerungslogik, PIDs, Intervalle, Wartungs-Tracking
-├── display_diagnostics.yaml       # OLED-Display Diagnoseseiten
 ├── esp32c6_common.yaml            # Gemeinsame ESP32-C6 Einstellungen
 ├── device_config.yaml             # Dynamische Gerätekonfiguration
-├── espslaveNTC.yaml               # Firmware für Slave-Geräte (Empfänger)
-├── automation_helpers.h           # C++ Helper-Funktionen für Lambdas
-├── components/                    # Externe Komponenten
-│   └── ventilation_group/         # Lüftungssteuerung
-│       ├── __init__.py
-│       └── ventilation_group.h
-├── documentation/
-│   ├── Anleitung-Fan-Circuit.md
-│   ├── Hardware-Setup-Readme.md
-│   └── Dynamic-Configuration.md
+├── secrets.yaml                   # WLAN-Daten (Git-ignored)
+├── packages/                      # Geteilte YAML-Module
+│   ├── hardware_io.yaml           # Hardware-Schnittstellen (I2C, MCP, PCA, LEDs)
+│   ├── sensors_climate.yaml       # Sensorik (SCD41, NTCs, BMP390, LD2450)
+│   ├── ui_controls.yaml           # HA GUI-Elemente (Slider, Selects, Alarm)
+│   ├── logic_automation.yaml      # Steuerungslogik, PIDs, Intervalle, Wartung
+│   └── display_diagnostics.yaml   # OLED-Display Diagnoseseiten
+├── components/                    # Lokale Custom C++-Komponenten
+│   ├── automation_helpers.h       # C++ Helper-Funktionen für Lambdas
+│   └── ventilation_group/         # Lüftungssteuerung Logik
+├── experimental/                  # Test- und Entwicklungsgeräte
+│   ├── espslavetest.yaml          # Test-Knoten Konfiguration
+│   ├── integration_test.yaml      # Automatisierte Integrationstests
+│   └── espslaveNTC.yaml           # Experimentelles Setup mit NTC Sensorik
+├── tests/                         # C++ Unit Tests (GTest)
+│   ├── simple_test_runner.cpp     # Test-Logik für alle C++ Komponenten
+│   └── run_tests.bat              # Build & Run Batch-Skript
+├── assets/                        # Statische Dateien
+│   └── materialdesignicons...ttf  # Material Design Webfont
+├── documentation/                 # Tiefergehende Anleitungen
 └── Readme.md                      # Diese Datei
 ```
 
