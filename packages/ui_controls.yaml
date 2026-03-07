@@ -120,21 +120,6 @@ number:
             set_ventilation_timer(x);
 
   - platform: template
-    name: "Zyklusdauer (eine Richtung)"
-    id: cycle_duration_config
-    icon: "mdi:timer-sand"
-    unit_of_measurement: "s"
-    min_value: 10
-    max_value: 300
-    step: 5
-    initial_value: 70
-    optimistic: true
-    set_action:
-      then:
-        - lambda: |-
-            set_cycle_duration_handler(x);
-
-  - platform: template
     name: "Sync Intervall"
     id: sync_interval_config
     icon: "mdi:sync"
@@ -165,10 +150,10 @@ number:
         - lambda: |-
             set_fan_intensity_slider(x);
 
-  # CO2 Auto-Control: Min Fan Level (moisture protection)
+  # Automatik: Min Fan Level (moisture protection)
   - platform: template
-    name: "CO2 Min Lüfterstufe"
-    id: co2_min_level_slider
+    name: "Automatik Min Lüfterstufe"
+    id: automatik_min_luefterstufe
     icon: "mdi:water-percent"
     min_value: 1
     max_value: 10
@@ -179,13 +164,13 @@ number:
     set_action:
       then:
         - lambda: |-
-            id(co2_min_fan_level) = (int)x;
+            id(automatik_min_fan_level) = (int)x;
             ESP_LOGI("co2_auto", "Min fan level set to %d", (int)x);
 
-  # CO2 Auto-Control: Max Fan Level (noise limiter)
+  # Automatik: Max Fan Level (noise limiter)
   - platform: template
-    name: "CO2 Max Lüfterstufe"
-    id: co2_max_level_slider
+    name: "Automatik Max Lüfterstufe"
+    id: automatik_max_luefterstufe
     icon: "mdi:volume-off"
     min_value: 1
     max_value: 10
@@ -196,7 +181,7 @@ number:
     set_action:
       then:
         - lambda: |-
-            id(co2_max_fan_level) = (int)x;
+            id(automatik_max_fan_level) = (int)x;
             ESP_LOGI("co2_auto", "Max fan level set to %d", (int)x);
 
   # Automatik CO2 Grenzwert
@@ -258,7 +243,7 @@ select:
   # Lüftungsmodus (existing)
   - platform: template
     name: "Lüftungsmodus"
-    id: selected_mode
+    id: luefter_modus
     options:
       - "Wärmerückgewinnung"
       - "Stoßlüftung"

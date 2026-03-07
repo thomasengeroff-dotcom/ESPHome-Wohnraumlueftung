@@ -28,7 +28,7 @@ display:
       - id: page_system
         lambda: |-
           it.printf(0, 0, id(font_large), "System Info");
-          it.printf(0, 25, id(font_medium), "Modus: %s", id(selected_mode).current_option());
+          it.printf(0, 25, id(font_medium), "Modus: %s", id(luefter_modus).current_option());
           it.printf(0, 45, id(font_medium), "Lüfter: %d/10", id(fan_intensity_level));
 
       # Page 2: Climate Data
@@ -48,9 +48,9 @@ display:
             it.printf(0, 45, id(font_medium), "Außen: N/A");
           }
 
-          if (id(co2_sensor).has_state()) {
+          if (id(scd41_co2).has_state()) {
              // Print CO2 right aligned
-             it.printf(128, 25, id(font_medium), TextAlign::TOP_RIGHT, "%.0f ppm", id(co2_sensor).state);
+             it.printf(128, 25, id(font_medium), TextAlign::TOP_RIGHT, "%.0f ppm", id(scd41_co2).state);
           }
 
       # Page 3: Network Data

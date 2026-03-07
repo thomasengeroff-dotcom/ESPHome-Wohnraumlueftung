@@ -49,14 +49,13 @@ struct __attribute__((packed)) VentilationPacket {
   
   // Automatik Config payload
   bool co2_auto_enabled;               ///< Is CO2 control active?
-  uint8_t co2_min_fan_level;           ///< 1-10 minimum level
-  uint8_t co2_max_fan_level;           ///< 1-10 maximum level
+  uint8_t automatik_min_fan_level;           ///< 1-10 minimum level
+  uint8_t automatik_max_fan_level;           ///< 1-10 maximum level
   uint16_t auto_co2_threshold_val;     ///< Setpoint, e.g. 1000 ppm (16-bit)
   uint8_t auto_humidity_threshold_val; ///< Setpoint, e.g. 60 % (8-bit)
   int8_t auto_presence_val;            ///< Presence compensation (-5 to +5)
   
   // Timer Settings payload
-  uint16_t cycle_duration_sec;    ///< WRG cycle direction timer
   uint16_t sync_interval_min;     ///< ESP-NOW Broadcast Interval
   uint16_t vent_timer_min;        ///< Duration for Stoß/Durchlüften mode (minutes)
 };

@@ -8,6 +8,8 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Added
 
+- **Entitäten-Dokumentation**: Neues Referenz-Dokument `documentation/Entities_Documentation.md` mit einer vollständigen Übersicht und thematischen Gruppierung aller bereitgestellten Home Assistant Entitäten inklusive technischer IDs hinzugefügt.
+
 - **ebm-papst VarioPro: Korrektes Single-PWM-Mapping** (`set_fan_logic()` in `automation_helpers.h`):
   - Der Lüfter 4412 F/2 GLL nutzt **ein einzelnes PWM-Signal** für Drehzahl und Richtung: `50 % = Stopp`, `< 50 % = Richtung A (Abluft)`, `> 50 % = Richtung B (Zuluft)`.
   - Vorher wurde 0–100 % direkt ausgegeben (Lüfter drehte immer in Richtung B, kein Stopp möglich).
@@ -95,6 +97,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Changed
 
+- **Entitäten Harmonisierung & Umbenennung**: Diverse Entitäten in YAML und C++ Code wurden für ein einheitliches Namensschema überarbeitet (z.B. Wechsel von `co2_min_fan_level` zu `automatik_min_luefterstufe`, `co2_sensor` zu `scd41_co2`, Modus-Auswahl zu `luefter_modus`). Das Dokument `Entities_Documentation.md` wurde hierfür als Quellreferenz verfasst.
+- **Dynamische Zyklusdauer (WRG)**: Der Wechselintervall im Wärmerückgewinnungsmodus ist nicht mehr statisch, sondern wird nun im C++ Code (`automation_helpers.h`) dynamisch aus der Lüfterstufe abgeleitet. Stufe 1 läuft mit 70 Sekunden, Stufe 10 mit 50 Sekunden. Dies optimiert automatisch die thermische Effizienz des Keramikspeichers unter verschiedenen Lasten.
+- **ESP-NOW Payload Optimerung**: Die Variable `cycle_duration_sec` wurde aus dem `VentilationPacket` der ESP-NOW Synchronisationslogik gestrichen. Die Master-Geräte übermitteln stattdessen nur die Basis-Parameter, der lokale C++ Code berechnet die Zyklusdauer nun selbst deterministisch, was die Paketgröße reduziert und Asynchronitäten vermeidet.
+- **Radar Präsenz-Steuerung**: Die drei separaten Slider und Entitäten für "Intensiv", "Normal" und "Gering" wurden durch einen einzelnen übersichtlichen UI-Slider `Anwesenheit Lüfter-Anpassung` (-5 bis +5) in Home Assistant ersetzt, was die Ansicht stark vereinfacht.
 - **Readme.md Restrukturierung**: Implementierte Features (CO2-Regelung, Radar-Anwesenheit, Wartungs-Management, Master LED Fehleranzeige) aus dem Roadmap-Bereich in eine eigene Sektion "✅ Implementierte Erweiterungen" verschoben. Roadmap enthält nun ausschließlich geplante Features.
   - Inhaltsverzeichnis erweitert.
   - Projektstruktur aktualisiert (u.a. `display_diagnostics.yaml` ergänzt).
@@ -173,6 +179,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Removed
 
+- Manueller Slider `number.zyklusdauer_eine_richtung` in Home Assistant entfernt, da diese nun vollautomatisch und lüfterdrehzahlabhängig berechnet wird.
 - Fehlerhafte `current_mode()` Getter-Methode aus `ventilation_group.h`.
 
 ## [0.3.0] - 2026-02-14

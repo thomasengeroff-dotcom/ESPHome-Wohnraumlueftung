@@ -36,7 +36,7 @@ sensor:
   - platform: scd4x
     co2:
       name: "CO2"
-      id: co2_sensor
+      id: scd41_co2
       accuracy_decimals: 0
       filters:
         - median:
@@ -169,11 +169,11 @@ text_sensor:
   # Human-readable CO2 classification (Ausgezeichnet, Gut, etc.)
   - platform: template
     name: "CO2 Bewertung"
-    id: co2_classification
+    id: scd41_co2_bewertung
     icon: "mdi:molecule-co2"
     update_interval: 30s
     lambda: |-
-      return get_co2_classification(id(co2_sensor).state);
+      return get_co2_classification(id(scd41_co2).state);
 
 # ---------------------------------------------------------
 # HLK-LD2450 RADAR

@@ -79,14 +79,14 @@ globals:
     initial_value: "true" # Default: enabled in Smart-Automatik
     restore_value: true
 
-  # CO2 auto-control: min fan level (moisture protection / DIN 1946-6 Feuchteschutz)
-  - id: co2_min_fan_level
+  # Automatik: min fan level (moisture protection / DIN 1946-6 Feuchteschutz)
+  - id: automatik_min_fan_level
     type: int
     initial_value: "2"
     restore_value: true
 
-  # CO2 auto-control: max fan level (noise control)
-  - id: co2_max_fan_level
+  # Automatik: max fan level (noise control)
+  - id: automatik_max_fan_level
     type: int
     initial_value: "7"
     restore_value: true

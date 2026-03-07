@@ -37,8 +37,8 @@ extern esphome::globals::GlobalsComponent<bool> *ventilation_enabled;   ///< Ven
 extern esphome::globals::GlobalsComponent<int> *current_mode_index;     ///< Active mode index (0–3).
 extern esphome::globals::GlobalsComponent<int> *fan_intensity_level;    ///< Fan intensity (1–10).
 extern esphome::globals::RestoringGlobalsComponent<bool> *co2_auto_enabled;      ///< CO2 auto-control enabled flag.
-extern esphome::globals::RestoringGlobalsComponent<int> *co2_min_fan_level;      ///< Min fan level for CO2 control (moisture protection).
-extern esphome::globals::RestoringGlobalsComponent<int> *co2_max_fan_level;      ///< Max fan level for CO2 control (noise limit).
+extern esphome::globals::RestoringGlobalsComponent<int> *automatik_min_fan_level;  ///< Min fan level for auto control (moisture protection).
+extern esphome::globals::RestoringGlobalsComponent<int> *automatik_max_fan_level;  ///< Max fan level for auto control (noise limit).
 
 extern esphome::globals::GlobalsComponent<bool> *auto_mode_active;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
@@ -50,17 +50,16 @@ extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
 
 /// @name Template UI components
 /// @{
-extern esphome::template_::TemplateSelect *selected_mode;       ///< Mode selector (WRG/Stoß/Durchlüften/Aus).
+extern esphome::template_::TemplateSelect *luefter_modus;       ///< Mode selector (WRG/Stoß/Durchlüften/Aus).
 // auto_presence_behavior removed
 extern esphome::template_::TemplateNumber *vent_timer;          ///< Ventilation timer (minutes).
 extern esphome::template_::TemplateNumber *fan_intensity_display; ///< Fan intensity display number.
-extern esphome::template_::TemplateSwitch *co2_auto_switch;     ///< CO2 auto-control on/off switch.
-extern esphome::template_::TemplateNumber *co2_min_level_slider; ///< Min fan level for automated modes.
-extern esphome::template_::TemplateNumber *co2_max_level_slider; ///< Max fan level for automated modes.
+extern esphome::template_::TemplateSwitch *automatik_co2;       ///< CO2 auto-control on/off switch.
+extern esphome::template_::TemplateNumber *automatik_min_luefterstufe; ///< Min fan level for automated modes.
+extern esphome::template_::TemplateNumber *automatik_max_luefterstufe; ///< Max fan level for automated modes.
 extern esphome::template_::TemplateNumber *auto_presence_slider; ///< Presence compensation slider.
 extern esphome::template_::TemplateNumber *auto_co2_threshold;   ///< CO2 automated threshold.
 extern esphome::template_::TemplateNumber *auto_humidity_threshold; ///< Humidity automated threshold.
-extern esphome::template_::TemplateNumber *cycle_duration_config; ///< Fan direction cycle duration in seconds.
 extern esphome::template_::TemplateNumber *sync_interval_config; ///< Time between auto-sync packets in minutes.
 /// @}
 
@@ -82,7 +81,7 @@ extern esphome::ledc::LEDCOutput *fan_pwm_primary;   ///< Primary PWM output (GP
 
 /// @name Sensors
 /// @{
-extern esphome::sensor::Sensor *co2_sensor;          ///< SCD41 CO2 sensor.
+extern esphome::sensor::Sensor *scd41_co2;           ///< SCD41 CO2 sensor.
 extern esphome::sensor::Sensor *temperature;         ///< Room Temperature (SCD41)
 extern esphome::ntc::NTC *temp_zuluft;         ///< Supply Air Temperature (NTC Inside)
 extern esphome::ntc::NTC *temp_abluft;         ///< Exhaust Air Temperature (NTC Outside)
@@ -194,16 +193,16 @@ inline void apply_co2_auto_control() {
     if (!ventilation_enabled->value()) return;
 
     // Guard: SCD41 sensor must be connected (state is NaN when absent)
-    if (co2_sensor == nullptr) return;
-    float co2_ppm = co2_sensor->state;
+    if (scd41_co2 == nullptr) return;
+    float co2_ppm = scd41_co2->state;
     if (std::isnan(co2_ppm)) {
         ESP_LOGD("co2_auto", "SCD41 not connected — CO2 auto-control inactive");
         return;
     }
 
     int current_level = fan_intensity_level->value();
-    int min_level = co2_min_fan_level->value();
-    int max_level = co2_max_fan_level->value();
+    int min_level = automatik_min_fan_level->value();
+    int max_level = automatik_max_fan_level->value();
 
     int target_level = VentilationLogic::get_co2_fan_level(co2_ppm, current_level, min_level, max_level);
 
@@ -224,7 +223,7 @@ inline void evaluate_auto_mode() {
 
     auto *v = ventilation_ctrl;
     // Default to the configured base level from Home Assistant (Moisture protection / base ventilation)
-    int target_level = co2_min_fan_level->value(); 
+    int target_level = automatik_min_fan_level->value(); 
     int internal_mode = v->state_machine.current_mode; // Copy current mode as starting point
 
     // Determine current hardware direction to correctly map NTC sensors during MODE_VENTILATION
@@ -329,8 +328,8 @@ inline void evaluate_auto_mode() {
     }
 
     if (max_pid_demand > 0.01f) {
-        int min_level = co2_min_fan_level->value();
-        int max_level = co2_max_fan_level->value();
+        int min_level = automatik_min_fan_level->value();
+        int max_level = automatik_max_fan_level->value();
         
         // Calculate proportional LED target level (1-10 display feedback)
         // Note: The physical motor receives a precision float (0.0 - 1.0) via update_fan_logic()
@@ -413,6 +412,17 @@ inline void update_fan_logic() {
     static const float MAX_FAN_LEVEL = 10.0f;
     float speed = SPEED_MIN + ((intensity - 1.0f) / (MAX_FAN_LEVEL - 1.0f)) * (1.0f - SPEED_MIN);
 
+    // Dynamic Cycle duration mapped to fan level:
+    // Level 1 = 70s, Level 10 = 50s.
+    // Mathematical progression: duration = 70 - ((intensity - 1) * (20/9))
+    if (ventilation_ctrl != nullptr) {
+        float dynamic_cycle_s = 70.0f - ((intensity - 1.0f) * (20.0f / 9.0f));
+        uint32_t dynamic_cycle_ms = std::round(dynamic_cycle_s) * 1000;
+        if (ventilation_ctrl->state_machine.cycle_duration_ms != dynamic_cycle_ms) {
+            ventilation_ctrl->set_cycle_duration(dynamic_cycle_ms);
+        }
+    }
+
     // In Automatik mode: override speed with precise PID demand
     if (auto_mode_active != nullptr && auto_mode_active->value()) {
         float max_pid_demand = 0.0f;
@@ -432,13 +442,13 @@ inline void update_fan_logic() {
         }
 
         if (max_pid_demand > 0.01f) {
-            const float min_speed = (co2_min_fan_level->value() - 1.0f) / (MAX_FAN_LEVEL - 1.0f);
-            const float max_speed = (co2_max_fan_level->value() - 1.0f) / (MAX_FAN_LEVEL - 1.0f);
+            const float min_speed = (automatik_min_fan_level->value() - 1.0f) / (MAX_FAN_LEVEL - 1.0f);
+            const float max_speed = (automatik_max_fan_level->value() - 1.0f) / (MAX_FAN_LEVEL - 1.0f);
             // Map continuous PID demand [0..1] into allowed PWM window [min..max]
             speed = min_speed + max_pid_demand * (max_speed - min_speed);
         } else {
             // No PID demand: stay at baseline minimum
-            speed = (co2_min_fan_level->value() - 1.0f) / (MAX_FAN_LEVEL - 1.0f);
+            speed = (automatik_min_fan_level->value() - 1.0f) / (MAX_FAN_LEVEL - 1.0f);
         }
     }
 
@@ -661,8 +671,8 @@ inline void handle_espnow_receive(const std::vector<uint8_t>& data) {
         current_mode_index->value() = new_mode_idx;
 
         // Update Select Component if different
-        if (std::string(selected_mode->current_option()) != mode_str) {
-            selected_mode->publish_state(mode_str);
+        if (std::string(luefter_modus->current_option()) != mode_str) {
+            luefter_modus->publish_state(mode_str);
         }
 
         // Update Visuals
@@ -681,23 +691,23 @@ inline void handle_espnow_receive(const std::vector<uint8_t>& data) {
     // 1. CO2 Automatik (Switch)
     if (pkt->co2_auto_enabled != co2_auto_enabled->value()) {
         co2_auto_enabled->value() = pkt->co2_auto_enabled;
-        co2_auto_switch->publish_state(pkt->co2_auto_enabled);
+        automatik_co2->publish_state(pkt->co2_auto_enabled);
         ESP_LOGI("vent_sync", "Synced co2_auto_enabled from peer: %d", pkt->co2_auto_enabled);
         dirty = true;
     }
 
-    // 2. CO2 Min/Max Levels (Sliders 1-10)
-    if (pkt->co2_min_fan_level >= 1 && pkt->co2_min_fan_level <= 10 && pkt->co2_min_fan_level != co2_min_fan_level->value()) {
-        co2_min_fan_level->value() = pkt->co2_min_fan_level;
-        co2_min_level_slider->publish_state(pkt->co2_min_fan_level);
-        ESP_LOGI("vent_sync", "Synced co2_min_fan_level from peer: %d", pkt->co2_min_fan_level);
+    // 2. Automatik Min/Max Levels (Sliders 1-10)
+    if (pkt->automatik_min_fan_level >= 1 && pkt->automatik_min_fan_level <= 10 && pkt->automatik_min_fan_level != automatik_min_fan_level->value()) {
+        automatik_min_fan_level->value() = pkt->automatik_min_fan_level;
+        automatik_min_luefterstufe->publish_state(pkt->automatik_min_fan_level);
+        ESP_LOGI("vent_sync", "Synced automatik_min_fan_level from peer: %d", pkt->automatik_min_fan_level);
         dirty = true;
     }
 
-    if (pkt->co2_max_fan_level >= 1 && pkt->co2_max_fan_level <= 10 && pkt->co2_max_fan_level != co2_max_fan_level->value()) {
-        co2_max_fan_level->value() = pkt->co2_max_fan_level;
-        co2_max_level_slider->publish_state(pkt->co2_max_fan_level);
-        ESP_LOGI("vent_sync", "Synced co2_max_fan_level from peer: %d", pkt->co2_max_fan_level);
+    if (pkt->automatik_max_fan_level >= 1 && pkt->automatik_max_fan_level <= 10 && pkt->automatik_max_fan_level != automatik_max_fan_level->value()) {
+        automatik_max_fan_level->value() = pkt->automatik_max_fan_level;
+        automatik_max_luefterstufe->publish_state(pkt->automatik_max_fan_level);
+        ESP_LOGI("vent_sync", "Synced automatik_max_fan_level from peer: %d", pkt->automatik_max_fan_level);
         dirty = true;
     }
 
@@ -725,14 +735,6 @@ inline void handle_espnow_receive(const std::vector<uint8_t>& data) {
     }
 
     // 5. System Timers
-    if (pkt->cycle_duration_sec >= 10 && pkt->cycle_duration_sec <= 3600) {
-        // Only update if different
-        if (v->state_machine.cycle_duration_ms != (uint32_t)(pkt->cycle_duration_sec * 1000)) {
-            v->set_cycle_duration(pkt->cycle_duration_sec * 1000); // Also handles logging
-            cycle_duration_config->publish_state(pkt->cycle_duration_sec);
-        }
-    }
-
     if (pkt->sync_interval_min >= 1 && pkt->sync_interval_min <= 1440) {
         if (v->sync_interval_ms != (uint32_t)(pkt->sync_interval_min * 60 * 1000)) {
             v->set_sync_interval(pkt->sync_interval_min * 60 * 1000);
@@ -760,12 +762,6 @@ inline void set_ventilation_timer(float value) {
     uint32_t ms = (uint32_t)value * 60 * 1000;
     // Update the duration but keep current mode
     v->state_machine.ventilation_duration_ms = ms;
-}
-
-/// @brief Converts a seconds value from the UI slider to ms and updates cycle duration.
-inline void set_cycle_duration_handler(float value) {
-    auto *v = ventilation_ctrl;
-    v->set_cycle_duration((uint32_t)value * 1000);
 }
 
 /// @brief Converts a minutes value from the UI slider to ms and updates sync interval.
@@ -876,14 +872,13 @@ inline std::vector<uint8_t> build_and_populate_packet(esphome::MessageType type)
 
     // Populate all HA configurations
     pkt->co2_auto_enabled = co2_auto_enabled->value();
-    pkt->co2_min_fan_level = (uint8_t) co2_min_fan_level->value();
-    pkt->co2_max_fan_level = (uint8_t) co2_max_fan_level->value();
+    pkt->automatik_min_fan_level = (uint8_t) automatik_min_fan_level->value();
+    pkt->automatik_max_fan_level = (uint8_t) automatik_max_fan_level->value();
     pkt->auto_co2_threshold_val = (uint16_t) auto_co2_threshold_val->value();
     pkt->auto_humidity_threshold_val = (uint8_t) auto_humidity_threshold_val->value();
     pkt->auto_presence_val = (int8_t) auto_presence_val->value();
     
     // Timers
-    pkt->cycle_duration_sec = (uint16_t) (v->state_machine.cycle_duration_ms / 1000);
     pkt->sync_interval_min = (uint16_t) (v->sync_interval_ms / 60 / 1000);
     pkt->vent_timer_min = (uint16_t) (v->state_machine.ventilation_duration_ms / 60 / 1000);
 

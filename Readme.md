@@ -2,7 +2,7 @@
 
 Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses Projekt erstezt die Steuerung der VentoMaxx V-WRG Serie mittels eines eigens dafür entwickelten PCB und steuert damit einen reversierbaren 12V Lüfter (Push-Pull) zur Wärmerückgewinnung, überwacht die Luftqualität (CO2, Feuchte und Temperatur), berechnet die effektive Wärmerückgewinnung und nutzt das **originale VentoMaxx Bedienpanel** für eine nahtlose Integration, intuitive Steuerung und vieles mehr.
 
-> 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit 12V Lüftern (3-PIN oder 4-PIN PWM). Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist damit explizit für die VentoMaxx V-WRG Serie optimiert und muss für andere Hersteller ggf. angepasst werden. Das PCB ist so konzipiert, dass es in das Gehäuse der VentoMaxx V-WRG Serie passt und die vorhandenen Befestigungspunkte nutzt.
+> 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit 12V Lüftern (3-PIN oder 4-PIN PWM). Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist damit explizit für die VentoMaxx V-WRG Serie optimiert und muss für andere Hersteller ggf. angepasst werden. Das PCB ist so konzipiert, dass es exakt in das Gehäuse der VentoMaxx V-WRG Serie passt und die vorhandenen Befestigungspunkte nutzt.
 
 [![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
@@ -39,10 +39,9 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
 
 ### ⚙️ Intelligente Betriebsmodi
 
-- 🤖 **Standard-Automatik**: Vollautomatische Steuerung für maximalen Komfort und Effizienz. Standardbetrieb in Wärmerückgewinnung mit dynamischer Anpassung an CO2 und Luftfeuchtigkeit unter Einbezug von Wetterdaten. Im Sommer automatische Querlüftung zur passiven Kühlung (wenn außen kühler als innen) und Berücksichtigung von Anwesenheit zur Anpassung der Lüftungsintensität.
-Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenheit im Raum zu messen und die Lüftungsintensität entsprechend der Voreinstellungen anzupassen.
-- 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll.
-- 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb.
+- 🤖 **Standard-Automatik**: Vollautomatische Steuerung für maximalen Komfort und Effizienz. Standardbetrieb in Wärmerückgewinnung (Push-Pull) mit dynamischer Anpassung an CO2 und Luftfeuchtigkeit unter Einbezug von Wetterdaten. Im Sommer wird die Querlüftung zur passiven Kühlung (wenn außen kühler als innen) automatisch aktiviert. Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenheit im Raum zu messen und die Lüftungsintensität entsprechend der Voreinstellungen anzupassen.
+- 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll. Dieser Modus lässt aber die Radar Anwesenheits Sensorik unberücksichtigt.
+- 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb. Dieser Modus lässt aber die Radar Anwesenheits Sensorik unberücksichtigt.
 - 🔗 **Autarkes Mesh-Netzwerk**: Robuste Dezentralität durch direkte Peer-to-Peer Kommunikation (ESP-NOW). Der Gruppenbetrieb ist auch ohne zentrale WLAN-Infrastruktur oder externe Broker gewährleistet.
 
 ### 🛡️ Präzisions-Sensorik & Monitoring
@@ -50,8 +49,8 @@ Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenhei
 - 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels Sensirion SCD41.
 - 💨 **Echte CO2-Messung**: Der SCD41 nutzt **photoacoustic sensing** zur direkten CO2-Messung (400-5000 ppm) statt berechneter Äquivalente - ideal für bedarfsgerechte Lüftungssteuerung.
 - 🏔️ **Luftdruckmessung via BMP390**: Der hochpräzise Barometer-Sensor ermöglicht lokale Wettertrend-Analysen, Sturmwarnungen (Rapid Pressure Drop) und liefert gleichzeitig die exakten Höhendaten für die Autokalibrierung und barometrische Kompensation des SCD41 CO2-Sensors.
-- 📊 **Automatische Intensitätsregelung**: Das System kann die Lüfterleistung automatisch bei steigendem CO2-Gehalt für optimale Raumluftqualität erhöhen.
-- 🏎️ **Closed-Loop Drehzahlüberwachung**: Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung.
+- 📊 **Automatische Intensitätsregelung**: Das System kann die Lüfterleistung automatisch bei steigendem CO2-Gehalt oder Luftfeuchtigkeit für optimale Raumluftqualität erhöhen.
+- 🏎️ **Closed-Loop Drehzahlüberwachung**: Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung (nur bei 4-PIN PWM Lüftern möglich).
 - 📡 **Radar Anwesenheits Sensorik**: Mittels des HLK-LD2450 Radar Sensors wird die Anwesenheit in der Raum gemessen und die Lüftungsintensität entsprechend angepasst. Es kann eingestellt werden, ob die Lüftung intensiver (z.B. für Büro), normal (z.B. für Wohnraum) oder geringer (z.B. für Schlafzimmer) betrieben werden soll.
 
 ### 🖥️ Bedienung am Lüftungsgerät
@@ -409,7 +408,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 
 | Feature | Sensor(en) | Schwellenwert |
 | :--- | :--- | :--- |
-| ✅ **CO2-Regelung (PID)** | SCD41 (`sensor.co2`) | `number.auto_co2_grenzwert` |
+| ✅ **CO2-Regelung (PID)** | SCD41 (`sensor.scd41_co2`) | `number.auto_co2_threshold` |
 | ✅ **Feuchte-Management (PID)** | SCD41 (`sensor.scd41_humidity`) + HA `outdoor_humidity` | Über Außenfeuchte |
 | ✅ **Radar Anwesenheits-Sensorik** | HLK-LD2450 (`binary_sensor.radar_presence`) | Konfigurabel in HA |
 | ✅ **Sommer-Kühlfunktion** | NTC-Sensoren + ESP-NOW Gruppentemperatur | 22°C Innentemperatur |
@@ -462,11 +461,13 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 
 #### Verfügbare Steuerungen
 
-- **Lüfter**: Slider 0-100% (entspricht intern den 10 Stufen des Bedienpanels)
+- **Lüfter**: Slider 0-10% bis 100% (entspricht intern den 10 Stufen des Bedienpanels)
 - **Modus**: Auswahl (Smart-Automatik / Eco Recovery / Ventilation / Off)
 - **Timer**: Konfiguration für "Durchlüften" (Standard: 30 Min)
-- **CO2-Grenzwert**: `number.auto_co2_grenzwert` (Standard aktiv)
+- **CO2-Grenzwert**: `number.auto_co2_threshold` (Standard aktiv)
 - **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und **CO2-Gehalt (ppm)**
+
+👉 **Tipp:** Eine detaillierte Übersicht aller verfügbaren Home Assistant Entitäten inklusive ihrer technischen Namen (`ID`) und Funktion finden Sie im Dokument **[Entities_Documentation.md](documentation/Entities_Documentation.md)**.
 
 #### 📊 Lüftergeschwindigkeit pro Stufe (ebm-papst VarioPro PWM-Kennlinie)
 

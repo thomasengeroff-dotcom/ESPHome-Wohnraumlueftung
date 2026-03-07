@@ -5,7 +5,7 @@ climate:
   - platform: pid
     name: "PID CO2 Automatik"
     id: pid_co2
-    sensor: co2_sensor
+    sensor: scd41_co2
     default_target_temperature: 1000
     cool_output: pid_co2_output
     internal: true
@@ -63,14 +63,14 @@ switch:
   # CO2-based adaptive fan control (on/off)
   - platform: template
     name: "CO2 Automatik"
-    id: co2_auto_switch
+    id: automatik_co2
     icon: "mdi:molecule-co2"
     optimistic: false
     lambda: |-
       return id(co2_auto_enabled);
     turn_on_action:
       - lambda: |-
-          if (std::isnan(id(co2_sensor).state)) {
+          if (std::isnan(id(scd41_co2).state)) {
             ESP_LOGW("co2_auto", "SCD41 nicht angeschlossen — CO2 Automatik kann nicht aktiviert werden");
           } else {
             id(co2_auto_enabled) = true;
