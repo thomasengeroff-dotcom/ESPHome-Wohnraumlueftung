@@ -140,7 +140,7 @@ Eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Dieses
   > ```
   >
   > **Alternativ:** Ändern Sie direkt die `entity_id` in `sensors_climate.yaml` auf Ihren Sensor:
->
+  >
   > ```yaml
   > entity_id: sensor.balkon_sht31_humidity  # statt sensor.outdoor_humidity
   > ```
@@ -522,7 +522,7 @@ automation:
   - alias: "Filterwechsel Benachrichtigung"
     trigger:
       - platform: state
-        entity_id: binary_sensor.esptest_filterwechsel_alarm
+        entity_id: binary_sensor.espwohnraumlueftung_filterwechsel_alarm
         to: "on"
     action:
       - service: notify.mobile_app_<ihr_geraet>
@@ -542,15 +542,9 @@ automation:
 
 ### 💡 Tipps für optimale Nutzung
 
-#### Betriebsarten sinnvoll einsetzen
-
-- ❄️ **Winter (WRG)**: Nutzen Sie immer den Wärmerückgewinnungs-Modus für maximale Energieersparnis.
-- ☀️ **Sommer (Querlüftung)**: Abends den "Durchlüften"-Modus aktivieren, um kühle Außenluft einzubringen (ohne WRG).
-- 🔇 **Nacht**: Stufe 1 oder 2 ist meist ausreichend und kaum hörbar.
-
 #### Wartung & Pflege
 
-- **Filter**: Alle 6 Monate prüfen/wechseln.
+- **Filter**: Alle 12 Monate prüfen/wechseln.
 - **Reinigung**: Panel nur mit trockenem Tuch reinigen.
 - **Wärmetauscher**: Einmal jährlich mit Wasser ausspülen (siehe Herstelleranleitung).
 
