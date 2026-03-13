@@ -34,6 +34,10 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional("radar_presence_id"):           cv.use_id(binary_sensor.BinarySensor),
 
         cv.Optional("scd41_co2_bewertung_id"):      cv.use_id(text_sensor.TextSensor),
+        cv.Optional("device_id_id"):                cv.use_id(text_sensor.TextSensor),
+        cv.Optional("floor_id_id"):                 cv.use_id(text_sensor.TextSensor),
+        cv.Optional("room_id_id"):                  cv.use_id(text_sensor.TextSensor),
+        cv.Optional("phase_id"):                    cv.use_id(text_sensor.TextSensor),
 
         cv.Optional("test_speed_slider_id"):        cv.use_id(number.Number),
         cv.Optional("vent_timer_id"):               cv.use_id(number.Number),

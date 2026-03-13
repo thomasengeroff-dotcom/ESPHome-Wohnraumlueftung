@@ -79,6 +79,7 @@ Der Funktionsumfang dieser Eigenentwicklung geht nach meinen Recherechen über a
 **Volle Home Assistant Integration**: Native API-Unterstützung für nahtloses Monitoring, Steuerung und Automatisierung über dein Smart Home System. Alle Funktionalitäten des Geräts sind über Home Assistant steuerbar und auslesbar.
 
 **Lokales Web-Dashboard (`wrg_dashboard`)**: Ein direkt auf dem ESP32 betriebener, asynchroner Webserver stellt eine moderne und responsive Benutzeroberfläche zur Verfügung. Rufe einfach **`http://<deine-IP-Adresse>/ui`** (oder z. B. `http://esptest.local/ui`) im Webbrowser auf. Über das Dashboard kannst du in Echtzeit alle Sensordaten (als Kacheln mit Tagesverlaufsgraphen) einsehen und sämtliche Anlagen-Einstellungen ohne zusätzliche Hardware (wie Home Assistant) im lokalen Netzwerk ändern. _(Hinweis: Die Root-URL `/` zeigt weiterhin das Standard-ESPHome-UI an)_
+Damit ist die Nutzung auch komplett ohne Home Assistant möglich!
 
 **Intuitive Gruppensteuerung**: Durch das "Group-Controller" Konzept via ESP-NOW können mehrere Geräte in einem Raum als eine einzige visuelle Einheit im Home Assistant Dashboard (z.B. mittels Mushroom Cards) abgebildet werden. Dies reduziert den WLAN-Traffic, erhöht die Stabilität und macht die Bedienung extrem einfach (hoher WAF).
 👉 _Details, Konzept und YAML-Beispiele für ESPHome und das HA Dashboard findest du im Ordner [ha_integration_example](ha_integration_example/)._
@@ -231,6 +232,12 @@ Die folgenden weiteren "Advanced Automation"-Funktionen sind in Vorbereitung:
   - ✅ **Memory Management**: Nutzung von Move Semantics (`std::move`) zur abfallfreien Übergabe von Vektoren zwischen Tasks, plus strikte Const-Correctness (`const std::string&`).
   - ✅ **DRY Architecture**: Entfernung redundanter Ternary-Operatoren (`condition ? state : (float)NAN`) für Web-JSON Building durch Einsatz dedizierter, anonymer Lambda Helper-Funktionen pro Sensor-DataType.
   - ✅ **Footprint Reduction**: Komplettentfernung veralteter Web-UI Cache-Konzepte (`DashboardSnapshot`) und damit drastisch verbesserte Free-RAM Performance.
+
+- **Modern Web-Dashboard (Tailwind CSS) & UX (März 2026)**:
+  - ✅ **Premium UI/UX**: Umstellung des asynchronen Dashboards auf **Tailwind CSS**. Modernes Dark-Mode Design, voll-responsiv und optimiert für Desktop & Mobile.
+  - ✅ **Grundeinstellungen**: Integration einer neuen Dashboard-Sektion für Geräte-ID, Floor ID, Room ID und Phase zur schnellen Vor-Ort-Konfiguration.
+  - ✅ **Echtzeit-Graphen**: Erweiterung der Chart.js Integration für flüssige Visualisierung von CO2, Feuchte, Temp und RPM.
+  - ✅ **Code-Health**: Bereinigung der Dashboard-Backend-Logik, Behebung von Typ-Mismatch Fehlern in C++ Lambdas und Entfernung von Deprecated-Warnungen.
 
 ### 🙏 Danksagungen / Credits
 

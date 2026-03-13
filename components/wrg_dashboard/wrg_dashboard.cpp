@@ -114,6 +114,11 @@ void WrgDashboard::handle_state_(AsyncWebServerRequest *request) {
   doc["fan_rpm"] = get_f(this->fan_rpm_);
   doc["filter_operating_days"] = get_f(this->filter_operating_days_);
 
+  doc["device_id"] = get_t(this->device_id_);
+  doc["floor_id"] = get_t(this->floor_id_);
+  doc["room_id"] = get_t(this->room_id_);
+  doc["phase"] = get_t(this->phase_);
+
   doc["filter_change_alarm"] = get_b(this->filter_change_alarm_);
   doc["radar_presence"] = get_b(this->radar_presence_);
 

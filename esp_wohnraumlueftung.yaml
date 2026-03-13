@@ -204,6 +204,10 @@ wrg_dashboard:
   filter_change_alarm_id: filter_change_alarm
   radar_presence_id: radar_presence
   scd41_co2_bewertung_id: scd41_co2_bewertung
+  device_id_id: dashboard_device_id
+  floor_id_id: dashboard_floor_id
+  room_id_id: dashboard_room_id
+  phase_id: dashboard_phase
   test_speed_slider_id: test_speed_slider
   vent_timer_id: vent_timer
   sync_interval_config_id: sync_interval_config
