@@ -2,7 +2,8 @@
 # This is an example and may include too much for your use-case.
 # You can modify this file to suit your needs.
 /.esphome/
-/secrets.yaml
+secrets.yaml
+*.backup
 KiCad/
 .agent/skills/cpp-pro/SKILL.md
 .agent/skills/home-assistant-esphome/SKILL.md

@@ -105,6 +105,7 @@ text_sensor:
     mac_address:
       name: "Eigene MAC Adresse"
       id: own_mac_address
+      internal: true
       icon: "mdi:identifier"
       entity_category: diagnostic
 

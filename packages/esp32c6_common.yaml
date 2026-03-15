@@ -35,7 +35,7 @@ logger:
 # Native API for direct integration with Home Assistant (faster/better than MQTT)
 api:
   encryption:
-    key: "KYMSXhepNaErPxXKPB6BWFAc8pz9/FYAYN/FjK5yKTg="
+    key: !secret api_encryption_key
 
 # ---------------------------------------------------------
 # OVER-THE-AIR UPDATES (OTA)
@@ -51,6 +51,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  min_auth_mode: WPA2
 
   # Fallback Hotspot:
   # If the configured WiFi is not reachable within 1 minute, the device
