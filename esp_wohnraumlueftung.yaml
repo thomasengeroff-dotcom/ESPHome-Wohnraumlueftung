@@ -43,6 +43,7 @@ esphome:
     priority: 600
     then:
       - script.execute: update_leds
+      - script.execute: fan_speed_update
 
 # ---------------------------------------------------------
 # GLOBAL VARIABLES (State Memory)
@@ -138,6 +139,12 @@ globals:
   - id: ui_active
     type: bool
     initial_value: "false"
+
+  # ESP-NOW peer check (disable to suppress Master LED blinking when no peers are connected)
+  - id: peer_check_enabled
+    type: bool
+    initial_value: "true"
+    restore_value: true
 
 # ---------------------------------------------------------
 # VENTILATION COMPONENT (External)

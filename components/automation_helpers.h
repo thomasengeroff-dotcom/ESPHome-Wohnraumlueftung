@@ -64,6 +64,8 @@ extern esphome::template_::TemplateNumber *sync_interval_config; ///< Time betwe
 /// @}
 
 extern esphome::globals::GlobalsComponent<bool> *ui_active;     ///< UI active flag (30s dimming).
+extern esphome::globals::RestoringGlobalsComponent<bool> *peer_check_enabled; ///< ESP-NOW peer check on/off.
+extern esphome::template_::TemplateSwitch *peer_check_switch;   ///< HA switch for peer check.
 
 /// @name Scripts
 /// @{
@@ -509,30 +511,68 @@ inline float calculate_ramp_down(int iteration) {
 
 
 /// @brief Applies the operating mode corresponding to the given index.
-/// Index mapping: 0 = Wärmerückgewinnung, 1 = Stoßlüftung,
-/// 2 = Durchlüften (uses vent_timer), 3 = Automatik, 4 = Aus.
+/// Index mapping: 0 = Automatik, 1 = WRG, 2 = Durchlüften, 3 = Stoßlüftung, 4 = Aus.
+/// Manages system_on/ventilation_enabled state, syncs HA select, and triggers fan update.
 inline void cycle_operating_mode(int mode_index) {
   auto *v = ventilation_ctrl;
   auto_mode_active->value() = false; // Reset by default
   
+  // Mode names for HA select sync (must match luefter_modus options exactly)
+  static const char* mode_names[] = {"Automatik", "Wärmerückgewinnung", "Durchlüften", "Stoßlüftung", "Aus"};
+  
   switch(mode_index) {
     case 0: // Automatik
+      system_on->value() = true;
+      ventilation_enabled->value() = true;
       auto_mode_active->value() = true;
-      v->set_mode(esphome::MODE_ECO_RECOVERY); // Standard start state
+      // Directly set mode to bypass set_mode() early-return guard
+      // (Automatik and WRG both use MODE_ECO_RECOVERY)
+      v->state_machine.current_mode = esphome::MODE_ECO_RECOVERY;
+      v->update_hardware();
+      v->pending_broadcast = true;
+      evaluate_auto_mode(); // Immediate PID/sensor eval
       break;
-    case 1:  // Wärmerückgewinnung
-      v->set_mode(esphome::MODE_ECO_RECOVERY);
+    case 1:  // Wärmerückgewinnung (manual)
+      system_on->value() = true;
+      ventilation_enabled->value() = true;
+      // Directly set mode to bypass set_mode() early-return guard
+      v->state_machine.current_mode = esphome::MODE_ECO_RECOVERY;
+      v->update_hardware();
+      v->pending_broadcast = true;
       break;
     case 2:  // Durchlüften — timer from vent_timer number component
+      system_on->value() = true;
+      ventilation_enabled->value() = true;
       v->set_mode(esphome::MODE_VENTILATION, (uint32_t)(vent_timer->state * 60 * 1000));
       break;
     case 3:  // Stoßlüftung
+      system_on->value() = true;
+      ventilation_enabled->value() = true;
       v->set_mode(esphome::MODE_STOSSLUEFTUNG);
       break;
     case 4:  // Aus
+      system_on->value() = false;
+      ventilation_enabled->value() = false;
       v->set_mode(esphome::MODE_OFF);
+      lueftung_fan->turn_off();
+      fan_pwm_primary->set_level(0.5f); // Neutral stop for VarioPro
       break;
   }
+  
+  // Sync HA select dropdown
+  if (mode_index >= 0 && mode_index <= 4) {
+    std::string mode_str = mode_names[mode_index];
+    if (std::string(luefter_modus->current_option()) != mode_str) {
+      luefter_modus->publish_state(mode_str);
+    }
+  }
+  
+  // Update fan speed for active modes
+  if (mode_index != 4) {
+    fan_speed_update->execute();
+  }
+  
+  ESP_LOGI("mode", "Mode changed to index %d", mode_index);
 }
 
 
@@ -625,8 +665,8 @@ inline void check_master_led_error() {
         has_error = true;
     }
 
-    // 2. Check ESP-NOW peer freshness (5 minutes = 300000ms)
-    if (ventilation_ctrl != nullptr) {
+    // 2. Check ESP-NOW peer freshness (5 minutes = 300000ms) — only if enabled
+    if (peer_check_enabled != nullptr && peer_check_enabled->value() && ventilation_ctrl != nullptr) {
         const uint32_t now = millis();
         // If we have never received a peer message, or it's been > 5 minutes
         if (ventilation_ctrl->last_peer_pid_demand_time == 0 ||
@@ -803,26 +843,18 @@ inline void set_fan_intensity_slider(float value) {
     update_leds->execute();
 }
 
-/// @brief Handles the mode select dropdown: maps string option to VentilationMode.
+/// @brief Handles the mode select dropdown from HA: maps string option to mode index
+/// and delegates to cycle_operating_mode() for unified state management.
 inline void set_operating_mode_select(const std::string& x) {
-    auto *v = ventilation_ctrl;
-    auto_mode_active->value() = false; // Reset by default
+    int mode_index = 0;
+    if (x == "Automatik")           mode_index = 0;
+    else if (x == "Wärmerückgewinnung") mode_index = 1;
+    else if (x == "Durchlüften")    mode_index = 2;
+    else if (x == "Stoßlüftung")    mode_index = 3;
+    else if (x == "Aus")            mode_index = 4;
     
-    if (x == "Wärmerückgewinnung") {
-        v->set_mode(esphome::MODE_ECO_RECOVERY);
-    } else if (x == "Stoßlüftung") {
-        v->set_mode(esphome::MODE_STOSSLUEFTUNG);
-    } else if (x == "Durchlüften") {
-        // Use the configured timer duration (0 = Infinite)
-        uint32_t duration = (uint32_t)(vent_timer->state * 60 * 1000);
-        v->set_mode(esphome::MODE_VENTILATION, duration);
-    } else if (x == "Automatik") {
-        auto_mode_active->value() = true;
-        v->set_mode(esphome::MODE_ECO_RECOVERY);
-        evaluate_auto_mode(); // Force immediate evaluation
-    } else if (x == "Aus") {
-        v->set_mode(esphome::MODE_OFF);
-    }
+    current_mode_index->value() = mode_index;
+    cycle_operating_mode(mode_index);
     update_leds->execute();
 }
 
@@ -832,7 +864,10 @@ inline void set_operating_mode_select(const std::string& x) {
 inline void handle_button_mode_click() {
     current_mode_index->value() = (current_mode_index->value() + 1) % 5;
     cycle_operating_mode(current_mode_index->value());
-    ui_timeout_script->execute();
+    ui_active->value() = true;         // Activate UI immediately so LEDs render
+    update_leds->execute();            // Show new mode LEDs now
+    ui_timeout_script->execute();      // Start 30s auto-dim timer
+    ESP_LOGI("button", "Mode button pressed, new index: %d", current_mode_index->value());
 }
 
 /// @brief Power button short press: turns ventilation_enabled ON.
@@ -878,7 +913,9 @@ inline void handle_button_level_click() {
     
     ventilation_ctrl->set_fan_intensity(level);
     fan_speed_update->execute();
-    ui_timeout_script->execute();
+    ui_active->value() = true;         // Activate UI immediately so LEDs render
+    update_leds->execute();            // Show new intensity level LEDs now
+    ui_timeout_script->execute();      // Start 30s auto-dim timer
     ESP_LOGI("button", "Intensity level: %d", level);
 }
 

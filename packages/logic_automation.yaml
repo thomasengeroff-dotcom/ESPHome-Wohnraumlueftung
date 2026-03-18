@@ -80,6 +80,23 @@ switch:
           id(co2_auto_enabled) = false;
           ESP_LOGI("co2_auto", "CO2 Automatik deaktiviert");
 
+  # ESP-NOW Peer Check (disable to suppress Master LED blinking without peers)
+  - platform: template
+    name: "ESP-NOW Peerprüfung"
+    id: peer_check_switch
+    icon: "mdi:access-point-network"
+    optimistic: false
+    lambda: |-
+      return id(peer_check_enabled);
+    turn_on_action:
+      - lambda: |-
+          id(peer_check_enabled) = true;
+          ESP_LOGI("espnow", "Peer check enabled");
+    turn_off_action:
+      - lambda: |-
+          id(peer_check_enabled) = false;
+          ESP_LOGI("espnow", "Peer check disabled");
+
 # ---------------------------------------------------------
 # SCRIPTS (Complex Logic)
 # ---------------------------------------------------------
@@ -188,17 +205,16 @@ binary_sensor:
     filters:
       - delayed_on: 25ms # Ignores any bouncing that is shorter than 25ms.
       - delayed_off: 25ms # Prevents "ghost presses" when releasing the button.
-    on_multi_click:
+    on_click:
       # Short press: Cycle through intensity levels 1→10→1
-      - timing:
-          - ON for at most 0.5s
-          - OFF for at least 0.1s
+      - min_length: 50ms
+        max_length: 999ms
         then:
           - lambda: |-
               handle_button_level_click();
       # Long press (≥1s): Turn off system power
-      - timing:
-          - ON for at least 1s
+      - min_length: 1000ms
+        max_length: 60000ms
         then:
           - lambda: handle_button_power_long_click();
 
