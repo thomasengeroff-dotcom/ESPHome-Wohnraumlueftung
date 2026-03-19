@@ -68,10 +68,10 @@ Der verwendete Lüfter besitzt eine V-förmige Steuerkurve für den Richtungswec
 | Betriebszustand | Datei / Messung | Signal (Lüfter sieht) | Verhalten gem. Datenblatt |
 | :--- | :--- | :--- | :--- |
 | **Stillstand (Pause)** | `S5-Pause.jpg` | **50 % PWM** | Aktive Bremsung, Rotor steht |
-| **Zuluft: Stufe 1** (Minimum) | `S1a.jpg` | **30 % PWM** | Niedrige Vorwärtsdrehzahl |
-| **Zuluft: Stufe 5** (Maximum) | `S5a.jpg` | **5 % PWM** | Maximale Vorwärtsdrehzahl ($4.200\text{ U/min}$) |
-| **Abluft: Stufe 1** (Minimum) | `S2b.jpg` | **70 % PWM** | Niedrige Rückwärtsdrehzahl |
-| **Abluft: Stufe 5** (Maximum) | `S5b.jpg` | **95 % PWM** | Maximale Rückwärtsdrehzahl ($4.200\text{ U/min}$) |
+| **Abluft (Raus): Stufe 1** (Minimum) | `S1a.jpg` | **30 % PWM** | Niedrige Drehzahl (Raus) |
+| **Abluft (Raus): Stufe 10** (Maximum) | `S5a.jpg` | **5 % PWM** | Maximale Drehzahl (Raus) |
+| **Zuluft (Rein): Stufe 1** (Minimum) | `S2b.jpg` | **70 % PWM** | Niedrige Drehzahl (Rein) |
+| **Zuluft (Rein): Stufe 10** (Maximum) | `S5b.jpg` | **95 % PWM** | Maximale Drehzahl (Rein) |
 
 ---
 
@@ -87,10 +87,11 @@ Ich habe die Steuerung nun exakt an die Oszilloskop-Messungen der V-Kennlinie an
 **Was wurde geändert?**
 
 * **set_fan_logic:** Die Funktion mappt nun die Stufen 1 bis 10 linear auf die gemessenen Werte:
-  * **Zuluft:** Von 30% (Stufe 1) runter auf 5% (Stufe 10).
-  * **Abluft:** Von 70% (Stufe 1) hoch auf 95% (Stufe 10).
+  * **Abluft (Raus):** Von 30% (Stufe 1) runter auf 5% (Stufe 10).
+  * **Zuluft (Rein):** Von 70% (Stufe 1) hoch auf 95% (Stufe 10).
   * **Stillstand:** Exakt 50%.
-* **Richtungen:** Die Richtungen im Code wurden so getauscht, dass sie zur Mess-Tabelle passen (Zuluft < 50%, Abluft > 50%).
+* **Richtungen:** Die Richtungen im Code wurden so korrigiert, dass 30% Abluft (Raus) und 70% Zuluft (Rein) entsprechen.
+* **Neu:** Es gibt eine neue Entität `Aktuelle Luftrichtung` in Home Assistant, die den Status im Klartext anzeigt.
 * **Hardware-Check:** Die Frequenz in `hardware_io.yaml` steht bereits auf den korrekten **2000 Hz**.
 
 Das Projekt kann nun neu kompiliert und getestet werden. Der Lüfter sollte nun hochpräzise reagieren und die Richtungen korrekt wechseln.

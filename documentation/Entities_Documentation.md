@@ -12,12 +12,16 @@ Diese Entitäten dienen der primären Steuerung des Lüfters und des Betriebsmod
 * **`number.fan_intensity_display`** ("Lüfter Intensität")
   * *Typ:* Number (Slider)
   * *Dokumentation:* Manuelle Einstellung der Lüfterstufe (1 bis 10). Wird im Automatik-Modus überschrieben.
-* **`number.test_speed_slider`** ("Lüfter Geschwindigkeit")
+* **`number.fan_intensity_display`** ("Lüfter Intensität")
   * *Typ:* Number (Template)
   * *Dokumentation:* Zeigt den aktuell berechneten PWM-Wert des Lüfters an (bzw. lässt bei manueller test_speed_slider Steuerung Prozent zu).
 * **`sensor.fan_rpm`** ("Lüfter Drehzahl")
-  * *Typ:* Sensor (Pulse Counter)
-  * *Dokumentation:* Liest das Tachosignal des Lüfters aus und liefert die echten Umdrehungen pro Minute (RPM).
+  * *Typ:* Sensor
+  * *Dokumentation:* Zeigt die Drehzahl des Lüfters in RPM an. Falls kein physischer Tacho-Sensor (4-Pin Lüfter) angeschlossen ist, wird ein berechneter Wert basierend auf der Leistungsstufe ausgegeben (100% = 4200 RPM).
+* **`text_sensor.direction_display`** ("Aktuelle Luftrichtung")
+  * *Typ:* Text Sensor
+  * *Dokumentation:* Zeigt die momentane Richtung des Luftstroms an: "Zuluft (Rein)", "Abluft (Raus)" oder "Stillstand".
+* **`sensor.ventilation_timer_remaining`** ("Verbleibende Zeit").
 
 ## 2. Automatik & Regelung (Sensoren-getrieben)
 

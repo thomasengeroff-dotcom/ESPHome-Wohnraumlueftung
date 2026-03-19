@@ -17,7 +17,7 @@ Statt die Geräte-IDs fest im YAML-Code zu definieren, können alle Lüftungsger
 ### In Home Assistant verfügbar
 
 | Parameter | Beschreibung | Bereich | Standard |
-|-----------|--------------|---------|----------|
+| :--- | :--- | :--- | :--- |
 | **Stockwerk (Floor ID)** | Stockwerk-Nummer | 0-99 | 1 |
 | **Raum (Room ID)** | Raum-Nummer | 0-99 | 1 |
 | **Geräte-ID (Device ID)** | Eindeutige Geräte-ID | 1-99 | 1 |
@@ -55,7 +55,7 @@ In Home Assistant unter dem Gerät findest du folgende Einstellungen:
 
 #### Beispiel: Wohnzimmer, Stockwerk 1, Gerät 1
 
-```
+```text
 Stockwerk (Floor ID):     1
 Raum (Room ID):          2  (z.B. Wohnzimmer)
 Geräte-ID (Device ID):   1  (Erstes Gerät im Raum)
@@ -64,7 +64,7 @@ Geräte-Phase:            Phase A (Startet mit Zuluft)
 
 #### Beispiel: Wohnzimmer, Stockwerk 1, Gerät 2 (Paar-Betrieb)
 
-```
+```text
 Stockwerk (Floor ID):     1
 Raum (Room ID):          2  (Gleicher Raum!)
 Geräte-ID (Device ID):   2  (Zweites Gerät im Raum)
@@ -87,7 +87,7 @@ Die ESP-NOW Kommunikation funktioniert automatisch im **Broadcast-Modus**:
 
 **Beispiel:**
 
-```
+```text
 Gerät 1: Floor 1, Room 2, Device 1
 Gerät 2: Floor 1, Room 2, Device 2
 Gerät 3: Floor 1, Room 3, Device 1
@@ -111,7 +111,7 @@ Die Werte werden **automatisch im Flash** gespeichert und bleiben nach Neustarts
 ### Erdgeschoss (Floor 0)
 
 | Raum | Gerät | Floor ID | Room ID | Device ID | Phase |
-|------|-------|----------|---------|-----------|-------|
+| :--- | :--- | :--- | :--- | :--- | :--- |
 | Küche | 1 | 0 | 1 | 1 | A |
 | Küche | 2 | 0 | 1 | 2 | B |
 | Wohnzimmer | 1 | 0 | 2 | 1 | A |
@@ -120,7 +120,7 @@ Die Werte werden **automatisch im Flash** gespeichert und bleiben nach Neustarts
 ### Obergeschoss (Floor 1)
 
 | Raum | Gerät | Floor ID | Room ID | Device ID | Phase |
-|------|-------|----------|---------|-----------|-------|
+| :--- | :--- | :--- | :--- | :--- | :--- |
 | Schlafzimmer | 1 | 1 | 1 | 1 | A |
 | Schlafzimmer | 2 | 1 | 1 | 2 | B |
 | Kinderzimmer | 1 | 1 | 2 | 1 | A |
@@ -136,7 +136,7 @@ Geräte kommunizieren nur mit anderen Geräten, die:
 
 ### Beispiel: Paar-Betrieb
 
-```
+```text
 Gerät A: Floor 1, Room 2, Device 1, Phase A
 Gerät B: Floor 1, Room 2, Device 2, Phase A
 ```
@@ -175,7 +175,7 @@ set_action:
 
 Alle Änderungen werden geloggt:
 
-```
+```text
 [config] Floor ID updated to: 2
 [config] Room ID updated to: 3
 [config] Device ID updated to: 1
@@ -186,7 +186,7 @@ Alle Änderungen werden geloggt:
 
 Die Einstellungen erscheinen als **Number-Inputs** und **Select-Dropdown**:
 
-```
+```text
 ┌─────────────────────────────────────┐
 │ ESPTest                             │
 ├─────────────────────────────────────┤
@@ -196,7 +196,6 @@ Die Einstellungen erscheinen als **Number-Inputs** und **Select-Dropdown**:
 │ Geräte-Phase (A/B)          [ A ▼ ] │
 ├─────────────────────────────────────┤
 │ Lüftungsmodus               [Wärme▼]│
-│ Lüfter Geschwindigkeit      [█▓░░░] │
 │ Durchlüften Dauer (min)     [ 30  ] │
 └─────────────────────────────────────┘
 ```

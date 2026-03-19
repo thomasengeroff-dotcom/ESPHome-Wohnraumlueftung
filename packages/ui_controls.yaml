@@ -83,29 +83,6 @@ light:
 # UI CONTROLS (Home Assistant)
 # ---------------------------------------------------------
 number:
-  # Manual Speed Slider
-  - platform: template
-    name: "Lüfter Geschwindigkeit"
-    id: test_speed_slider
-    icon: "mdi:fan-speed-3"
-    min_value: 0
-    max_value: 100
-    step: 1
-    mode: slider
-    optimistic: true
-    set_action:
-      then:
-        - if:
-            condition:
-              lambda: "return is_fan_slider_off(x);"
-            then:
-              - fan.turn_off: lueftung_fan
-            else:
-              - fan.turn_on:
-                  id: lueftung_fan
-                  speed: !lambda |-
-                    return x;
-
   - platform: template
     name: "Durchlüften Dauer (min)"
     id: vent_timer
@@ -235,6 +212,24 @@ number:
           id(auto_presence_val) = x;
           id(auto_presence_slider).publish_state(x);
           evaluate_auto_mode(); // Force re-eval
+
+# ---------------------------------------------------------
+# TEXT SENSORS (Status Display)
+# ---------------------------------------------------------
+text_sensor:
+  - platform: template
+    name: "Aktuelle Luftrichtung"
+    id: direction_display
+    icon: "mdi:directions-fork"
+    lambda: |-
+      if (last_fan_pwm_level < 0.45f) {
+        return {"Abluft (Raus)"};
+      } else if (last_fan_pwm_level > 0.55f) {
+        return {"Zuluft (Rein)"};
+      } else {
+        return {"Stillstand"};
+      }
+    update_interval: 2s
 
 # ---------------------------------------------------------
 # VENTILATION MODE SELECTION

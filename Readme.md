@@ -69,11 +69,13 @@ Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PL
 ### ⚙️ Intelligente Betriebsmodi
 
 - 🤖 **Standard-Automatik**: Vollautomatische Steuerung für maximalen Komfort und Effizienz. Standardbetrieb in Wärmerückgewinnung (Push-Pull) mit dynamischer Anpassung an CO2 und Luftfeuchtigkeit unter Einbezug von Wetterdaten. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll.
-Im Sommer wird die Querlüftung zur passiven nächtlichen Kühlung (wenn es außen kühler ist als innen) automatisch aktiviert. Zusätzlich nutzt dieser Modus die Radar Anwesenheits Sensorik um die Anwesenheit im Raum zu messen und die Lüftungsintensität entsprechend der Voreinstellungen anzupassen. Dies ist also der Standardmodus, welcher im Alltag genutzt werden sollte.
+Im Sommer wird die Querlüftung zur passiven nächtlichen Kühlung (wenn es außen kühler ist als innen) automatisch aktiviert. Dieser Modus ist der Standard im Alltag, um maximale Energieeffizienz und Luftqualität zu gewährleisten.
 In zukünftigen Versionen werde ich diesen Modus weiter optimieren, um den Komfort und die Effizienz weiter zu steigern.
 - 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Die Synchronisation aller Einheiten erfolgt vollautomatisch und kabellos über das ESP-NOW Protokoll. Dieser Modus lässt aber die CO2, Feuchte und Radar Anwesenheits Sensorik unberücksichtigt.
 - 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb. Dieser Modus lässt aber die CO2, Feuchte und Radar Anwesenheits Sensorik unberücksichtigt.
 - 🚀 **Stoßlüftung**: Intensivlüftung für schnellen Luftaustausch. Das Gerät lüftet für 15 Minuten mit der **manuell gewählten Intensität** und pausiert anschließend für 105 Minuten, um Feuchtigkeit effektiv abzuführen und den Keramikspeicher zu regenerieren. Danach wiederholt sich der Zyklus.
+- 📊 **Echte VentoMaxx V-Kennlinie**: Der Lüfter wird exakt nach den physikalischen Parametern der Original-Hardware gesteuert (50% PWM = Stopp-Zone, lineare Skalierung in beide Richtungen), was eine hochpräzise und materialschonende Regelung ermöglicht.
+- 🔄 **Klartext-Richtungsanzeige**: Eine neue Sensor-Entität zeigt jederzeit die aktuelle Luftrichtung ("Zuluft (Rein)", "Abluft (Raus)" oder "Stillstand") an, was die Diagnose und Überwachung der Synchronisation erheblich vereinfacht.
 
 ### 🛡️ Präzisions-Sensorik & Monitoring
 
@@ -81,7 +83,8 @@ In zukünftigen Versionen werde ich diesen Modus weiter optimieren, um den Komfo
 - 💨 **Echte CO2-Messung**: Der SCD41 nutzt **photoacoustic sensing** zur direkten CO2-Messung (400-5000 ppm) statt berechneter Äquivalente - ideal für bedarfsgerechte Lüftungssteuerung.
 - 🏔️ **Luftdruckmessung via BMP390**: Der hochpräzise Barometer-Sensor [Bosch BMP390](https://www.bosch-sensortec.com/en/products/environmental-sensors/pressure-sensors/pressure-sensors-bmp390.html) ermöglicht lokale Wettertrend-Analysen, Sturmwarnungen (Rapid Pressure Drop) und liefert gleichzeitig die exakten Höhendaten für die Autokalibrierung und barometrische Kompensation des SCD41 CO2-Sensors.
 - 📊 **Automatische Intensitätsregelung**: Das System kann die Lüfterleistung automatisch bei steigendem CO2-Gehalt oder Luftfeuchtigkeit für optimale Raumluftqualität erhöhen. Hierfür wird eine fortschrittliche PID-Regelung verwendet, welche die Lüfterleistung dynamisch an die gemessenen Werte anpasst. Die Regelung ist so optimiert, dass sie die Lüfterleistung so gering wie möglich hält, um den Energieverbrauch und die Geräuschentwicklung zu minimieren.
-- 🚶 **Radar-basierte Anwesenheitserkennung (HLK-LD2450)**: Mittels eines mmWave-Radarsensors (integriert über den UART-Pin-Header) wird die Anwesenheit im Raum präzise erfasst. Da die Lüftungsgeräte ohnehin in jedem Raum optimal positioniert sind, dienen sie gleichzeitig als perfekter Präsenzmelder für Home Assistant. Über eine gleitende Bedarfssteuerung (Slider `-5` bis `+5`) kann die Lüftungsintensität ideal angepasst werden (z.B. `+3` intensiviert die Lüftung im Büro bei Anwesenheit, `-2` senkt sie zur Lärmreduzierung im Schlafzimmer).
+- 🚶 **Radar-basierte Anwesenheitserkennung (HLK-LD2450)**: Mittels eines mmWave-Radarsensors (integriert über den UART-Pin-Header) wird die Anwesenheit im Raum präzise erfasst. In den manuellen Modi (WRG, Durchlüften, Stoßlüftung) dient der Sensor als **dynamischer Boost/Dämpfer**. Über eine gleitende Bedarfssteuerung (Slider `-5` bis `+5`) kann die aktuell gewählte Lüfterstufe ideal angepasst werden (z.B. `+3` intensiviert die Lüftung im Büro bei Anwesenheit, `-2` senkt sie zur Lärmreduzierung im Schlafzimmer). Im Automatik-Modus wird die Präsenz zugunsten einer stabilen PID-Regelung ignoriert.
+Natürlich kann dieser Sensor auch für andere Automatisierungen in Home Assistant genutzt werden.
 
 ### 🖥️ Bedienung am Lüftungsgerät
 
@@ -144,7 +147,8 @@ Die folgenden weiteren "Advanced Automation"-Funktionen sind in Vorbereitung:
   - Zum Differenzdruckausgleich bei gleichzeitigem Betrieb von Kamin-/Holzofen und Lüftungsanlage. Erweiterung der Hardware durch einen potentialfreien Kontakt, an welchem der Unterdruckwächter angeschlossen wird.
 
 - **Closed-Loop Drehzahlüberwachung**:
-  - Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung (nur bei 4-PIN PWM Lüftern möglich).
+  - Kontinuierliches Monitoring der Lüfterdrehzahl via Tacho-Signal für konstanten Volumenstrom und Fehlererkennung (4-PIN PWM Lüfter).
+  - **Neu:** Intelligente virtuelle Drehzahlberechnung (4200 RPM @ 100%) als Fallback für Standard-Lüfter ohne Tacho-Signal.
 
 - **KI-gestützte Lüftungssteuerung**:
   - Proaktive KI-gestützte Lüftungssteuerung basierend auf historischen Daten und externen Prognosen (Wetter, CO2, Feuchte). Siehe [📄 KI-gestützte Lüftungssteuerung](documentation/KI-gestützte-Lüftungssteuerung.md) für Details.
@@ -337,7 +341,6 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 | :--- | :--- | :--- |
 | ✅ **CO2-Regelung (PID)** | SCD41 (`sensor.scd41_co2`) | `number.auto_co2_threshold` |
 | ✅ **Feuchte-Management (PID)** | SCD41 (`sensor.scd41_humidity`) + HA `outdoor_humidity` | Über Außenfeuchte |
-| ✅ **Radar Anwesenheits-Sensorik** | HLK-LD2450 (`binary_sensor.radar_presence`) | Konfigurabel in HA |
 | ✅ **Sommer-Kühlfunktion** | NTC-Sensoren + ESP-NOW Gruppentemperatur | 22°C Innentemperatur |
 
 **Logik im Detail:**
@@ -346,7 +349,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 - **Adaptive Automatik (CO2):** Steigt der CO2-Wert über den HA-Grenzwert, regelt ein PID-Regler die Lüfterleistung **stufenlos** und lautlos hoch. Ein konfigurierbarer Min-/Max-Level (`automatik_min_fan_level`) begrenzt dabei das Anpassungsfenster.
 - **💧 Feuchte-Management:** Bei Überschreitung des Feuchte-Grenzwerts (Default 60%) regelt ein eigener PID-Regler (`pid_humidity`) die Leistung hoch (Schimmelprävention). Eine intelligente Hysterese (`±2%`) verhindert "Rapid Cycling". **Outdoor Check:** Es wird nur entfeuchtet, wenn die Außenluft trockener ist als die Innenluft (`out_hum < in_hum`).
 - **Sommer-Kühlung:** Bei Innentemperatur > 22°C und kühlerem Außenbereich wechselt das System automatisch in `Durchlüften`. Sobald es außen wieder wärmer wird, kehrt es zu WRG zurück.
-- **Anwesenheit:** Optionale Anpassung der Lüfterstärke (+3/+1/-1 Stufen) je nach konfiguriertem Profil in HA.
+- **Anwesenheit (Manuelle Modi):** In den Modi WRG, Durchlüften und Stoßlüftung wird die Lüfterstärke bei erkannter Präsenz dynamisch angepasst (Slider `-5` bis `+5`). Dies erlaubt einen bedarfsgerechten "Präsenz-Boost" ohne die Automatik-Regelung zu beeinflussen.
 - **Gruppenlogik:** PID-Demand und Temperaturen werden sekündlich via ESP-NOW geteilt — alle Geräte im Raum laufen synchron (die Lüfter skalieren identisch auf den höchsten Bedarf im Raum).
 
 > **⚙️ Voraussetzung für das Feuchte-Management: `sensor.outdoor_humidity` in Home Assistant**
@@ -405,27 +408,28 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 
 👉 **Tipp:** Eine detaillierte Übersicht aller verfügbaren Home Assistant Entitäten inklusive ihrer technischen Namen (`ID`) und Funktion findest du im Dokument **[Entities_Documentation.md](documentation/Entities_Documentation.md)**.
 
-#### 📊 Lüftergeschwindigkeit pro Stufe (ebm-papst VarioPro PWM-Kennlinie)
+#### 📊 Lüftergeschwindigkeit pro Stufe (VentoMaxx V-Kennlinie)
 
-Der ebm-papst 4412 F/2 GLL (VarioPro) wird über ein **einzelnes PWM-Signal** gesteuert, das gleichzeitig Drehzahl und Richtung kodiert:
+Der original VentoMaxx Lüfter (**ebm-papst 4412 F/2 GLL**) wird über ein **einzelnes PWM-Signal** gesteuert. Die Kennlinie folgt einer V-Form (gemessen via Oszilloskop), wobei 50% PWM den Stillstand markiert:
 
-| | **50 % PWM** | **50 % → 0 % PWM** | **50 % → 100 % PWM** |
+| | **50 % PWM** | **30 % → 5 % PWM** | **70 % → 95 % PWM** |
 |---|---|---|---|
-| **Funktion** | Lüfter **STOP** | Richtung A (Abluft) | Richtung B (Zuluft) |
+| **Funktion** | Lüfter **STOP** | Richtung A (Abluft / Raus) | Richtung B (Zuluft / Rein) |
 | **Drehzahl** | 0 RPM | steigt mit Abstand zu 50% | steigt mit Abstand zu 50% |
 
-| Stufe | Drehzahl | PWM Dir A (Abluft) | PWM Dir B (Zuluft) |
+| Stufe | Leistung | PWM Dir A (Abluft) | PWM Dir B (Zuluft) |
 | :---: | :---: | :---: | :---: |
-| **1** | 10 % | 45 % | 55 % |
-| **2** | 20 % | 40 % | 60 % |
-| **3** | 30 % | 35 % | 65 % |
-| **4** | 40 % | 30 % | 70 % |
-| **5** | 50 % | 25 % | 75 % |
-| **6** | 60 % | 20 % | 80 % |
-| **7** | 70 % | 15 % | 85 % |
-| **8** | 80 % | 10 % | 90 % |
-| **9** | 90 % | 5 % | 95 % |
-| **10** | 100 % | 0 % | 100 % |
+| **OFF** | 0 % | 50.0 % | 50.0 % |
+| **1** | 10 % | 30.0 % | 70.0 % |
+| **2** | 20 % | 27.2 % | 72.8 % |
+| **3** | 30 % | 24.4 % | 75.6 % |
+| **4** | 40 % | 21.7 % | 78.3 % |
+| **5** | 50 % | 18.9 % | 81.1 % |
+| **6** | 60 % | 16.1 % | 83.9 % |
+| **7** | 70 % | 13.3 % | 86.7 % |
+| **8** | 80 % | 10.6 % | 89.4 % |
+| **9** | 90 % | 7.8 % | 92.2 % |
+| **10** | 100 % | 5.0 % | 95.0 % |
 
 > ⚙️ **Mindestdrehzahl:** Stufe 1 entspricht 10 % Drehzahl (PWM nie auf 50 % = Stopp). Im Automatik-Modus (PID) wird die Drehzahl stufenlos zwischen `co2_min_fan_level` und `co2_max_fan_level` geregelt.
 > 🔄 **Software-Fan-Ramping:** Bei jedem Richtungswechsel (WRG/Stoßlüftung) führt das System eine **5-sekündige sanfte Abbrems- und Anlauframpe** durch. Dies schont den Motor und minimiert Umschaltgeräusche. Die Intensitäts-LEDs zeigen währenddessen bereits den Zielwert an.

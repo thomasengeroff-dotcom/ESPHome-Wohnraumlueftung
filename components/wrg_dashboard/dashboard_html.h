@@ -76,6 +76,7 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
         <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Temperatur Abluft:</span> <span class="font-medium text-lg" id="val_temp_abluft">-- °C</span></div>
         <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Effizienz WRG:</span> <span class="font-medium text-accent text-lg" id="val_heat_recovery_efficiency">-- %</span></div>
         <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Lüfter RPM:</span> <span class="font-medium text-lg" id="val_fan_rpm">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Luftrichtung:</span> <span class="font-medium text-accent text-lg" id="val_direction_display">--</span></div>
       </div>
 
       <!-- Air Quality -->
@@ -114,11 +115,6 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
           <div class="flex flex-col space-y-2">
             <div class="flex justify-between"><span class="text-sm text-gray-400 font-medium">Lüfter Intensität</span><span id="label_fan_intensity" class="font-bold text-accent">--</span></div>
             <input type="range" id="fan_intensity_display" min="1" max="10" step="1" onchange="sendSet('fan_intensity_display', this.value)" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2">
-          </div>
-
-          <div class="flex flex-col space-y-2">
-            <div class="flex justify-between"><span class="text-sm text-gray-400 font-medium">Lüfter Speed (%)</span><span id="label_speed" class="font-bold text-accent">--</span></div>
-            <input type="range" id="test_speed_slider" min="0" max="100" step="1" onchange="sendSet('test_speed_slider', this.value)" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2">
           </div>
 
           <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
@@ -279,7 +275,7 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
         // Update direct text elements
         const ids = ["device_id", "floor_id", "room_id", "phase", 
                      "temperature", "pressure", "outdoor_humidity", "temp_zuluft", "temp_abluft", 
-                     "heat_recovery_efficiency", "fan_rpm", "scd41_co2", "scd41_co2_bewertung", 
+                     "heat_recovery_efficiency", "fan_rpm", "direction_display", "scd41_co2", "scd41_co2_bewertung", 
                      "scd41_temperature", "scd41_humidity", "filter_operating_days"];
         
         ids.forEach(id => {
@@ -308,7 +304,7 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
           document.getElementById("luefter_modus").value = data.luefter_modus;
         }
         
-        const uiControls = ['fan_intensity_display', 'test_speed_slider', 'automatik_min_luefterstufe', 'automatik_max_luefterstufe', 'auto_co2_threshold', 'auto_humidity_threshold', 'auto_presence_slider'];
+        const uiControls = ['fan_intensity_display', 'automatik_min_luefterstufe', 'automatik_max_luefterstufe', 'auto_co2_threshold', 'auto_humidity_threshold', 'auto_presence_slider'];
         uiControls.forEach(ctrl => {
            if (document.activeElement.id !== ctrl && data[ctrl] !== null) {
               document.getElementById(ctrl).value = data[ctrl];
@@ -316,7 +312,6 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
         });
 
         document.getElementById("label_fan_intensity").innerText = document.getElementById("fan_intensity_display").value;
-        document.getElementById("label_speed").innerText = document.getElementById("test_speed_slider").value;
         
         // Render ESP-NOW Peers
         if (data.peers && data.peers.length > 0) {
@@ -376,7 +371,6 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
     }
 
     async function sendSet(id, val) {
-      if (id === 'test_speed_slider') document.getElementById("label_speed").innerText = val;
       if (id === 'fan_intensity_display') document.getElementById("label_fan_intensity").innerText = val;
 
       try {
@@ -393,4 +387,3 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
 </body>
 </html>
 )=====";
-

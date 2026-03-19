@@ -140,16 +140,36 @@ sensor:
         id(temp_abluft).state      // Exhaust air temperature
       );
 
-  # Fan Tachometer (RPM) Reading
+  # Fan Tachometer (RPM) Reading (Hardware)
   - platform: pulse_counter
     pin: GPIO20 # Pin D9
-    name: "Lüfter Drehzahl"
-    id: fan_rpm
+    id: fan_rpm_pulse
+    internal: true
     use_pcnt: true # Use hardware PCNT for efficient pulse counting (recommended for ESP32)
-    unit_of_measurement: "RPM"
     update_interval: 1s # 1s Window for stable RPM calculation
     filters:
       - multiply: 0.5 # 2 pulses per revolution -> divide by 2
+
+  # Fan RPM (Virtual / Calculated)
+  # Uses real RPM if pulse_counter > 0, otherwise calculates based on speed demand.
+  # 100% speed (level 10) = 4200 RPM
+  - platform: template
+    name: "Lüfter Drehzahl"
+    id: fan_rpm
+    unit_of_measurement: "RPM"
+    accuracy_decimals: 0
+    icon: "mdi:speedometer"
+    update_interval: 1s
+    lambda: |-
+      float raw_rpm = id(fan_rpm_pulse).state;
+      if (raw_rpm > 10.0f) { // If we have > 10 RPM, consider it a real 4-pin signal
+        return raw_rpm;
+      }
+      
+      // No 4rd wire / tacho signal: show calculated RPM
+      float speed = get_current_target_speed();
+      if (speed < 0.05f) return 0.0f; // Fan is off
+      return speed * 4200.0f;
     on_value:
       then:
         - script.execute: update_leds # Update LEDs on RPM change (optional feedback)

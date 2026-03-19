@@ -64,8 +64,11 @@ public:
   void set_floor_id(text_sensor::TextSensor *t) { floor_id_ = t; }
   void set_room_id(text_sensor::TextSensor *t) { room_id_ = t; }
   void set_phase(text_sensor::TextSensor *t) { phase_ = t; }
+  void set_direction_display(text_sensor::TextSensor *t) {
+    direction_display_ = t;
+  }
 
-  void set_test_speed_slider(number::Number *n) { test_speed_slider_ = n; }
+
   void set_vent_timer(number::Number *n) { vent_timer_ = n; }
   void set_sync_interval_config(number::Number *n) {
     sync_interval_config_ = n;
@@ -128,8 +131,8 @@ protected:
   text_sensor::TextSensor *floor_id_{nullptr};
   text_sensor::TextSensor *room_id_{nullptr};
   text_sensor::TextSensor *phase_{nullptr};
+  text_sensor::TextSensor *direction_display_{nullptr};
 
-  number::Number *test_speed_slider_{nullptr};
   number::Number *vent_timer_{nullptr};
   number::Number *sync_interval_config_{nullptr};
   number::Number *fan_intensity_display_{nullptr};

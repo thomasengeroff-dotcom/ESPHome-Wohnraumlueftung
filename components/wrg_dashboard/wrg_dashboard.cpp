@@ -63,7 +63,6 @@ void WrgDashboard::dispatch_set_(const std::string &key, const std::string &sval
 
   if (key == "luefter_modus") { doSelect(this->luefter_modus_); }
   else if (key == "fan_intensity_display") { doNumber(this->fan_intensity_display_); }
-  else if (key == "test_speed_slider") { doNumber(this->test_speed_slider_); }
   else if (key == "automatik_min_luefterstufe") { doNumber(this->automatik_min_luefterstufe_); }
   else if (key == "automatik_max_luefterstufe") { doNumber(this->automatik_max_luefterstufe_); }
   else if (key == "auto_co2_threshold") { doNumber(this->auto_co2_threshold_); }
@@ -118,6 +117,7 @@ void WrgDashboard::handle_state_(AsyncWebServerRequest *request) {
   doc["floor_id"] = get_t(this->floor_id_);
   doc["room_id"] = get_t(this->room_id_);
   doc["phase"] = get_t(this->phase_);
+  doc["direction_display"] = get_t(this->direction_display_);
 
   doc["filter_change_alarm"] = get_b(this->filter_change_alarm_);
   doc["radar_presence"] = get_b(this->radar_presence_);
@@ -125,7 +125,7 @@ void WrgDashboard::handle_state_(AsyncWebServerRequest *request) {
   doc["scd41_co2_bewertung"] = get_t(this->scd41_co2_bewertung_);
   doc["luefter_modus"] = get_s(this->luefter_modus_);
 
-  doc["test_speed_slider"] = get_n(this->test_speed_slider_);
+
   doc["vent_timer"] = get_n(this->vent_timer_);
   doc["sync_interval_config"] = get_n(this->sync_interval_config_);
   doc["fan_intensity_display"] = get_n(this->fan_intensity_display_);

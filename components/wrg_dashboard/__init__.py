@@ -38,8 +38,9 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional("floor_id_id"):                 cv.use_id(text_sensor.TextSensor),
         cv.Optional("room_id_id"):                  cv.use_id(text_sensor.TextSensor),
         cv.Optional("phase_id"):                    cv.use_id(text_sensor.TextSensor),
+        cv.Optional("direction_display_id"):        cv.use_id(text_sensor.TextSensor),
 
-        cv.Optional("test_speed_slider_id"):        cv.use_id(number.Number),
+
         cv.Optional("vent_timer_id"):               cv.use_id(number.Number),
         cv.Optional("sync_interval_config_id"):     cv.use_id(number.Number),
         cv.Optional("fan_intensity_display_id"):    cv.use_id(number.Number),

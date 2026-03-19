@@ -240,18 +240,18 @@ interval:
                 data: !lambda |-
                   return build_and_populate_packet(esphome::MSG_SYNC);
 
-  # Automatik Logik
-  - interval: 60s
+  # Automatik Logik (CO2, Feuchte, Sommer/Winter)
+  - interval: 10s
     id: auto_mode_interval
     then:
       - lambda: |-
           evaluate_auto_mode();
 
-  # CO2 Auto-Control: Check CO2 level and adjust fan every 30s
-  - interval: 30s
+  # Lüfter-Geschwindigkeits-Update (Präsenz-Check für alle Modi)
+  - interval: 10s
     then:
       - lambda: |-
-          apply_co2_auto_control();
+          fan_speed_update->execute();
 
   # Master LED Error Check: Blink if WiFi disconnected or no ESP-NOW peer within 5 min
   - interval: 5s

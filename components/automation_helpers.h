@@ -208,40 +208,7 @@ inline int get_co2_fan_level(float co2_ppm, int current_level, int min_level, in
 /// @brief Applies CO2-based auto-control if enabled and SCD41 is connected.
 /// Checks sensor availability (NaN = not connected), calculates target level,
 /// and applies it only if it differs from the current level (gradual change).
-inline void apply_co2_auto_control() {
-    // Guard: System-wide Automatik mode must be active
-    if (auto_mode_active == nullptr || !auto_mode_active->value()) return;
-
-    // Guard: CO2 auto-control (switch) must be enabled
-    if (!co2_auto_enabled->value()) return;
-
-    // Guard: System must be on
-    if (!ventilation_enabled->value()) return;
-
-    // Guard: SCD41 sensor must be connected (state is NaN when absent)
-    if (scd41_co2 == nullptr) return;
-    float co2_ppm = scd41_co2->state;
-    if (std::isnan(co2_ppm)) {
-        ESP_LOGD("co2_auto", "SCD41 not connected — CO2 auto-control inactive");
-        return;
-    }
-
-    int current_level = fan_intensity_level->value();
-    int min_level = automatik_min_fan_level->value();
-    int max_level = automatik_max_fan_level->value();
-
-    int target_level = VentilationLogic::get_co2_fan_level(co2_ppm, current_level, min_level, max_level);
-
-    if (target_level != current_level) {
-        ESP_LOGI("co2_auto", "CO2=%.0f ppm → Fan %d→%d (min=%d, max=%d)",
-                 co2_ppm, current_level, target_level, min_level, max_level);
-        fan_intensity_level->value() = target_level;
-        fan_intensity_display->publish_state(target_level);
-        ventilation_ctrl->set_fan_intensity(target_level);
-        fan_speed_update->execute();
-        update_leds->execute();
-    }
-}
+// Legacy CO2 control removed in favor of evaluate_auto_mode()
 
 /// @brief Core logic for the new Standard-Automatik mode.
 inline void evaluate_auto_mode() {
@@ -368,13 +335,9 @@ inline void evaluate_auto_mode() {
                   max_pid_demand, v->local_pid_demand, v->last_peer_pid_demand, target_level);
     }
 
-    // 5. Presence logic
-    if (radar_presence != nullptr && radar_presence->has_state() && radar_presence->state) {
-        int presence_comp = auto_presence_val->value();
-        if (presence_comp != 0) {
-            target_level = std::max(1, std::min(10, target_level + presence_comp));
-        }
-    }
+    // 5. Presence logic - Removed from Automatik mode as requested.
+    // Presence compensation is now handled directly in get_current_target_speed() 
+    // for manual modes instead.
 
     // Apply the computed logic
     if (v->state_machine.current_mode != internal_mode) {
@@ -394,10 +357,10 @@ inline void evaluate_auto_mode() {
 /// @brief Sets fan PWM for the ebm-papst VarioPro reversible fan.
 /// This fan uses a SINGLE PWM signal for both speed and direction:
 ///   - 50.0% duty cycle = STOP (active brake)
-///   - 50% → 0%   = Direction: Zuluft (Stufe 1 @ 30%, Stufe 10 @ 5%)
-///   - 50% → 100% = Direction: Abluft (Stufe 1 @ 70%, Stufe 10 @ 95%)
+///   - 50% → 0%   = Direction: Abluft (Raus) (Stufe 1 @ 30%, Stufe 10 @ 5%)
+///   - 50% → 100% = Direction: Zuluft (Rein) (Stufe 1 @ 70%, Stufe 10 @ 95%)
 /// @param speed     Target speed as duty cycle fraction (0.1 = min, 1.0 = max).
-/// @param direction Target direction: 0 = Zuluft (PWM < 50%), 1 = Abluft (PWM > 50%).
+/// @param direction Target direction: 0 = Abluft (PWM < 50%), 1 = Zuluft (PWM > 50%).
 inline void set_fan_logic(float speed, int direction) {
     if (fan_pwm_primary == nullptr) return;
 
@@ -413,12 +376,12 @@ inline void set_fan_logic(float speed, int direction) {
 
     float pwm;
     if (direction == 0) {
-        // Direction Zuluft: Min Speed (0.1) -> 30% PWM, Max Speed (1.0) -> 5% PWM
+        // Direction Abluft (Raus): Min Speed (0.1) -> 30% PWM, Max Speed (1.0) -> 5% PWM
         // Linear interpolation: y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)
         // PWM = 0.30 + (speed - 0.1) * (0.05 - 0.30) / (1.0 - 0.1)
         pwm = 0.30f - ((speed - 0.1f) / 0.9f) * 0.25f;
     } else {
-        // Direction Abluft: Min Speed (0.1) -> 70% PWM, Max Speed (1.0) -> 95% PWM
+        // Direction Zuluft (Rein): Min Speed (0.1) -> 70% PWM, Max Speed (1.0) -> 95% PWM
         // PWM = 0.70 + (speed - 0.1) * (0.95 - 0.70) / (0.9)
         pwm = 0.70f + ((speed - 0.1f) / 0.9f) * 0.25f;
     }
@@ -441,10 +404,10 @@ inline float level_to_speed(float level) {
 inline float get_current_target_speed() {
     if (fan_intensity_level == nullptr) return 0.0f;
     
-    // Normal manual mode calculation
-    float speed = level_to_speed((float)fan_intensity_level->value());
+    float intensity = (float)fan_intensity_level->value();
 
     if (auto_mode_active != nullptr && auto_mode_active->value()) {
+        // --- 1. Automatik Mode (PID based) ---
         float max_pid_demand = 0.0f;
         if (co2_auto_enabled->value() && co2_pid_result != nullptr) {
             max_pid_demand = std::max(max_pid_demand, co2_pid_result->value());
@@ -459,19 +422,30 @@ inline float get_current_target_speed() {
             }
         }
         
-        float min_level = (float)automatik_min_fan_level->value();
-        float max_level = (float)automatik_max_fan_level->value();
+        float min_l = (float)automatik_min_fan_level->value();
+        float max_l = (float)automatik_max_fan_level->value();
         
         if (max_pid_demand > 0.01f) {
-            // Scale the PID demand (0.0 - 1.0) directly onto the Level domain (e.g. Stage 1 to Stage 8)
-            float target_level = min_level + max_pid_demand * (max_level - min_level);
-            speed = level_to_speed(target_level);
+            intensity = min_l + max_pid_demand * (max_l - min_l);
         } else {
-            // When demand drops to 0, use the minimum defined limit
-            speed = level_to_speed(min_level);
+            intensity = min_l;
+        }
+    } else {
+        // --- 2. Manual Modes (WRG, Ventilation, Stoßlüftung) ---
+        // Apply presence compensation only in non-automatic modes
+        if (radar_presence != nullptr && radar_presence->has_state() && radar_presence->state) {
+            float comp = (float)auto_presence_val->value();
+            if (comp != 0.0f) {
+                intensity += comp;
+                ESP_LOGD("fan", "Applying presence compensation: %.1f (Base: %d)", 
+                          comp, fan_intensity_level->value());
+            }
         }
     }
-    return std::max(0.0f, std::min(1.0f, speed));
+    
+    // Clamp to valid 1-10 level domain
+    intensity = std::max(1.00f, std::min(10.00f, intensity));
+    return level_to_speed(intensity);
 }
 
 /// @brief Updates fan speed and direction based on intensity and mode.
@@ -505,8 +479,8 @@ inline void update_fan_logic() {
     }
 
     // Read current direction from the fan_direction switch:
-    // OFF = Direction: Zuluft (PWM < 50%)
-    // ON  = Direction: Abluft (PWM > 50%)
+    // OFF = Direction: Abluft (Raus) (PWM < 50%)
+    // ON  = Direction: Zuluft (Rein) (PWM > 50%)
     const int direction = (fan_direction != nullptr && fan_direction->state) ? 1 : 0;
 
     set_fan_logic(speed, direction);
