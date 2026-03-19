@@ -8,6 +8,9 @@
 #include <vector>
 #include "ventilation_state_machine.h"
 
+// Forward declaration of the global fan update function (defined in automation_helpers.h)
+void update_fan_logic();
+
 namespace esphome {
 
 // ---------------------------------------------------------
@@ -147,11 +150,19 @@ class VentilationController : public Component {
   void loop() override {
     uint32_t now = millis();
 
-    // 1. Update State Machine
+    // 1. Update State Machine (returns true on discrete state flip)
     bool dirty = state_machine.update(now);
 
-    // 2. Hardware Update
-    if (dirty) update_hardware();
+    // 2. Hardware Update (always update during ramping phases)
+    HardwareState state = state_machine.get_target_state(now);
+    
+    // We update hardware if:
+    // a) The state machine reported a discrete change (e.g. direction flip)
+    // b) We are currently in a ramping phase (ramp_factor != 1.0)
+    // c) System is off (to ensure it stays off/ramps down)
+    if (dirty || state.ramp_factor < 1.0f || !state.fan_enabled) {
+        update_hardware(state);
+    }
 
     // 3. Auto Sync Broadcast (Every sync_interval_ms)
     if (now - last_sync_tx > sync_interval_ms) {
@@ -289,9 +300,9 @@ class VentilationController : public Component {
   }
 
   /// @brief Applies the state machine's target state to the physical hardware.
-  /// Sets the direction switch and turns the fan on/off as needed.
-  void update_hardware() {
-      HardwareState state = state_machine.get_target_state();
+  /// Sets the direction switch and handles fan on/off bridging.
+  /// The actual PWM/speed logic is handled by update_fan_logic().
+  void update_hardware(const HardwareState& state) {
       bool target_in = state.direction_in;
       bool enable_fan = state.fan_enabled;
 
@@ -304,7 +315,9 @@ class VentilationController : public Component {
           }
       }
 
-      // 2. Fan on/off (only toggle if changed)
+      // 2. Fan on/off bridging
+      // Note: We turn the fan component on/off but delegating the actual
+      // PWM calculation to update_fan_logic() which uses the ramp_factor.
       if (main_fan) {
           if (!enable_fan) {
                if (main_fan->state) main_fan->turn_off().perform();
@@ -312,6 +325,15 @@ class VentilationController : public Component {
                if (!main_fan->state) main_fan->turn_on().perform();
           }
       }
+
+      // 3. Trigger PWM update (includes ramp factor)
+      // This refers to the global function in automation_helpers.h
+      ::update_fan_logic();
+  }
+
+  /// @brief Convenience wrapper that calculates current state and applies it.
+  void update_hardware() {
+      update_hardware(state_machine.get_target_state(millis()));
   }
 
   /// @brief Serializes the current state into a VentilationPacket byte vector.

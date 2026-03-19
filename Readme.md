@@ -299,7 +299,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 
 | LED | Anzahl | Position | Verhalten |
 | :--- | :---: | :--- | :--- |
-| **Power** | 🟢 1x | LED Panel | Leuchtet, wenn System EIN **und** UI aktiv. Geht nach 30s aus. |
+| **Power** | 🟢 1x | LED Panel | Leuchtet hell im Betrieb. Dimmt nach 60s @ `ui_active_timeout` (Standard: 60s) auf 20% Helligkeit ab (statt ganz auszugehen). |
 | **Master** | 🟢 1x | LED Panel | Leuchtet bei aktivem UI (kein Fehler). Blinkt dauerhaft bei Fehler (WLAN-/ESP-NOW-Verbindungsverlust) — unabhängig vom UI-Timeout. |
 | **Modus L** (`LED_WRG`) | 🟢 1x | Links | **Pulsiert** im Smart-Automatik Modus. Dauerhaft an bei WRG oder Durchlüften. |
 | **Modus R** (`LED_VEN`) | 🟢 1x | Rechts | Dauerhaft an bei Stoßlüftung oder Durchlüften. |
@@ -315,7 +315,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 | Durchlüften (Sommer) | 🟢 | 🟢 |
 | Aus / System OFF | ⚫ | ⚫ |
 
-> 💡 **30 Sekunden Auto-Dimming:** Alle Status-LEDs (Power, Master, Modus, Intensität) erlöschen 30 Sekunden nach dem letzten Tastendruck sanft. Bei jedem Tastendruck werden sie wieder aktiviert. Ausnahme: Die **Master-LED blinkt weiter bei Fehler** (WLAN/ESP-NOW-Ausfall), auch nach dem Timeout.
+> 💡 **60 Sekunden Auto-Dimming:** Alle Status-LEDs (Modus, Intensität, Master) erlöschen 60 Sekunden (konfigurierbar) nach dem letzten Tastendruck sanft. Die **Power-LED** bleibt dabei auf 20% gedimmt an. Bei jedem Tastendruck werden alle LEDs wieder aktiviert. Ausnahme: Die **Master-LED blinkt weiter bei Fehler** (WLAN/ESP-NOW-Ausfall), auch nach dem Timeout.
 
 ---
 
@@ -427,7 +427,8 @@ Der ebm-papst 4412 F/2 GLL (VarioPro) wird über ein **einzelnes PWM-Signal** ge
 | **9** | 90 % | 5 % | 95 % |
 | **10** | 100 % | 0 % | 100 % |
 
-> °️ **Mindestdrehzahl:** Stufe 1 entspricht 10 % Drehzahl (PWM nie auf 50 % = Stopp). Im Automatik-Modus (PID) wird die Drehzahl stufenlos zwischen `co2_min_fan_level` und `co2_max_fan_level` geregelt.
+> ⚙️ **Mindestdrehzahl:** Stufe 1 entspricht 10 % Drehzahl (PWM nie auf 50 % = Stopp). Im Automatik-Modus (PID) wird die Drehzahl stufenlos zwischen `co2_min_fan_level` und `co2_max_fan_level` geregelt.
+> 🔄 **Software-Fan-Ramping:** Bei jedem Richtungswechsel (WRG/Stoßlüftung) führt das System eine **5-sekündige sanfte Abbrems- und Anlauframpe** durch. Dies schont den Motor und minimiert Umschaltgeräusche. Die Intensitäts-LEDs zeigen währenddessen bereits den Zielwert an.
 
 #### Automatische Funktionen
 

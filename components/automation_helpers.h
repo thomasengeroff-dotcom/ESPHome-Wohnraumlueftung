@@ -249,7 +249,8 @@ inline void evaluate_auto_mode() {
     int internal_mode = v->state_machine.current_mode; // Copy current mode as starting point
 
     // Determine current hardware direction to correctly map NTC sensors during MODE_VENTILATION
-    const bool is_intake = v->state_machine.get_target_state().direction_in;
+    if (v == nullptr) return;
+    const bool is_intake = v->state_machine.get_target_state(millis()).direction_in;
 
     // --- 1. Compute Local Temperatures ---
     float local_in = NAN;
@@ -479,6 +480,18 @@ inline void update_fan_logic() {
 
     float speed = get_current_target_speed();
 
+    // Apply software ramping factor if a controller is available
+    if (ventilation_ctrl != nullptr) {
+        HardwareState state = ventilation_ctrl->state_machine.get_target_state(millis());
+        speed *= state.ramp_factor;
+        
+        // Log ramping during transition phases for debugging
+        if (state.ramp_factor < 0.99f && state.ramp_factor > 0.01f) {
+            ESP_LOGD("fan_ramp", "Ramping speed: %.2f (Base: %.2f, Factor: %.2f)", 
+                      speed, get_current_target_speed(), state.ramp_factor);
+        }
+    }
+
     // Read current direction from the fan_direction switch:
     // OFF = Direction A (e.g. Abluft/Rausblasen, PWM < 50%)
     // ON  = Direction B (e.g. Zuluft/Reinblasen, PWM > 50%)
@@ -580,22 +593,54 @@ void check_master_led_error();
 
 /// @brief Refreshes all status LEDs based on system_on, current mode, and fan level.
 /// Maps fan intensity 1–10 onto the 5 level LEDs and toggles the two mode LEDs.
+/// ALL LEDs (except Master error blink and Power LED) turn off when ui_active is false.
+/// Power LED dims to 20% when ui_active is false.
 inline void update_leds_logic() {
   auto *v = ventilation_ctrl;
   const int current_mode = v->state_machine.current_mode;
 
-  // 1. Power LED (Always ON if system is ON and UI is active)
-  if (system_on->value() && ui_active->value()) {
-    status_led_power->turn_on();
-  } else {
-    status_led_power->turn_off();
+  // 0. Case: System is OFF
+  if (!system_on->value()) {
+    status_led_power->turn_off().perform();
+    status_led_mode_wrg->turn_off().perform();
+    status_led_mode_vent->turn_off().perform();
+    status_led_l1->turn_off().perform();
+    status_led_l2->turn_off().perform();
+    status_led_l3->turn_off().perform();
+    status_led_l4->turn_off().perform();
+    status_led_l5->turn_off().perform();
+    check_master_led_error(); // Still show error independently
+    return;
   }
 
-  // 2. Mode LEDs
-  status_led_mode_wrg->turn_off();
-  status_led_mode_vent->turn_off();
+  // 1. Case: UI Inactive (Dimming/Night mode)
+  if (!ui_active->value()) {
+    // Dim Power LED to 20%
+    status_led_power->turn_on().set_brightness(0.2f).perform();
+    
+    // Turn off all others
+    status_led_mode_wrg->turn_off().perform();
+    status_led_mode_vent->turn_off().perform();
+    status_led_l1->turn_off().perform();
+    status_led_l2->turn_off().perform();
+    status_led_l3->turn_off().perform();
+    status_led_l4->turn_off().perform();
+    status_led_l5->turn_off().perform();
+    
+    check_master_led_error();
+    return;
+  }
 
-  if (system_on->value()) {
+  // 2. Case: UI Active and System On (Normal operation)
+  
+  // 1. Power LED (100% Brightness)
+  status_led_power->turn_on().set_brightness(1.0f).perform();
+
+  // 2. Mode LEDs
+  status_led_mode_wrg->turn_off().perform();
+  status_led_mode_vent->turn_off().perform();
+
+  if (current_mode != esphome::MODE_OFF) {
     if (auto_mode_active->value()) {
       // Smart-Automatik: Left LED pulses slowly to distinguish from manual WRG
       auto call = status_led_mode_wrg->turn_on();
@@ -608,46 +653,45 @@ inline void update_leds_logic() {
       call.perform();
     } else if (current_mode == esphome::MODE_STOSSLUEFTUNG) {
       // Stoßlüftung: Right LED on
-      status_led_mode_vent->turn_on();
+      status_led_mode_vent->turn_on().perform();
     } else if (current_mode == esphome::MODE_VENTILATION) {
       // Durchlüften: Both LEDs on (solid)
       auto call_wrg = status_led_mode_wrg->turn_on();
       call_wrg.set_effect("None");
       call_wrg.perform();
-      status_led_mode_vent->turn_on();
+      status_led_mode_vent->turn_on().perform();
     }
-    // MODE_OFF: Both LEDs off (already reset above)
   }
 
   // 3. Level LEDs (1-10 mapped to 5 LEDs)
   // Reset all first
-  status_led_l1->turn_off();
-  status_led_l2->turn_off();
-  status_led_l3->turn_off();
-  status_led_l4->turn_off();
-  status_led_l5->turn_off();
+  status_led_l1->turn_off().perform();
+  status_led_l2->turn_off().perform();
+  status_led_l3->turn_off().perform();
+  status_led_l4->turn_off().perform();
+  status_led_l5->turn_off().perform();
 
-  if (!ui_active->value() || !system_on->value() || current_mode == esphome::MODE_OFF) return;
-
-  const int level = fan_intensity_level->value();
-  
-  // Mapping Logic (1-10 -> 5 LEDs)
-  if (level >= 10) {
-    status_led_l1->turn_on(); status_led_l2->turn_on();
-    status_led_l3->turn_on(); status_led_l4->turn_on();
-    status_led_l5->turn_on();
-  } else {
-     switch(level) {
-       case 1: status_led_l1->turn_on(); break;
-       case 2: status_led_l1->turn_on(); status_led_l2->turn_on(); break;
-       case 3: status_led_l2->turn_on(); break;
-       case 4: status_led_l2->turn_on(); status_led_l3->turn_on(); break;
-       case 5: status_led_l3->turn_on(); break;
-       case 6: status_led_l3->turn_on(); status_led_l4->turn_on(); break;
-       case 7: status_led_l4->turn_on(); break;
-       case 8: status_led_l4->turn_on(); status_led_l5->turn_on(); break;
-       case 9: status_led_l5->turn_on(); break;
-     }
+  if (current_mode != esphome::MODE_OFF) {
+    const int level = fan_intensity_level->value();
+    
+    // Mapping Logic (1-10 -> 5 LEDs)
+    if (level >= 10) {
+      status_led_l1->turn_on().perform(); status_led_l2->turn_on().perform();
+      status_led_l3->turn_on().perform(); status_led_l4->turn_on().perform();
+      status_led_l5->turn_on().perform();
+    } else {
+       switch(level) {
+         case 1: status_led_l1->turn_on().perform(); break;
+         case 2: status_led_l1->turn_on().perform(); status_led_l2->turn_on().perform(); break;
+         case 3: status_led_l2->turn_on().perform(); break;
+         case 4: status_led_l2->turn_on().perform(); status_led_l3->turn_on().perform(); break;
+         case 5: status_led_l3->turn_on().perform(); break;
+         case 6: status_led_l3->turn_on().perform(); status_led_l4->turn_on().perform(); break;
+         case 7: status_led_l4->turn_on().perform(); break;
+         case 8: status_led_l4->turn_on().perform(); status_led_l5->turn_on().perform(); break;
+         case 9: status_led_l5->turn_on().perform(); break;
+       }
+    }
   }
 
   // Also ensure the Master LED evaluates its UI status immediately
@@ -837,10 +881,12 @@ inline void set_sync_interval_handler(float value) {
 inline void set_fan_intensity_slider(float value) {
     int val = (int)value;
     fan_intensity_level->value() = val;
-    // set_fan_intensity_level(val); // Removed as undefined
     
     ventilation_ctrl->set_fan_intensity(val);
+    fan_speed_update->execute();
+    ui_active->value() = true;
     update_leds->execute();
+    ui_timeout_script->execute();
 }
 
 /// @brief Handles the mode select dropdown from HA: maps string option to mode index
@@ -855,7 +901,9 @@ inline void set_operating_mode_select(const std::string& x) {
     
     current_mode_index->value() = mode_index;
     cycle_operating_mode(mode_index);
+    ui_active->value() = true;
     update_leds->execute();
+    ui_timeout_script->execute();
 }
 
 // --- Button callback handlers ------------------------------------------

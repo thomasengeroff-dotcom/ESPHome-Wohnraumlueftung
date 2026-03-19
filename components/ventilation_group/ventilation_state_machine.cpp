@@ -131,20 +131,43 @@ uint32_t VentilationStateMachine::get_cycle_pos(uint32_t now) const {
 /// The caller compares the result to the previous state to decide whether to
 /// actually toggle GPIOs.
 /// @return HardwareState with fan_enabled and direction_in fields set.
-HardwareState VentilationStateMachine::get_target_state() const {
+HardwareState VentilationStateMachine::get_target_state(uint32_t now) const {
     HardwareState state;
     state.fan_enabled = true;
     state.direction_in = true;
-    state.needs_update = false; // Caller determines if diff warrants update
+    state.ramp_factor = 1.0f; // Default: full speed
+    state.needs_update = false;
 
     if (current_mode == MODE_OFF) {
         state.fan_enabled = false;
+        state.ramp_factor = 0.0f;
         return state;
     }
 
     if (current_mode == MODE_STOSSLUEFTUNG && !stoss_active_phase) {
         state.fan_enabled = false;
+        state.ramp_factor = 0.0f;
         return state;
+    }
+
+    // --- Ramping Logic (for WRG and Stoßlüftung) ---
+    // Only apply ramping in modes that have cyclic direction changes
+    if (current_mode == MODE_ECO_RECOVERY || current_mode == MODE_STOSSLUEFTUNG) {
+        uint32_t pos = get_cycle_pos(now);
+        uint32_t half = cycle_duration_ms;
+        uint32_t full = half * 2;
+
+        // Simplify position to half-cycle relative [0 ... half]
+        uint32_t phase_pos = pos % half;
+        
+        if (phase_pos < RAMP_DURATION_MS) {
+            // 1. Ramp Up: 0.0 -> 1.0 in the first 5s
+            state.ramp_factor = (float)phase_pos / (float)RAMP_DURATION_MS;
+        } else if (phase_pos > (half - RAMP_DURATION_MS)) {
+            // 2. Ramp Down: 1.0 -> 0.0 in the last 5s
+            uint32_t remaining = half - phase_pos;
+            state.ramp_factor = (float)remaining / (float)RAMP_DURATION_MS;
+        }
     }
 
     // Direction Logic

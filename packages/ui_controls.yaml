@@ -51,32 +51,32 @@ light:
   - platform: monochromatic
     output: out_led_l1
     id: status_led_l1
-    internal: true
-    default_transition_length: 0.2s
+    #internal: true
+    default_transition_length: 0.5s
     gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l2
     id: status_led_l2
-    internal: true
-    default_transition_length: 0.2s
+    #internal: true
+    default_transition_length: 0.5s
     gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l3
     id: status_led_l3
-    internal: true
-    default_transition_length: 0.2s
+    #internal: true
+    default_transition_length: 0.5s
     gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l4
     id: status_led_l4
-    internal: true
-    default_transition_length: 0.2s
+    #internal: true
+    default_transition_length: 0.5s
     gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
   - platform: monochromatic
     output: out_led_l5
     id: status_led_l5
-    internal: true
-    default_transition_length: 0.2s
+    #internal: true
+    default_transition_length: 0.5s
     gamma_correct: 1.0 # Optional: adjusts brightness curve for human eye
 
 # ---------------------------------------------------------
@@ -299,3 +299,39 @@ button:
           id(filter_change_alarm).publish_state(false);
           id(filter_operating_days_sensor).publish_state(0);
           ESP_LOGI("filter", "Filter counters reset. Timestamp: %d", id(filter_last_change_ts));
+
+  # --- LED Test Buttons (Diagnostic) ---
+  - platform: template
+    name: "Test LED L1"
+    icon: "mdi:led-on"
+    entity_category: diagnostic
+    on_press:
+      - light.toggle: status_led_l1
+
+  - platform: template
+    name: "Test LED L2"
+    icon: "mdi:led-on"
+    entity_category: diagnostic
+    on_press:
+      - light.toggle: status_led_l2
+
+  - platform: template
+    name: "Test LED L3"
+    icon: "mdi:led-on"
+    entity_category: diagnostic
+    on_press:
+      - light.toggle: status_led_l3
+
+  - platform: template
+    name: "Test LED L4"
+    icon: "mdi:led-on"
+    entity_category: diagnostic
+    on_press:
+      - light.toggle: status_led_l4
+
+  - platform: template
+    name: "Test LED L5"
+    icon: "mdi:led-on"
+    entity_category: diagnostic
+    on_press:
+      - light.toggle: status_led_l5

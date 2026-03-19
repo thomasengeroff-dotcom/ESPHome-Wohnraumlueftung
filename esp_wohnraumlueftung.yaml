@@ -42,7 +42,23 @@ esphome:
   on_boot:
     priority: 600
     then:
-      - script.execute: update_leds
+      # LED Self-Test: All LEDs on for 3 seconds
+      - lambda: |-
+          auto call_wrg = status_led_mode_wrg->turn_on();
+          call_wrg.set_effect("None");
+          call_wrg.perform();
+          status_led_mode_vent->turn_on().perform();
+          status_led_power->turn_on().perform();
+          status_led_master->turn_on().perform();
+          status_led_l1->turn_on().perform();
+          status_led_l2->turn_on().perform();
+          status_led_l3->turn_on().perform();
+          status_led_l4->turn_on().perform();
+          status_led_l5->turn_on().perform();
+          ESP_LOGI("boot", "LED self-test: all LEDs on");
+      - delay: 3s
+      # Show correct state and start 30s UI timeout
+      - script.execute: ui_timeout_script
       - script.execute: fan_speed_update
 
 # ---------------------------------------------------------
@@ -67,7 +83,7 @@ globals:
   # Fan intensity level (1-10)
   - id: fan_intensity_level
     type: int
-    initial_value: "4" # Start at lower medium intensity
+    initial_value: "2" # Start at lower medium intensity
 
   # Current operating mode index (0=Automatik, 1=WRG, 2=Durchlüften, 3=Stoßlüftung, 4=Aus)
   - id: current_mode_index

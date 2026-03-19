@@ -24,6 +24,7 @@ enum VentilationMode {
 struct HardwareState {
     bool fan_enabled;    ///< true = fan should run, false = fan off.
     bool direction_in;   ///< true = intake (IN), false = exhaust (OUT).
+    float ramp_factor;   ///< 0.0 (stop) to 1.0 (full target speed).
     bool needs_update;   ///< Reserved — caller compares against previous state.
 };
 
@@ -33,6 +34,7 @@ struct HardwareState {
 /// peer synchronization offset.  Call update() every loop iteration.
 class VentilationStateMachine {
 public:
+    static constexpr uint32_t RAMP_DURATION_MS = 5000; ///< 5s ramp up/down duration.
     // --- Configuration ---
     bool is_phase_a = true;              ///< Phase group assignment (A starts IN, B starts OUT).
     uint32_t cycle_duration_ms = 70000;  ///< Half-cycle duration in ms (default 70 s).
@@ -73,7 +75,7 @@ public:
     // --- Getters ---
 
     /// @brief Compute desired fan + direction state from current mode and phase.
-    HardwareState get_target_state() const;
+    HardwareState get_target_state(uint32_t now) const;
     /// @brief Remaining time in MODE_VENTILATION (ms). 0 if infinite or expired.
     uint32_t get_remaining_duration(uint32_t now) const;
     /// @brief Current position in the full direction cycle (for sync packets).
