@@ -130,6 +130,7 @@ sensor:
     name: "Wärmerückgewinnung Effizienz"
     id: heat_recovery_efficiency
     unit_of_measurement: "%"
+    state_class: "measurement"
     accuracy_decimals: 1
     icon: "mdi:percent"
     update_interval: 30s
@@ -157,6 +158,7 @@ sensor:
     name: "Lüfter Drehzahl"
     id: fan_rpm
     unit_of_measurement: "RPM"
+    state_class: "measurement"
     accuracy_decimals: 0
     icon: "mdi:speedometer"
     update_interval: 1s
@@ -182,6 +184,7 @@ sensor:
     name: "Lüfter PWM Ansteuerung"
     id: fan_pwm_percent
     unit_of_measurement: "%"
+    state_class: "measurement"
     accuracy_decimals: 1
     icon: "mdi:fan-speed-1"
     update_interval: 500ms

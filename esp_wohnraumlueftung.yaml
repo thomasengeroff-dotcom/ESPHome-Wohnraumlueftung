@@ -41,20 +41,11 @@ esphome:
   on_boot:
     priority: 600
     then:
+      # Sync persistent configuration IDs to the C++ controller object
+      - lambda: sync_config_to_controller();
+
       # LED Self-Test: All LEDs on for 3 seconds
-      - lambda: |-
-          auto call_wrg = status_led_mode_wrg->turn_on();
-          call_wrg.set_effect("None");
-          call_wrg.perform();
-          status_led_mode_vent->turn_on().perform();
-          status_led_power->turn_on().perform();
-          status_led_master->turn_on().perform();
-          status_led_l1->turn_on().perform();
-          status_led_l2->turn_on().perform();
-          status_led_l3->turn_on().perform();
-          status_led_l4->turn_on().perform();
-          status_led_l5->turn_on().perform();
-          ESP_LOGI("boot", "LED self-test: all LEDs on");
+      - lambda: run_led_self_test();
       - delay: 3s
       # Show correct state and start 30s UI timeout
       - script.execute: ui_timeout_script
@@ -182,19 +173,33 @@ ventilation_logic:
 # ---------------------------------------------------------
 # Configures peer-to-peer communication with the Slave/Consumer device
 espnow:
-  peers:
-    - "FF:FF:FF:FF:FF:FF" # Broadcast for Discovery/Sync
-  
+  id: espnow_component
+  peer_address: "FF:FF:FF:FF:FF:FF" # Broadcast for Discovery/Sync
+
   # on_receive ONLY triggers for registered peers (defined above).
   # Since we use broadcasts for the whole group, on_broadcast is REQUIRED.
   on_broadcast:
     - lambda: |-
+        ESP_LOGD("espnow_raw", "Received BROADCAST from %02X:%02X:%02X:%02X:%02X:%02X, size %d", 
+                 info.src_addr[0], info.src_addr[1], info.src_addr[2], 
+                 info.src_addr[3], info.src_addr[4], info.src_addr[5], size);
         std::vector<uint8_t> packet(data, data + size);
         handle_espnow_receive(packet);
-  
+
   # For robustness, we also handle registered peers (e.g. if we add them dynamically)
   on_receive:
     - lambda: |-
+        ESP_LOGD("espnow_raw", "Received UNICAST from %02X:%02X:%02X:%02X:%02X:%02X, size %d", 
+                 info.src_addr[0], info.src_addr[1], info.src_addr[2], 
+                 info.src_addr[3], info.src_addr[4], info.src_addr[5], size);
+        std::vector<uint8_t> packet(data, data + size);
+        handle_espnow_receive(packet);
+
+  on_unknown_peer:
+    - lambda: |-
+        ESP_LOGD("espnow_raw", "Received UNKNOWN PEER BROADCAST from %02X:%02X:%02X:%02X:%02X:%02X, size %d", 
+                 info.src_addr[0], info.src_addr[1], info.src_addr[2], 
+                 info.src_addr[3], info.src_addr[4], info.src_addr[5], size);
         std::vector<uint8_t> packet(data, data + size);
         handle_espnow_receive(packet);
 

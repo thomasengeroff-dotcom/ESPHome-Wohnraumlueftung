@@ -61,6 +61,10 @@ extern esphome::template_::TemplateNumber *auto_presence_slider; ///< Presence c
 extern esphome::template_::TemplateNumber *auto_co2_threshold;   ///< CO2 automated threshold.
 extern esphome::template_::TemplateNumber *auto_humidity_threshold; ///< Humidity automated threshold.
 extern esphome::template_::TemplateNumber *sync_interval_config; ///< Time between auto-sync packets in minutes.
+extern esphome::template_::TemplateNumber *config_floor_id;       ///< Persistent Floor ID number.
+extern esphome::template_::TemplateNumber *config_room_id;        ///< Persistent Room ID number.
+extern esphome::template_::TemplateNumber *config_device_id;      ///< Persistent Device ID number.
+extern esphome::template_::TemplateSelect *config_phase;          ///< Persistent Phase A/B selection.
 /// @}
 
 extern esphome::globals::GlobalsComponent<bool> *ui_active;     ///< UI active flag (30s dimming).
@@ -988,4 +992,44 @@ inline std::vector<uint8_t> build_and_populate_packet(esphome::MessageType type)
     pkt->vent_timer_min = (uint16_t) (v->state_machine.ventilation_duration_ms / 60 / 1000);
 
     return data;
+}
+
+// --- Boot-time Initialization Helpers ----------------------------------
+
+/// @brief Synchronizes persistent configuration values from HA numbers to the C++ controller.
+/// Called during on_boot to ensure the controller has the correct IDs before any ESP-NOW traffic.
+inline void sync_config_to_controller() {
+    auto *v = ventilation_ctrl;
+    if (v == nullptr) return;
+
+    v->set_floor_id((uint8_t)config_floor_id->state);
+    v->set_room_id((uint8_t)config_room_id->state);
+    v->set_device_id((uint8_t)config_device_id->state);
+    
+    bool is_phase_a = (config_phase->current_option() == "Phase A (Startet mit Zuluft)");
+    v->set_is_phase_a(is_phase_a);
+
+    ESP_LOGI("boot", "Synced Config to Controller: Floor %d, Room %d, Device %d, Phase: %s", 
+             v->floor_id, v->room_id, v->device_id, is_phase_a ? "A" : "B");
+}
+
+/// @brief Runs a 3-second visual self-test by turning on all physical status LEDs.
+inline void run_led_self_test() {
+    // 1. Turn on all mode and status LEDs
+    auto call_wrg = status_led_mode_wrg->turn_on();
+    call_wrg.set_effect("None");
+    call_wrg.perform();
+
+    status_led_mode_vent->turn_on().perform();
+    status_led_power->turn_on().perform();
+    status_led_master->turn_on().perform();
+    
+    // 2. Turn on all level indicator LEDs
+    status_led_l1->turn_on().perform();
+    status_led_l2->turn_on().perform();
+    status_led_l3->turn_on().perform();
+    status_led_l4->turn_on().perform();
+    status_led_l5->turn_on().perform();
+
+    ESP_LOGI("boot", "LED self-test: all LEDs on");
 }

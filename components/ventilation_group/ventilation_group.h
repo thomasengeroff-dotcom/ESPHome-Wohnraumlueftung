@@ -132,7 +132,10 @@ class VentilationController : public Component {
   void set_floor_id(uint8_t id) { floor_id = id; }            ///< Set floor group.
   void set_room_id(uint8_t id) { room_id = id; }              ///< Set room group.
   void set_device_id(uint8_t id) { device_id = id; }          ///< Set unique device ID.
-  void set_is_phase_a(bool phase_a) { state_machine.is_phase_a = phase_a; } ///< Set phase group.
+  void set_is_phase_a(bool phase_a) { 
+      state_machine.is_phase_a = phase_a; 
+      update_hardware();
+  } ///< Set phase group.
   void set_main_fan(fan::Fan *fan) { main_fan = fan; }        ///< Bind the fan component.
   void set_direction_switch(switch_::Switch *sw) { direction_switch = sw; } ///< Bind the direction switch.
 
@@ -161,6 +164,10 @@ class VentilationController : public Component {
     // b) We are currently in a ramping phase (ramp_factor != 1.0)
     // c) System is off (to ensure it stays off/ramps down)
     if (dirty || state.ramp_factor < 1.0f || !state.fan_enabled) {
+        if (dirty) {
+            ESP_LOGD("vent", "State transition detected (flip/mode timer). Triggering sync broadcast.");
+            trigger_sync();
+        }
         update_hardware(state);
     }
 
@@ -199,7 +206,8 @@ class VentilationController : public Component {
   void set_fan_intensity(uint8_t intensity) {
       if (current_fan_intensity == intensity) return;
       current_fan_intensity = intensity;
-      ESP_LOGI("vent", "Fan Intensity updated to %d. Setting pending_broadcast = true", intensity);
+      ESP_LOGI("vent", "Fan Intensity updated to %d. Refreshing hardware.", intensity);
+      update_hardware();
       pending_broadcast = true;
   }
 
@@ -237,7 +245,7 @@ class VentilationController : public Component {
           return false;
       }
       if (pkt->device_id == device_id) {
-          ESP_LOGD("vent_sync", "Ignored own packet (device %d)", device_id);
+          ESP_LOGW("vent_sync", "Ignored own packet (device %d). Check for ID collision!", device_id);
           return false;
       }
       
@@ -326,6 +334,12 @@ class VentilationController : public Component {
   void update_hardware(const HardwareState& state) {
       bool target_in = state.direction_in;
       bool enable_fan = state.fan_enabled;
+
+      ESP_LOGI("vent", "Hardware Refresh: Mode %d, Intensity %d, Phase: %s, Direction: %s, Ramp: %.2f", 
+               state_machine.current_mode, current_fan_intensity, 
+               state_machine.is_phase_a ? "A" : "B", 
+               target_in ? "ZULUFT (IN)" : "ABLUFT (OUT)",
+               state.ramp_factor);
 
       // 1. Direction switch (only toggle if changed)
       if (direction_switch) {

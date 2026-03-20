@@ -4,6 +4,23 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [0.6.0] - 2026-03-20
+
+### Added
+
+- **WLAN-Kanal Diagnose**: Neuer Sensor `WiFi Channel` in den Home Assistant Diagnostics zur einfacheren Überprüfung der Netzwerkumgebung.
+- **Erweitertes C++ Debug-Logging**: Detaillierte Log-Ausgaben in `update_hardware()` (Richtung, Phase, Ramp-Faktor), um Synchronisationsvorgänge im C++ Controller direkt verfolgen zu können.
+
+### Changed
+
+- **Echtzeit-Synchronisations-Trigger**: Das System sendet nun **sofort** einen ESP-NOW Broadcast, sobald ein Richtungswechsel (Zyklus-Ende) oder ein Phasenwechsel (Stoßlüftung) eintritt. Dies garantiert, dass alle Geräte im Raum exakt zeitgleich umschalten.
+- **ESP-NOW Broadcast Refactoring**: Umstellung von `espnow.send` auf die native `espnow.broadcast` Action in der YAML-Konfiguration für saubereren Code und bessere Kompatibilität.
+- **Unmittelbare Hardware-Reaktion**: Settermethoden für Phase (A/B) und Intensität triggern nun sofort einen Hardware-Refresh, anstatt auf den nächsten 1s-Loop zu warten.
+
+### Fixed
+
+- **Home Assistant Langzeitstatistiken**: `state_class: measurement` zu den Sensoren für Drehzahl, PWM-Ansteuerung und WRG-Effizienz hinzugefügt. Behebt die Warnung "Entität hat keine Zustandsklasse" und stellt Grafiken in HA wieder her.
+
 ## [0.5.0] - 2026-03-20
 
 ### Changed

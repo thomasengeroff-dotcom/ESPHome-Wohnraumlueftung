@@ -261,8 +261,7 @@ interval:
           then:
             - lambda: |-
                 ESP_LOGD("espnow_debug", "YAML Interval triggered: pending_broadcast is TRUE. Calling espnow.send...");
-            - espnow.send:
-                address: "FF:FF:FF:FF:FF:FF" # Broadcast address for Discovery/Sync
+            - espnow.broadcast:
                 data: !lambda |-
                   return build_and_populate_packet(esphome::MSG_SYNC);
 
