@@ -4,9 +4,8 @@
 # If there are several of these devices, they can communicate with each other via ESP-NOW.
 # ---------------------------------------------------------
 substitutions:
-  device_name: esptest
-  friendly_name: "ESPWRGLueftung"
-  min_fan_threshold: "10"
+  device_name: espwrglueftung
+  friendly_name: "ESP-WRG-Lüftung"
 
   # VENTILATION CONFIG - Default Values
   # These are initial values. The actual configuration can be changed

@@ -214,13 +214,27 @@ class VentilationController : public Component {
   /// @param data  Raw byte vector received via ESP-NOW.
   /// @return true if any local state was changed (caller should update UI).
   bool on_packet_received(std::vector<uint8_t> data) {
-      if (data.size() != sizeof(VentilationPacket)) return false;
+      if (data.size() != sizeof(VentilationPacket)) {
+          ESP_LOGD("vent_sync", "Size mismatch! Expected %d, got %d", sizeof(VentilationPacket), data.size());
+          return false;
+      }
       VentilationPacket *pkt = (VentilationPacket*)data.data();
 
       // Filter: magic, group, self
-      if (pkt->magic_header != 0x42) return false;
-      if (pkt->floor_id != floor_id || pkt->room_id != room_id) return false;
-      if (pkt->device_id == device_id) return false;
+      if (pkt->magic_header != 0x42) {
+          ESP_LOGD("vent_sync", "Magic header mismatch! Expected 0x42, got 0x%02X", pkt->magic_header);
+          return false;
+      }
+      if (pkt->floor_id != floor_id || pkt->room_id != room_id) {
+          ESP_LOGD("vent_sync", "Group mismatch! Floor %d/%d, Room %d/%d", pkt->floor_id, floor_id, pkt->room_id, room_id);
+          return false;
+      }
+      if (pkt->device_id == device_id) {
+          ESP_LOGD("vent_sync", "Ignored own packet (device %d)", device_id);
+          return false;
+      }
+      
+      ESP_LOGD("vent_sync", "Valid packet received from device %d!", pkt->device_id);
 
       // Update peer tracking for dashboard
       bool found_peer = false;
