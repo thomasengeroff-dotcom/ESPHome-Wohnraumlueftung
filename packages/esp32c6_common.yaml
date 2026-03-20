@@ -7,6 +7,8 @@ esphome:
   # Force specific flash mode for better stability with C6
   platformio_options:
     board_build.flash_mode: dio
+    extra_scripts:
+      - pre:../../../version_bump.py
 
 # ---------------------------------------------------------
 # MICROCONTROLLER SETTINGS (Seeed XIAO ESP32C6)
@@ -131,3 +133,16 @@ text_sensor:
       id: sensor_ip_address
     ssid:
       name: "${device_name} ssid"
+
+  # Custom Project Version (auto-incremented on compile)
+  - platform: template
+    name: "${device_name} Projekt Version"
+    id: text_project_version
+    icon: "mdi:tag-outline"
+    entity_category: diagnostic
+    lambda: |-
+      #ifdef PROJECT_VERSION
+        return {PROJECT_VERSION};
+      #else
+        return {"0.0.0-dev"};
+      #endif

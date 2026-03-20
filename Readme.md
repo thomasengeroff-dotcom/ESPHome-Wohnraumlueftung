@@ -27,6 +27,7 @@ Dieses Open-Source-Projekt bietet eine professionelle, dezentrale Lüftungssteue
 - [Pinbelegung](#-pinbelegung--verkabelung)
 - [Installation](#-installation--software)
 - [Bedienung](#-bedienung--steuerung)
+- [Automatisierte Versionierung](#-automatisierte-versionierung)
 - [Wärmerückgewinnung](#-wärmerückgewinnung---so-funktionierts)
 - [Technische Details](#-technische-details--optimierungen)
 - [Projektstruktur](#-projektstruktur)
@@ -56,7 +57,8 @@ Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PL
 | Lüfterregelung | 3 feste Stufen | **10 Stufen + stufenlos (PID)** |
 | Smart Home | ❌ | ✅ Home Assistant (nativ) |
 | Wartungsalarm | Timer-LED | ✅ Prädiktiv + Push |
-| Synchronisation | Steuerkabel | ✅ Kabellos (ESP-NOW) |
+| Synchronisation | Steuerkabel | ✅ Kabellos (ESP-NOW) & Echtzeit-Sync |
+| Versionierung | Manuell | ✅ Vollautomatisch (Patch-Level) |
 | Updates | Servicetechniker | ✅ Over-the-Air (OTA) |
 | Lizenz | Proprietär | ✅ Open Source (MIT) |
 
@@ -715,7 +717,17 @@ binary_sensor:
     on_press:
       - lambda: handle_button_mode_click();
 
-```
+---
+
+### 🚀 Automatisierte Versionierung
+
+Um die Software-Wartung zu vereinfachen und sicherzustellen, dass jede Firmware-Änderung nachvollziehbar ist, nutzt das Projekt ein automatisiertes Versionierungssystem:
+
+- **Automatischer Patch-Bump**: Bei jedem Compile-Vorgang wird die dritte Stelle der Version (z. B. `0.6.0` → `0.6.1`) automatisch durch ein Python-Build-Script (`version_bump.py`) erhöht.
+- **Transparenz**: Die aktuelle Version wird als C++ Makro in die Firmware injiziert und steht in Home Assistant über den Sensor `sensor.espwrglueftung_projekt_version` zur Verfügung.
+- **Konsistenz**: Die Version wird in einer zentralen `version.json` im Projekt-Root gespeichert, was manuelle Fehler ausschließt.
+
+---
 
 ### 🔧 Aktuelle technische Verbesserungen
 

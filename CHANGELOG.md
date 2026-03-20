@@ -4,12 +4,22 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
-## [0.6.0] - 2026-03-20
+## [0.6.1] - 2026-03-21
 
 ### Added
 
-- **WLAN-Kanal Diagnose**: Neuer Sensor `WiFi Channel` in den Home Assistant Diagnostics zur einfacheren Überprüfung der Netzwerkumgebung.
-- **Erweitertes C++ Debug-Logging**: Detaillierte Log-Ausgaben in `update_hardware()` (Richtung, Phase, Ramp-Faktor), um Synchronisationsvorgänge im C++ Controller direkt verfolgen zu können.
+- **Automatisierte Versionierung**: Implementierung eines `version_bump.py` Skripts, das bei jedem Compile die Patch-Version (0.6.x) automatisch erhöht und als C++ Makro (`PROJECT_VERSION`) zur Verfügung stellt.
+- **Projekt-Version Sensor**: Neue Entität in Home Assistant zur Anzeige der aktuellen Firmware-Version.
+
+### Changed
+
+- **Echtzeit-Synchronisations-Trigger**: Das System sendet nun **sofort** einen ESP-NOW Broadcast, sobald ein Richtungswechsel (Zyklus-Ende) oder ein physischer Richtungs-Toggle eintritt. Dies garantiert, dass alle Geräte im Raum ohne Latenz synchron bleiben.
+
+### Fixed
+
+- **Home Assistant Langzeitstatistiken**: `state_class: measurement` zu den Sensoren für Drehzahl hinzugefügt, um die Datenaufzeichnung in der HA-Datenbank zu reparieren.
+
+## [0.6.0] - 2026-03-20
 
 ### Changed
 

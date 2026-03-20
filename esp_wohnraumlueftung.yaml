@@ -174,7 +174,8 @@ ventilation_logic:
 # Configures peer-to-peer communication with the Slave/Consumer device
 espnow:
   id: espnow_component
-  peer_address: "FF:FF:FF:FF:FF:FF" # Broadcast for Discovery/Sync
+  peers:
+    - FF:FF:FF:FF:FF:FF # Broadcast for Discovery/Sync
 
   # on_receive ONLY triggers for registered peers (defined above).
   # Since we use broadcasts for the whole group, on_broadcast is REQUIRED.
