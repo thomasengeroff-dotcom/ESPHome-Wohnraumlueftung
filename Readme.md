@@ -89,6 +89,18 @@ Natürlich kann dieser Sensor auch für andere Automatisierungen in Home Assista
 - 📊 **Echte VentoMaxx V-Kennlinie**: Der Lüfter wird exakt nach den physikalischen Parametern der Original-Hardware gesteuert (50% PWM = Stopp-Zone, lineare Skalierung in beide Richtungen), was eine hochpräzise und materialschonende Regelung ermöglicht.
 - 🔄 **Klartext-Richtungsanzeige**: Eine neue Sensor-Entität zeigt jederzeit die aktuelle Luftrichtung ("Zuluft (Rein)", "Abluft (Raus)" oder "Stillstand") an, was die Diagnose und Überwachung der Synchronisation erheblich vereinfacht.
 
+### ⚡ Extrem niedriger Stromverbrauch
+
+Das VentoMaxx System mit dieser ESPHome Steuerung arbeitet überragend effizient. Durch die Nutzung eines hochwertigen Traco-Netzteils und der präzisen PWM-Steuerung des ebm-papst Motors liegt die reine Wirkleistung (gemessen an 230V) in einem Bereich, der viele kommerzielle Anlagen deutlich unterbietet:
+
+- **Stufe 1 (Grundlüftung):** ~1,9 - 2,1 Watt *(ca. 5,25 € / Jahr)*
+- **Stufe 3 (Mittlere Lüftung):** ~2,6 - 2,9 Watt *(ca. 7,35 € / Jahr)*
+- **Stufe 5 (Erhöhte Last):** ~3,7 - 3,9 Watt *(ca. 10,00 € / Jahr)*
+- **Stufe 10 (Maximalleistung):** ~5,0 - 5,9 Watt *(ca. 15,00 € / Jahr)*
+
+Selbst bei ganzjährigem 24/7-Dauerbetrieb auf der *absoluten Maximalstufe (10)* belaufen sich die nominellen Stromkosten (bei 0,30 €/kWh) auf lediglich rund 15 Euro im Jahr. Im meist genutzten Automatik-Modus (Werte pendeln nachts oder bei Abwesenheit auf Stufe 1 bis 3) liegen die realen Betriebskosten bei extrem sparsamen **ca. 6 bis 7 Euro pro Jahr** für die gesamte Einheit. 
+
+*Besonders bemerkenswert: In diese Messwerte ist der durchgängige Betrieb aller verbauten Komponenten eingeflossen – inklusive der ESP32-Steuerung (WLAN/ESP-NOW), der Klima- und CO2-Sensoren sowie dem kontinuierlich messenden mmWave-Radar-Anwesenheitssensor!*
 ### 🖥️ Bedienung am Lüftungsgerät
 
 Um ein optimales Bedienerlebnis zu gewährleisten, wird das originale Bedienpanel des VentoMaxx V-WRG-1 beibehalten. Die Funktionalität wurde so weit wie möglich identisch zum Original umgesetzt, um eine intuitive Bedienung zu ermöglichen.
