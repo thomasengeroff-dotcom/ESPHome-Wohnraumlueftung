@@ -16,6 +16,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Create dummy secrets.yaml
+        run: cp secrets_example.yaml secrets.yaml
+
       - name: ESPHome Builder
         id: esphome-build
         uses: esphome/build-action@v7.2.0
