@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Build ESPHome Firmware
-        uses: esphome/build-action@v2.23.0
+      - name: ESPHome Builder
+        uses: esphome/build-action@v7.2.0
         with:
           yaml-file: esp_wohnraumlueftung.yaml
