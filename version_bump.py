@@ -12,16 +12,21 @@ except ImportError:
     pass
 
 # In PlatformIO/SCons, __file__ is not defined. 
-# Since this script is called from the project root in our YAML (../../../version_bump.py),
-# the CWD might be the build dir, but we can try to find the root.
-project_dir = os.getcwd()
+# Attempt to find the project root relative to the build context.
+if 'env' in globals():
+    project_dir = env.get("PROJECT_DIR", os.getcwd())
+else:
+    project_dir = os.getcwd()
+
 version_file = os.path.join(project_dir, "version.json")
 
-# Fallback: If not in root, try one level up or fixed root
+# Fallback: If not found, try common relative paths
 if not os.path.exists(version_file):
-    # Try the absolute root if we are in .esphome/build/espwrglueftung
-    project_dir = "c:/Users/thomas.engeroff/Documents/ESPHome-Projekte/ESPHome-Wohnraumlueftung"
-    version_file = os.path.join(project_dir, "version.json")
+    # Check if we are in a subdirectory like .esphome/build/xxx
+    potential_root = os.path.abspath(os.path.join(project_dir, "..", "..", ".."))
+    if os.path.exists(os.path.join(potential_root, "version.json")):
+        project_dir = potential_root
+        version_file = os.path.join(project_dir, "version.json")
 
 def bump_version():
     if not os.path.exists(version_file):
