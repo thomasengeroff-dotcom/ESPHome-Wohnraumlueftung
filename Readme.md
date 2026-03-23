@@ -9,10 +9,10 @@ Die Kommunikation zwischen den einzelnen Lüftungsgeräten erfolgt über das ESP
 
 [![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
-[![GitHub release](https://img.shields.io/github/v/release/thomasengeroff-dotcom/ESPHome-Wohnraumlueftung)](https://github.com/thomasengeroff-dotcom/ESPHome-Wohnraumlueftung/releases)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red)](https://esphome.io/components/esp32.html)
 ![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
 ![Sensor: BMP390](https://img.shields.io/badge/Sensor-BMP390-lightgrey)
+![Sensor: BME680](https://img.shields.io/badge/Sensor-BME680-lightgrey)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -41,7 +41,7 @@ Die Kommunikation zwischen den einzelnen Lüftungsgeräten erfolgt über das ESP
 ## Motivation
 
 Ich habe vor vielen Jahren im Rahmen der Haussanierung die dezentrale Wohnraumlüftung V-WRG von Ventomaxx installiert (10 Geräte) und war damit auch sehr zufrieden. Allerdings hat mich die proprietäre Steuerung und die fehlende Integration in mein Smart Home System immer gestört. Daher habe ich mich entschlossen, eine eigene Platine (PCB) inkl. der Steuerungssoftware auf Basis von ESPHome zu entwickeln, da es keine fertige Lösung gab. Diese Lösung ist Open Source und soll anderen Nutzern helfen, die in der gleichen Situation wie ich sind.
-Für die Steuerung der Lüftung auf Basis von CO2 nutze ich einen extrem hochwertigen und präzisen CO2-Sensor (Sensirion SCD41), der direkt in die Platine (per kleines Zusatz-PCB) integriert ist. Dieser Sensor misst die echte CO2-Konzentration in der Luft und steuert die Lüftungsintensität entsprechend der Voreinstellungen (mittels einer modernen PID-Regelung).
+Für die Steuerung der Lüftung auf Basis von CO2 nutze ich einen extrem hochwertigen und präzisen CO2-Sensor (Sensirion SCD41), der direkt in die Platine (per kleines Zusatz-PCB) integriert ist (Hinweis: Aktuell dient der BME680 als Fallback, da das SCD41-PCB noch in Fertigung ist). Dieser Sensor misst die echte CO2-Konzentration in der Luft und steuert die Lüftungsintensität entsprechend der Voreinstellungen (mittels einer modernen PID-Regelung).
 Da die Lüftungsgeräte in den verschiedenen Räumen meistens eine sehr zentrale Position haben, nutze ich diese auch direkt zur Anwesenheitserkennung mittels Radar-Sensor, der unsichtbar hinter der Blende des Lüftungsgerätes versteckt montiert werden kann. Der Anwesenheitssensor wird für die Steuerung der Lüftungsintensität im Standard-Automatik Modus genutzt und kann darüber hinaus in Home Assistant für jegliche weitere Automatisierungen genutzt werden.
 Der Funktionsumfang dieser Eigenentwicklung geht nach meinen Recherechen über alles hinaus, was aktuell am Markt der Lüftungsgeräte zu finden ist!
 
@@ -80,7 +80,8 @@ In zukünftigen Versionen werde ich diesen Modus weiter optimieren, um den Komfo
 
 ### 🛡️ Präzisions-Sensorik & Monitoring
 
-- 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels [Sensirion SCD41](https://sensirion.com/de/produkte/katalog/SCD41)
+- 🌡️ **Klimadatenerfassung**: Hochpräzise Messung von Temperatur und relativer Luftfeuchtigkeit mittels [Sensirion SCD41](https://sensirion.com/de/produkte/katalog/SCD41).
+  > 💡 **Aktueller Hinweis (März 2026):** Da mein SCD41-Zusatz-PCB aktuell noch in der Fertigung ist, nutze ich übergangsweise den **Bosch BME680 Gas Sensor** als Fallback. Der Code ist so implementiert, dass automatisch der CO2-Wert (IAQ-Äquivalent) des BME680 genutzt wird, falls kein SCD41 am Bus erkannt wird.
 - 💨 **Echte CO2-Messung**: Der SCD41 nutzt **photoacoustic sensing** zur direkten CO2-Messung (400-5000 ppm) statt berechneter Äquivalente - ideal für bedarfsgerechte Lüftungssteuerung.
 - 🏔️ **Luftdruckmessung via BMP390**: Der hochpräzise Barometer-Sensor [Bosch BMP390](https://www.bosch-sensortec.com/en/products/environmental-sensors/pressure-sensors/pressure-sensors-bmp390.html) ermöglicht lokale Wettertrend-Analysen, Sturmwarnungen (Rapid Pressure Drop) und liefert gleichzeitig die exakten Höhendaten für die Autokalibrierung und barometrische Kompensation des SCD41 CO2-Sensors.
 - 📊 **Automatische Intensitätsregelung**: Das System kann die Lüfterleistung automatisch bei steigendem CO2-Gehalt oder Luftfeuchtigkeit für optimale Raumluftqualität erhöhen. Hierfür wird eine fortschrittliche PID-Regelung verwendet, welche die Lüfterleistung dynamisch an die gemessenen Werte anpasst. Die Regelung ist so optimiert, dass sie die Lüfterleistung so gering wie möglich hält, um den Energieverbrauch und die Geräuschentwicklung zu minimieren.
@@ -200,6 +201,7 @@ Zusätzlich habe ich eine SCD41-PCB entwickelt, die den SCD41 CO2-Sensor perfekt
 | **Lüfter** | Die original Ventomaxx V-WRG Geräte nutzen den **EBM-PAPST 4412 F/2 GLL (VarioPro)** **3-Pin PWM** (ohne Tacho-Signal) Lüfter. Alternativ kann ein deutlich modernerer und leiserer **AxiRev** (4-Pin PWM) verwendet werden. Dafür müsste man sich aber um die Befestigung per 3D-Druck-Adapter kümmern. *Die technische Anbidnung ist im folgenden Dokument beschrieben: [Anleitung-Fan-Circuit.md](documentation/Anleitung-Fan-Circuit.md)* | [Fan Component](https://esphome.io/components/fan/speed.html) |
 | **SCD41** | Sensirion CO2-Sensor (Echtes CO2 400-5000ppm, Temp, Hum) via I²C | [SCD4X Component](https://esphome.io/components/sensor/scd4x.html) |
 | **BMP390** | Bosch Hochpräziser Barometrischer Drucksensor via I²C | [BMP3XX Component](https://esphome.io/components/sensor/bmp3xx.html) |
+| **BME680** | Bosch Gas Sensor (Fallback für CO2-Messung) via I²C | [BME680 Component](https://esphome.io/components/sensor/bme680.html) |
 | **NTCs** | 2x NTC 10k (Zuluft/Abluft) für Effizienzmessung | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
 | **I/O Expander** | **MCP23017** (I2C) für VentoMaxx Panel | [MCP23017](https://esphome.io/components/mcp23017.html) |
 | **LED Driver** | **PCA9685** (I2C) für dimmbare LEDs im VentoMaxx Panel | [PCA9685](https://esphome.io/components/output/pca9685.html) |
@@ -751,7 +753,8 @@ Um die Software-Wartung zu vereinfachen und sicherzustellen, dass jede Firmware-
 ### 🔧 Aktuelle technische Verbesserungen
 
 - **Hardware-Upgrade: SCD41 CO2-Sensor & BMP390 (Februar 2026)**:
-  - ✅ Wechsel von BME680 (VOC-basierte IAQ-Schätzung) zu **SCD41** (echte CO2-Messung) und **BMP390** (Luftdruck)
+  - ✅ Wechsel von BME680 (VOC-basierte IAQ-Schätzung) zu **SCD41** (echte CO2-Messung) und **BMP390** (Luftdruck).
+  - ⚠️ **Hinweis:** Da das SCD41-PCB noch in Fertigung ist, dient der **BME680** aktuell als Fallback (IAQ). Der Code erkennt automatisch, ob der SCD41 vorhanden ist.
   - ✅ **Photoacoustic sensing** für präzise CO2-Messung (400-5000 ppm)
   - ✅ Integrierte Temperatur- und Feuchtigkeitsmessung (SCD41)
   - ✅ Automatische CO2-basierte Lüftungsregelung für optimale Raumluftqualität
