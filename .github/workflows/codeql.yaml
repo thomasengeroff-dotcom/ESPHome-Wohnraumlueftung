@@ -1,0 +1,38 @@
+name: "CodeQL Security Scan"
+
+on:
+  push:
+    branches: [ ""master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: '30 2 * * 0' # Jeden Sonntag Nacht
+
+jobs:
+  analyze:
+    name: Analyze C/C++ Code
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: c-cpp
+        # Extra Sicherheitsscans aktivieren
+        queries: security-extended,security-and-quality
+
+    # Versucht das Projekt automatisch zu "verstehen"
+    - name: Autobuild # Hinweis: Wenn das bei ESPHome C++ fehlschlägt, können wir das anpassen
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:c-cpp"
