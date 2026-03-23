@@ -46,6 +46,20 @@ api:
 ota:
   - platform: esphome
     password: !secret otapw
+  - platform: http_request
+
+# ---------------------------------------------------------
+# HTTP FIRMWARE UPDATE (Local Intranet / Home Assistant)
+# ---------------------------------------------------------
+# Requires an HTTP server to host the manifest.json and the firmware.bin
+http_request:
+
+update:
+  - platform: http_request
+    name: "${device_name} Firmware Update"
+    # Der /local/ Ordner entspricht dem "www" Ordner im Home Assistant Samba Share
+    source: "http://192.168.178.45:8123/local/firmware/manifest.json"
+    update_interval: 12h
 
 # ---------------------------------------------------------
 # WIFI CONNECTIVITY

@@ -1,0 +1,14 @@
+{
+  "name": "Wohnrauml\u00c3\u00bcftung",
+  "version": "0.6.18",
+  "builds": [
+    {
+      "chipFamily": "ESP32-C6",
+      "ota": {
+        "md5": "db14d518f0f3330ae283a8d090e71b9d",
+        "path": "firmware.bin",
+        "summary": "Neueste Features und Bugfixes"
+      }
+    }
+  ]
+}
