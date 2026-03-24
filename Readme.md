@@ -792,6 +792,39 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 
 ---
 
+## 🛠️ Entwicklungsumgebung - Installation & Software
+
+### 1. ESPHome Installation
+
+Installiere ESPHome über pip:
+
+```bash
+# Installiere ESPHome (neueste Version)
+py -3.13 -m pip install --upgrade esphome
+```
+
+### 2. Firmware Kompilieren & Flashen
+
+Kompiliere die Firmware und lade sie auf das Gerät. Ersetze `esp_wohnraumlueftung.yaml` durch den Namen deiner YAML-Datei.
+
+```bash
+# Kompilieren
+py -3.13 -m esphome compile esp_wohnraumlueftung.yaml
+
+# Oder direkt flashen (mit OTA-Update über IP)
+py -3.13 -m esphome upload esp_wohnraumlueftung.yaml --device <IP-Adresse>
+```
+
+### 3. OTA-Updates
+
+Nach dem ersten Flashen über USB kannst du Updates drahtlos über Home Assistant durchführen:
+
+1. Gehe in Home Assistant zu **Einstellungen → System → Updates**
+2. Klicke auf **Firmware-Updates**
+3. Wähle dein Gerät aus und klicke auf **Installieren**
+
+---
+
 ## 📜 Lizenz
 
 Dieses Projekt steht unter der [GNU General Public License v3.0 (GPLv3)](LICENSE).

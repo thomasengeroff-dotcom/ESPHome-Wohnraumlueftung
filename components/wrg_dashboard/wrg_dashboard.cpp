@@ -30,8 +30,6 @@
 #include "esphome/core/log.h"
 #include <ArduinoJson.h>
 
-extern esphome::VentilationController *ventilation_ctrl;
-
 namespace esphome {
 namespace wrg_dashboard {
 
@@ -158,7 +156,8 @@ void WrgDashboard::handle_state_(AsyncWebServerRequest *request) {
     return (n && n->has_state()) ? n->state : (float)NAN;
   };
   auto get_s = [](select::Select *s) -> std::string {
-    return (s && s->has_state()) ? s->current_option() : "";
+    if (s && s->has_state()) return s->current_option();
+    return "";
   };
 
   doc["temperature"] = get_f(this->temperature_);
@@ -198,9 +197,9 @@ void WrgDashboard::handle_state_(AsyncWebServerRequest *request) {
   JsonArray peers_array = doc["peers"].to<JsonArray>();
 
   // Peer devices from VentilationController
-  if (ventilation_ctrl != nullptr) {
+  if (this->ventilation_ctrl_ != nullptr) {
     uint32_t now = millis();
-    for (const auto &peer : ventilation_ctrl->peers) {
+    for (const auto &peer : this->ventilation_ctrl_->peers) {
       if (now - peer.last_seen_ms <
           900000) { // Only show peers seen in the last 15 mins
         JsonObject p = peers_array.add<JsonObject>();

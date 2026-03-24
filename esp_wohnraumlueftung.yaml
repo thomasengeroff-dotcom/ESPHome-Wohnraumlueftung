@@ -273,3 +273,4 @@ wrg_dashboard:
   auto_presence_slider_id: auto_presence_slider
   luefter_modus_id: luefter_modus
   lueftung_fan_id: lueftung_fan
+  ventilation_ctrl_id: ventilation_ctrl

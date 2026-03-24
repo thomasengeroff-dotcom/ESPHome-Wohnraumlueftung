@@ -25,7 +25,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install ESPHome
-        run: pip install esphome==2025.12.7
+        run: pip install esphome==2026.3.1
 
       - name: Verify Configuration
         run: esphome config esp_wohnraumlueftung.yaml

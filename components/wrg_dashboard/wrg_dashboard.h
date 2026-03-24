@@ -33,6 +33,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/web_server_base/web_server_base.h"
+#include "esphome/components/ventilation_group/ventilation_group.h"
 #include "esphome/core/component.h"
 #include <mutex>
 #include <string>
@@ -118,6 +119,7 @@ public:
 
   void set_luefter_modus(select::Select *s) { luefter_modus_ = s; }
   void set_lueftung_fan(fan::Fan *f) { lueftung_fan_ = f; }
+  void set_ventilation_ctrl(esphome::VentilationController *c) { ventilation_ctrl_ = c; }
 
   // AsyncWebHandler overrides
   bool canHandle(AsyncWebServerRequest *request) const override;
@@ -171,6 +173,7 @@ protected:
 
   select::Select *luefter_modus_{nullptr};
   fan::Fan *lueftung_fan_{nullptr};
+  esphome::VentilationController *ventilation_ctrl_{nullptr};
 };
 
 } // namespace wrg_dashboard

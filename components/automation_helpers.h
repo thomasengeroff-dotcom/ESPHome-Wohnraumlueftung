@@ -87,7 +87,7 @@ extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
 
 /// @name Template UI components
 /// @{
-extern esphome::template_::TemplateSelect
+extern esphome::template_::TemplateSelectWithSetAction<false, false, false, 0>
     *luefter_modus; ///< Mode selector (WRG/Stoß/Durchlüften/Aus).
 // auto_presence_behavior removed
 extern esphome::template_::TemplateNumber
@@ -114,7 +114,7 @@ extern esphome::template_::TemplateNumber
     *config_room_id; ///< Persistent Room ID number.
 extern esphome::template_::TemplateNumber
     *config_device_id; ///< Persistent Device ID number.
-extern esphome::template_::TemplateSelect
+extern esphome::template_::TemplateSelectWithSetAction<false, true, true, 0>
     *config_phase; ///< Persistent Phase A/B selection.
 /// @}
 

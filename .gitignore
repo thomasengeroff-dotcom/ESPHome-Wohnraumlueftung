@@ -10,3 +10,9 @@ KiCad/
 
 # Documentation
 documentation/Ventomaxx/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+components/wrg_dashboard/__pycache__/__init__.cpython-313.pyc

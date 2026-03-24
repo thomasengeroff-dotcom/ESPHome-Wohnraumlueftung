@@ -53,6 +53,7 @@ CONFIG_SCHEMA = cv.Schema(
 
         cv.Optional("luefter_modus_id"):            cv.use_id(select.Select),
         cv.Optional("lueftung_fan_id"):             cv.use_id(fan.Fan),
+        cv.Optional("ventilation_ctrl_id"):         cv.use_id(cg.Component),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
