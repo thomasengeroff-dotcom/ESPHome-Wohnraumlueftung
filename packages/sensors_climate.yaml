@@ -89,6 +89,17 @@ sensor:
   # ---------------------------------------------------------
   # NTC TEMPERATURE SENSORS (Analog)
   # ---------------------------------------------------------
+  # Sensor Info (Eurosensor ENTC-EI-10k9777-02):
+  # - Resistance at 25°C: 10kΩ
+  # - Beta constant (25/85): 3976K ±0.5%
+  # - Accuracy: ±0.2°C (0 to 70°C)
+  #
+  # Voltage Divider Reference Resistor (R4, R5):
+  # - Part: HoAR0603-1/10W-10KR-0.1%-TCR25 (LCSC: C5123581)
+  # - Value: 10kΩ
+  # - Tolerance: ±0.1% (High precision)
+  # - Temperature Coefficient: ±25ppm/°C (Highly stable)
+  # ---------------------------------------------------------
   # NTC Innen - Indoor air temperature measurement
   - platform: resistance
     id: ntc_innen_resistance
@@ -103,7 +114,7 @@ sensor:
     name: "Temperatur Zuluft (Innen)"
     id: temp_zuluft
     calibration:
-      b_constant: 3435 # Beta coefficient from datasheet
+      b_constant: 3976 # Beta coefficient from datasheet
       reference_temperature: 25°C
       reference_resistance: 10kOhm
     accuracy_decimals: 1
@@ -113,6 +124,20 @@ sensor:
           send_every: 3
       - lambda: |-
           return filter_ntc_stable(0, x);
+
+  - platform: ntc
+    sensor: ntc_innen_resistance
+    name: "Temperatur Zuluft (Innen) RAW"
+    id: temp_zuluft_raw
+    calibration:
+      b_constant: 3976 # Beta coefficient from datasheet
+      reference_temperature: 25°C
+      reference_resistance: 10kOhm
+    accuracy_decimals: 1
+    filters:
+      - median:
+          window_size: 5
+          send_every: 3
 
   - platform: adc
     id: ntc_innen_source
@@ -135,7 +160,7 @@ sensor:
     name: "Temperatur Abluft (Außen)"
     id: temp_abluft
     calibration:
-      b_constant: 3435
+      b_constant: 3976 # Beta coefficient from datasheet
       reference_temperature: 25°C
       reference_resistance: 10kOhm
     accuracy_decimals: 1
@@ -145,6 +170,20 @@ sensor:
           send_every: 3
       - lambda: |-
           return filter_ntc_stable(1, x);
+
+  - platform: ntc
+    sensor: ntc_aussen_resistance
+    name: "Temperatur Abluft (Außen) RAW"
+    id: temp_abluft_raw
+    calibration:
+      b_constant: 3976
+      reference_temperature: 25°C
+      reference_resistance: 10kOhm
+    accuracy_decimals: 1
+    filters:
+      - median:
+          window_size: 5
+          send_every: 3
 
   - platform: adc
     id: ntc_aussen_source
