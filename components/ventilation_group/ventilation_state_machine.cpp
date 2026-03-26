@@ -116,7 +116,8 @@ void VentilationStateMachine::set_cycle_duration(uint32_t ms) {
 /// @param target_pos_ms  Cycle position reported by the peer (0 … 2×cycle_duration_ms).
 void VentilationStateMachine::sync_time(uint32_t now, uint32_t target_pos_ms) {
     uint32_t period = cycle_duration_ms * 2;
-    uint32_t my_pos = (now + time_offset_ms) % period;
+    // Use the safe get_cycle_pos() helper to avoid rollover issues
+    uint32_t my_pos = get_cycle_pos(now);
 
     int32_t diff = (int32_t)target_pos_ms - (int32_t)my_pos;
     if (diff > (int32_t)cycle_duration_ms) diff -= period;
@@ -124,6 +125,8 @@ void VentilationStateMachine::sync_time(uint32_t now, uint32_t target_pos_ms) {
 
     if (std::abs(diff) > 200) {
         time_offset_ms += diff;
+        // Keep offset within [-period, period] to avoid int32_t overflow after months of syncs
+        time_offset_ms %= (int32_t)period;
     }
 }
 

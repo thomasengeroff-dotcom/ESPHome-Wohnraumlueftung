@@ -368,6 +368,17 @@ inline bool handle_discovery_payload(const std::string &payload,
   return false;
 }
 
+/** @brief Sends a sync packet to all registered peers via unicast. 
+ *  This is used for real-time mirroring of settings (CO2, fan levels, etc.)
+ */
+inline void sync_settings_to_peers() {
+  if (ventilation_ctrl == nullptr) return;
+  // Build a MSG_STATE packet which includes all current settings
+  auto data = ventilation_ctrl->build_packet(esphome::MSG_STATE);
+  send_sync_to_all_peers(data);
+  ESP_LOGD("espnow_sync", "Sent settings update to all peers via unicast.");
+}
+
 // --- Inline wrappers (called from YAML lambdas) -----------------------
 
 // Global constants
@@ -422,22 +433,19 @@ inline esphome::optional<float> filter_ntc_stable(int sensor_idx,
              "filter may never pass a value.", cycle_duration_ms);
   }
 
-  // Dynamic wait time: 60% of the cycle, but minimum 20 seconds
+  // Dynamic wait time: 40% of the cycle (was 60%), but minimum 15 seconds (was 20)
   uint32_t wait_time_ms =
-      std::max((uint32_t)20000, (uint32_t)(cycle_duration_ms * 0.6f));
+      std::max((uint32_t)15000, (uint32_t)(cycle_duration_ms * 0.4f));
 
   // Safety check so we don't wait longer than the cycle itself minus 5s
   if (wait_time_ms >= cycle_duration_ms) {
     wait_time_ms = cycle_duration_ms > 5000 ? cycle_duration_ms - 5000 : 0;
   }
 
-  // Dynamic window size based on remaining time in the cycle
-  // Values arrive every 3 seconds (as specified in yaml median filter
-  // send_every)
-  uint32_t remaining_time_ms =
-      cycle_duration_ms > wait_time_ms ? cycle_duration_ms - wait_time_ms : 0;
-  size_t target_window_size =
-      std::max((size_t)1, (size_t)(remaining_time_ms / 3000));
+  // FIXED W5: Use a smaller, fixed window of 3 samples (9s) for stability.
+  // Dynamic window based on remaining time was too restrictive, often 
+  // preventing any value from being published during the 70s cycle.
+  const size_t target_window_size = 3;
 
   // 1. Check if we are still within the mandatory thermal adjustment wait time
   if (millis() - last_direction_change_time < wait_time_ms) {
@@ -490,6 +498,14 @@ inline int get_co2_fan_level(float co2_ppm, int current_level, int min_level,
 /// Checks sensor availability (NaN = not connected), calculates target level,
 /// and applies it only if it differs from the current level (gradual change).
 // Legacy CO2 control removed in favor of evaluate_auto_mode()
+
+/// @brief Calculates Wärmerückgewinnung (heat recovery) efficiency safely.
+inline float calculate_heat_recovery_efficiency(float t_raum, float t_zuluft, float t_aussen) {
+  if (std::isnan(t_raum) || std::isnan(t_zuluft) || std::isnan(t_aussen)) {
+    return NAN;
+  }
+  return VentilationLogic::calculate_heat_recovery_efficiency(t_raum, t_zuluft, t_aussen);
+}
 
 /// @brief Core logic for the new Standard-Automatik mode.
 inline void evaluate_auto_mode() {
@@ -564,32 +580,28 @@ inline void evaluate_auto_mode() {
   }
 
   // --- 3. Summer Cooling Logic ---
+  // [NEW v4] Strictly follows: 
+  // - Activation: Indoor > 22.0°C AND Outdoor cooler by at least 1.5°C
+  // - Hysteresis: Disengage when Outdoor is < 0.5°C cooler than Indoor (or warmer)
   if (!std::isnan(eff_in) && !std::isnan(eff_out)) {
     if (internal_mode != esphome::MODE_VENTILATION) {
-      // FIXED #7: Added hysteresis to prevent oscillation when eff_in ≈ eff_out.
-      // Engage cooling only when outside is clearly cooler (>1.5°C delta).
       if (eff_in > 22.0f && eff_out < (eff_in - 1.5f)) {
         internal_mode = esphome::MODE_VENTILATION;
-        ESP_LOGI("auto_mode", "Summer cooling engaged: In=%.1fC, Out=%.1fC",
+        ESP_LOGI("auto_mode", "Sommer-Kühlung AKTIVIERT: Innen=%.1f°C, Außen=%.1f°C (Delta > 1.5°C)",
                  eff_in, eff_out);
       } else if (internal_mode != esphome::MODE_ECO_RECOVERY) {
-        // Return to eco recovery
         internal_mode = esphome::MODE_ECO_RECOVERY;
       }
     } else {
-      // FIXED #7: Disengage only when outside is no longer meaningfully cooler
-      // (0.5°C hysteresis band avoids mode flapping near the threshold).
-      if (eff_out >= (eff_in - 0.5f)) {
+      // Return to WRG if outdoor is no longer significantly cooler or indoor is cool enough (<21.5 for basic hysteresis)
+      if (eff_out >= (eff_in - 0.5f) || eff_in < 21.5f) {
         internal_mode = esphome::MODE_ECO_RECOVERY;
-        ESP_LOGI(
-            "auto_mode",
-            "Summer cooling aborted (Outside no longer cool enough): In=%.1fC, Out=%.1fC",
-            eff_in, eff_out);
+        ESP_LOGI("auto_mode", "Sommer-Kühlung DEAKTIVIERT (Hysterese erreicht): Innen=%.1f°C, Außen=%.1f°C",
+                 eff_in, eff_out);
       }
     }
   } else if (internal_mode != esphome::MODE_ECO_RECOVERY &&
              internal_mode != esphome::MODE_VENTILATION) {
-    // Default to WRG
     internal_mode = esphome::MODE_ECO_RECOVERY;
   }
 

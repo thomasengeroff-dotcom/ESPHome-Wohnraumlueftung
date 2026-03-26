@@ -108,13 +108,13 @@ switch:
               ESP_LOGW("co2_auto", "Kein CO2-Sensor verfügbar (SCD41/BME680) — CO2 Automatik kann nicht aktiviert werden");
             } else {
               id(co2_auto_enabled) = true;
-              id(ventilation_ctrl)->trigger_sync();
+              sync_settings_to_peers();
               ESP_LOGI("co2_auto", "CO2 Automatik aktiviert");
             }
     turn_off_action:
         - lambda: |-
             id(co2_auto_enabled) = false;
-            id(ventilation_ctrl)->trigger_sync();
+            sync_settings_to_peers();
             ESP_LOGI("co2_auto", "CO2 Automatik deaktiviert");
 
   # ESP-NOW Peer Check (disable to suppress Master LED blinking without peers)
@@ -128,12 +128,12 @@ switch:
     turn_on_action:
         - lambda: |-
             id(peer_check_enabled) = true;
-            id(ventilation_ctrl)->trigger_sync();
+            sync_settings_to_peers();
             ESP_LOGI("espnow", "Peer check enabled");
     turn_off_action:
         - lambda: |-
             id(peer_check_enabled) = false;
-            id(ventilation_ctrl)->trigger_sync();
+            sync_settings_to_peers();
             ESP_LOGI("espnow", "Peer check disabled");
 
 # ---------------------------------------------------------

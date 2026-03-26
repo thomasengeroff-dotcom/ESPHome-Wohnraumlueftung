@@ -60,7 +60,7 @@ esphome:
   includes:
     - components/automation_helpers.h # Helper functions logic
   on_boot:
-    priority: 600
+    900 # High priority to ensure registration before other components start
     then:
       # Sync persistent configuration IDs to the C++ controller object
       - lambda: sync_config_to_controller();
@@ -101,7 +101,7 @@ globals:
     type: std::string
     max_restore_data_length: 254
     initial_value: '""'
-    restore_value: false  # Temporarily disabled to clear NVS corruption from previous firmware
+    restore_value: false  # TODO: Temporarily disabled to clear NVS corruption from previous firmware
 
   # CO2 auto-control enabled (only functional when SCD41 is connected)
   - id: co2_auto_enabled

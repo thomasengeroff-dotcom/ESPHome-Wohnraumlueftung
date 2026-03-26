@@ -380,7 +380,53 @@ public:
       changed = true;
     }
 
-    // 4. Temperature sync
+    // 4. Settings Synchronization (Protocol v4)
+    // Synchronize all automatik and timer settings if they differ.
+    // Loop prevention: We only update the local state here; we DO NOT call trigger_sync()
+    // or notify peers back, as this change originated from a peer.
+    extern esphome::globals::RestoringGlobalsComponent<bool> *co2_auto_enabled;
+    extern esphome::globals::RestoringGlobalsComponent<int> *automatik_min_fan_level;
+    extern esphome::globals::RestoringGlobalsComponent<int> *automatik_max_fan_level;
+    extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
+    extern esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_val;
+    extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_val;
+    extern esphome::template_::TemplateNumber *vent_timer;
+    extern esphome::template_::TemplateNumber *sync_interval_config;
+
+    if (co2_auto_enabled && co2_auto_enabled->value() != pkt->co2_auto_enabled) {
+      co2_auto_enabled->value() = pkt->co2_auto_enabled;
+      changed = true;
+    }
+    if (automatik_min_fan_level && automatik_min_fan_level->value() != pkt->automatik_min_fan_level) {
+      automatik_min_fan_level->value() = pkt->automatik_min_fan_level;
+      changed = true;
+    }
+    if (automatik_max_fan_level && automatik_max_fan_level->value() != pkt->automatik_max_fan_level) {
+      automatik_max_fan_level->value() = pkt->automatik_max_fan_level;
+      changed = true;
+    }
+    if (auto_co2_threshold_val && auto_co2_threshold_val->value() != pkt->auto_co2_threshold_val) {
+      auto_co2_threshold_val->value() = pkt->auto_co2_threshold_val;
+      changed = true;
+    }
+    if (auto_humidity_threshold_val && auto_humidity_threshold_val->value() != pkt->auto_humidity_threshold_val) {
+      auto_humidity_threshold_val->value() = pkt->auto_humidity_threshold_val;
+      changed = true;
+    }
+    if (auto_presence_val && auto_presence_val->value() != pkt->auto_presence_val) {
+      auto_presence_val->value() = pkt->auto_presence_val;
+      changed = true;
+    }
+    if (vent_timer && (uint16_t)vent_timer->state != pkt->vent_timer_min) {
+      vent_timer->publish_state(pkt->vent_timer_min);
+      changed = true;
+    }
+    if (sync_interval_config && (uint16_t)sync_interval_config->state != pkt->sync_interval_min) {
+      sync_interval_config->publish_state(pkt->sync_interval_min);
+      changed = true;
+    }
+
+    // 5. Temperature sync
     if (!std::isnan(pkt->t_in)) {
       last_peer_t_in = pkt->t_in;
       last_peer_t_in_time = millis();
@@ -390,11 +436,11 @@ public:
       last_peer_t_out_time = millis();
     }
 
-    // 5. PID Demand sync
+    // 6. PID Demand sync
     if (!std::isnan(pkt->pid_demand)) {
       last_peer_pid_demand = pkt->pid_demand;
       last_peer_pid_demand_time = millis();
-      has_peer_pid_demand = true; // FIXED W3: use explicit flag, not time==0 sentinel
+      has_peer_pid_demand = true; 
     }
 
     return changed;
