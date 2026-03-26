@@ -321,7 +321,10 @@ interval:
           condition:
             lambda: |-
               static bool done = false;
-              if (!done) { done = true; return true; }
+              if (!done && wifi::global_wifi_component->is_connected()) {
+                done = true;
+                return true;
+              }
               return false;
           then:
             - script.execute: espnow_discovery
@@ -333,9 +336,14 @@ interval:
             lambda: "return ((esphome::VentilationController*)id(ventilation_ctrl))->pending_broadcast;"
           then:
             - lambda: |-
-                ESP_LOGV("espnow_sync", "Pending sync detected. Sending unicast to all known peers...");
                 auto data = build_and_populate_packet(esphome::MSG_SYNC);
+                // Sofortige Änderungen per Broadcast (robust)
+                uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+                esphome::espnow::global_esp_now->send(
+                    broadcast_mac, data, [](esp_err_t err) {});
+                // Zusätzlich per Unicast für zuverlässige Zustellung
                 send_sync_to_all_peers(data);
+                // build_and_populate_packet/build_packet set pending_broadcast to false
 
   # Automatik Logik (CO2, Feuchte, Sommer/Winter)
   - interval: 10s

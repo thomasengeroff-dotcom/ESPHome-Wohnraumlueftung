@@ -41,6 +41,7 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include "esp_now.h"
 
 // Core and Component Headers
 #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -195,14 +196,19 @@ extern esphome::light::LightState
 extern esphome::VentilationController *ventilation_ctrl;
 
 // --- ESP-NOW Dynamic Discovery & Persistence -------------------------
+inline std::vector<uint8_t> build_and_populate_packet(esphome::MessageType type);
 
 // Helper to parse MAC address strings (e.g., "AA:BB:CC:DD:EE:FF")
 inline esphome::optional<std::array<uint8_t, 6>>
 parse_mac_local(const std::string &str) {
   std::array<uint8_t, 6> res;
-  if (sscanf(str.c_str(), "%hhX:%hhX:%hhX:%hhX:%hhX:%hhX", &res[0], &res[1],
-             &res[2], &res[3], &res[4], &res[5]) == 6)
+  int values[6];
+  if (sscanf(str.c_str(), "%X:%X:%X:%X:%X:%X", &values[0], &values[1], &values[2],
+             &values[3], &values[4], &values[5]) == 6) {
+    for (int i = 0; i < 6; ++i)
+      res[i] = (uint8_t)values[i];
     return res;
+  }
   return {};
 }
 
@@ -250,8 +256,26 @@ inline void register_peer_dynamic(const uint8_t *mac) {
     ESP_LOGI("espnow_disc", "New peer discovered and saved: %s",
              mac_str.c_str());
   }
-  // Runtime add_peer via the canonical global pointer
-  esphome::espnow::global_esp_now->add_peer(mac);
+
+  // FIXED: Register peer with current WiFi channel for reliable unicast
+  esp_now_peer_info_t peer_info = {};
+  memset(&peer_info, 0, sizeof(esp_now_peer_info_t));
+  memcpy(peer_info.peer_addr, mac, 6);
+  peer_info.channel = 0; // 0 = use current channel (auto)
+  peer_info.encrypt = false;
+  peer_info.ifidx = WIFI_IF_STA;
+
+  // Remove first if already exists (channel may have changed)
+  esp_now_del_peer(mac);
+  esp_err_t err = esp_now_add_peer(&peer_info);
+
+  if (err == ESP_OK) {
+    ESP_LOGI("espnow_disc", "Peer %s registered (channel: current)",
+             mac_str.c_str());
+  } else {
+    ESP_LOGW("espnow_disc", "Failed to register peer %s: %d", mac_str.c_str(),
+             err);
+  }
 }
 
 /** @brief Loads all peers saved in the runtime string cache and registers them
@@ -347,8 +371,13 @@ inline void send_sync_to_all_peers(const std::vector<uint8_t> &data) {
   if (espnow_peers == nullptr)
     return;
   std::string current_list = espnow_peers->value();
-  if (current_list.empty())
+  if (current_list.empty()) {
+    ESP_LOGW("espnow_sync", "No peers in list — cannot send unicast!");
     return;
+  }
+
+  ESP_LOGI("espnow_sync", "Sending unicast to peers: %s", current_list.c_str());
+
   size_t start = 0;
   size_t end = current_list.find(",");
   while (true) {
@@ -402,9 +431,16 @@ inline void sync_settings_to_peers() {
   if (ventilation_ctrl == nullptr)
     return;
   // Build a MSG_STATE packet which includes all current settings
-  auto data = ventilation_ctrl->build_packet(esphome::MSG_STATE);
-  send_sync_to_all_peers(data);
-  ESP_LOGD("espnow_sync", "Sent settings update to all peers via unicast.");
+  auto data = build_and_populate_packet(esphome::MSG_STATE);
+
+  // OPTIMIZATION: For immediate state changes (button/slider), we use
+  // a room-wide broadcast (FF:FF:FF:FF:FF:FF). This is much more robust
+  // than unicast because it works even if a peer's MAC is not yet discovered
+  // or registered. Periodic sync still uses unicast.
+  uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  esphome::espnow::global_esp_now->send(broadcast_mac, data, [](esp_err_t err) {});
+
+  ESP_LOGI("vent_sync", "Sent state change via BROADCAST to room members.");
 }
 
 // --- Inline wrappers (called from YAML lambdas) -----------------------
