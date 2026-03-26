@@ -29,7 +29,7 @@
 substitutions:
   # The project version is automatically updated by version_bump.py during build.
   # Do not change manually unless you know what you are doing.
-  project_version: "0.6.47"
+  project_version: "0.6.52"
 
 esphome:
   name: "${device_name}"
@@ -62,7 +62,7 @@ esp32:
 # Enables serial logging over USB-C
 logger:
   hardware_uart: USB_SERIAL_JTAG
-  level: INFO # Reduced from DEBUG for performance
+  level: DEBUG # Reduced from DEBUG for performance
 
 # ---------------------------------------------------------
 # HOME ASSISTANT API

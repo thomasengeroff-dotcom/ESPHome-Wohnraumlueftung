@@ -103,19 +103,19 @@ switch:
     lambda: |-
       return id(co2_auto_enabled);
     turn_on_action:
-        - lambda: |-
-            if (std::isnan(id(effective_co2).state)) {
-              ESP_LOGW("co2_auto", "Kein CO2-Sensor verfügbar (SCD41/BME680) — CO2 Automatik kann nicht aktiviert werden");
-            } else {
-              id(co2_auto_enabled) = true;
-              sync_settings_to_peers();
-              ESP_LOGI("co2_auto", "CO2 Automatik aktiviert");
-            }
-    turn_off_action:
-        - lambda: |-
-            id(co2_auto_enabled) = false;
+      - lambda: |-
+          if (std::isnan(id(effective_co2).state)) {
+            ESP_LOGW("co2_auto", "Kein CO2-Sensor verfügbar (SCD41/BME680) — CO2 Automatik kann nicht aktiviert werden");
+          } else {
+            id(co2_auto_enabled) = true;
             sync_settings_to_peers();
-            ESP_LOGI("co2_auto", "CO2 Automatik deaktiviert");
+            ESP_LOGI("co2_auto", "CO2 Automatik aktiviert");
+          }
+    turn_off_action:
+      - lambda: |-
+          id(co2_auto_enabled) = false;
+          sync_settings_to_peers();
+          ESP_LOGI("co2_auto", "CO2 Automatik deaktiviert");
 
   # ESP-NOW Peer Check (disable to suppress Master LED blinking without peers)
   - platform: template
@@ -126,15 +126,15 @@ switch:
     lambda: |-
       return id(peer_check_enabled);
     turn_on_action:
-        - lambda: |-
-            id(peer_check_enabled) = true;
-            sync_settings_to_peers();
-            ESP_LOGI("espnow", "Peer check enabled");
+      - lambda: |-
+          id(peer_check_enabled) = true;
+          sync_settings_to_peers();
+          ESP_LOGI("espnow", "Peer check enabled");
     turn_off_action:
-        - lambda: |-
-            id(peer_check_enabled) = false;
-            sync_settings_to_peers();
-            ESP_LOGI("espnow", "Peer check disabled");
+      - lambda: |-
+          id(peer_check_enabled) = false;
+          sync_settings_to_peers();
+          ESP_LOGI("espnow", "Peer check disabled");
 
 # ---------------------------------------------------------
 # SCRIPTS (Complex Logic)
@@ -185,7 +185,7 @@ script:
           ESP_LOGI("sleep", "Entering Light Sleep Mode (WiFi OFF, LEDs OFF)");
       - switch.turn_off: pca9685_oe
       - wifi.disable:
-  
+
   # Restores full operation
   - id: system_wakeup
     mode: restart
@@ -214,7 +214,7 @@ script:
     then:
       - lambda: load_peers_from_runtime_cache(); # W4: renamed from load_peers_from_flash
       - lambda: send_discovery_broadcast();
-      
+
       # LED Self-Test and UI start (moved from boot to avoid bus contention)
       - delay: 500ms
       - lambda: run_led_self_test();

@@ -107,7 +107,7 @@ number:
 
 select:
   - platform: template
-    name: "Geräte-Phase (A/B)"
+    name: "Geräte-Phase (A|B)"
     id: config_phase
     icon: "mdi:swap-horizontal"
     options:

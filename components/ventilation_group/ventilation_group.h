@@ -33,7 +33,6 @@
 #include "ventilation_state_machine.h"
 #include <vector>
 
-
 // Forward declaration of the global fan update function (defined in
 // automation_helpers.h)
 void update_fan_logic();
@@ -55,28 +54,31 @@ enum MessageType {
 
 /// Ensure breaking packet schema changes are detected across nodes.
 /// Bump this whenever the VentilationPacket layout or semantics change.
-static const uint8_t PROTOCOL_VERSION = 4; // Bumped: protocol_version field added
+static const uint8_t PROTOCOL_VERSION =
+    4; // Bumped: protocol_version field added
 /// @brief Binary packet exchanged between peer devices via ESP-NOW.
 /// Layout is packed and must be identical on all firmware builds.
 /// IMPORTANT: protocol_version is the second byte — increment PROTOCOL_VERSION
 /// and do a simultaneous OTA rollout on all nodes whenever this struct changes.
 struct __attribute__((packed)) VentilationPacket {
-  uint8_t magic_header;    ///< Always 0x42 — used for basic validation.
-  uint8_t protocol_version;///< FIXED K2: Schema version — reject mismatched peers.
-  uint8_t floor_id;        ///< Floor group (filters unrelated devices).
-  uint8_t room_id;         ///< Room group within the floor.
-  uint8_t device_id;       ///< Unique sender ID (used to ignore own packets).
-  uint8_t msg_type;        ///< MessageType enum value.
-  uint8_t current_mode;    ///< VentilationMode enum value.
+  uint8_t magic_header; ///< Always 0x42 — used for basic validation.
+  uint8_t
+      protocol_version; ///< FIXED K2: Schema version — reject mismatched peers.
+  uint8_t floor_id;     ///< Floor group (filters unrelated devices).
+  uint8_t room_id;      ///< Room group within the floor.
+  uint8_t device_id;    ///< Unique sender ID (used to ignore own packets).
+  uint8_t msg_type;     ///< MessageType enum value.
+  uint8_t current_mode; ///< VentilationMode enum value.
 
   // Live Data Synced States
-  uint32_t timestamp_ms;         ///< Sender's millis() at packet creation.
-  uint32_t cycle_pos_ms;         ///< Sender's position in the direction cycle.
-  uint32_t remaining_duration_ms;///< Remaining ventilation timer (0 = infinite).
-  bool phase_state;              ///< Sender's current global phase (A or B).
-  float t_in;                    ///< Sender's local indoor temperature (or NAN).
-  float t_out;                   ///< Sender's local outdoor temperature (or NAN).
-  float pid_demand;              ///< Sender's local evaluated PID demand (0.0–1.0).
+  uint32_t timestamp_ms; ///< Sender's millis() at packet creation.
+  uint32_t cycle_pos_ms; ///< Sender's position in the direction cycle.
+  uint32_t
+      remaining_duration_ms; ///< Remaining ventilation timer (0 = infinite).
+  bool phase_state;          ///< Sender's current global phase (A or B).
+  float t_in;                ///< Sender's local indoor temperature (or NAN).
+  float t_out;               ///< Sender's local outdoor temperature (or NAN).
+  float pid_demand;          ///< Sender's local evaluated PID demand (0.0–1.0).
 
   // Control & Settings Synced States
   uint8_t fan_intensity; ///< Current 1-10 level
@@ -87,7 +89,7 @@ struct __attribute__((packed)) VentilationPacket {
   uint8_t automatik_max_fan_level;     ///< 1-10 maximum level
   uint16_t auto_co2_threshold_val;     ///< Setpoint, e.g. 1000 ppm (16-bit)
   uint8_t auto_humidity_threshold_val; ///< Setpoint, e.g. 60 % (8-bit)
-  int8_t auto_presence_val;           ///< Presence compensation (-5 to +5)
+  int8_t auto_presence_val;            ///< Presence compensation (-5 to +5)
 
   // Timer Settings payload
   uint16_t sync_interval_min; ///< ESP-NOW Broadcast Interval
@@ -152,11 +154,14 @@ public:
   // to the identically highest required speed necessary to clear the room,
   // without fighting each other or creating noise artifacts.
   float local_pid_demand = 0.0f; ///< Local PID demand requirement (0.0 to 1.0)
-  float last_peer_pid_demand = 0.0f; ///< Last valid PID demand received from a peer
-  uint32_t last_peer_pid_demand_time = 0; ///< millis() when peer PID demand was received
+  float last_peer_pid_demand =
+      0.0f; ///< Last valid PID demand received from a peer
+  uint32_t last_peer_pid_demand_time =
+      0; ///< millis() when peer PID demand was received
   /// FIXED W3: Explicit flag avoids millis()-overflow false-positive when
   /// last_peer_pid_demand_time == 0 is used as a sentinel after 49.7 days.
-  bool has_peer_pid_demand = false; ///< True once any peer PID demand has been received.
+  bool has_peer_pid_demand =
+      false; ///< True once any peer PID demand has been received.
 
   // --- PEER TRACKING (For Dashboard) ---
   std::vector<PeerState> peers; ///< List of recently seen peers
@@ -303,7 +308,8 @@ public:
     // FIXED K2: Reject packets from nodes running a different protocol version.
     // Always do a simultaneous OTA rollout when PROTOCOL_VERSION changes.
     if (pkt->protocol_version != PROTOCOL_VERSION) {
-      ESP_LOGW("vent_sync", "Protocol version mismatch! Got v%d, expected v%d — "
+      ESP_LOGW("vent_sync",
+               "Protocol version mismatch! Got v%d, expected v%d — "
                "update firmware on all nodes simultaneously.",
                pkt->protocol_version, PROTOCOL_VERSION);
       return false;
@@ -380,51 +386,12 @@ public:
       changed = true;
     }
 
-    // 4. Settings Synchronization (Protocol v4)
-    // Synchronize all automatik and timer settings if they differ.
-    // Loop prevention: We only update the local state here; we DO NOT call trigger_sync()
-    // or notify peers back, as this change originated from a peer.
-    extern esphome::globals::RestoringGlobalsComponent<bool> *co2_auto_enabled;
-    extern esphome::globals::RestoringGlobalsComponent<int> *automatik_min_fan_level;
-    extern esphome::globals::RestoringGlobalsComponent<int> *automatik_max_fan_level;
-    extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
-    extern esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_val;
-    extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_val;
-    extern esphome::template_::TemplateNumber *vent_timer;
-    extern esphome::template_::TemplateNumber *sync_interval_config;
-
-    if (co2_auto_enabled && co2_auto_enabled->value() != pkt->co2_auto_enabled) {
-      co2_auto_enabled->value() = pkt->co2_auto_enabled;
-      changed = true;
-    }
-    if (automatik_min_fan_level && automatik_min_fan_level->value() != pkt->automatik_min_fan_level) {
-      automatik_min_fan_level->value() = pkt->automatik_min_fan_level;
-      changed = true;
-    }
-    if (automatik_max_fan_level && automatik_max_fan_level->value() != pkt->automatik_max_fan_level) {
-      automatik_max_fan_level->value() = pkt->automatik_max_fan_level;
-      changed = true;
-    }
-    if (auto_co2_threshold_val && auto_co2_threshold_val->value() != pkt->auto_co2_threshold_val) {
-      auto_co2_threshold_val->value() = pkt->auto_co2_threshold_val;
-      changed = true;
-    }
-    if (auto_humidity_threshold_val && auto_humidity_threshold_val->value() != pkt->auto_humidity_threshold_val) {
-      auto_humidity_threshold_val->value() = pkt->auto_humidity_threshold_val;
-      changed = true;
-    }
-    if (auto_presence_val && auto_presence_val->value() != pkt->auto_presence_val) {
-      auto_presence_val->value() = pkt->auto_presence_val;
-      changed = true;
-    }
-    if (vent_timer && (uint16_t)vent_timer->state != pkt->vent_timer_min) {
-      vent_timer->publish_state(pkt->vent_timer_min);
-      changed = true;
-    }
-    if (sync_interval_config && (uint16_t)sync_interval_config->state != pkt->sync_interval_min) {
-      sync_interval_config->publish_state(pkt->sync_interval_min);
-      changed = true;
-    }
+    // 4. Settings Synchronization
+    // NOTE: Config sync (co2_auto_enabled, automatik_min/max_fan_level,
+    // thresholds, timers etc.) is handled in automation_helpers.h ::
+    // handle_espnow_receive() because those globals are 'static' in main.cpp
+    // and only visible from there. This class (VentilationController) cannot
+    // access them directly.
 
     // 5. Temperature sync
     if (!std::isnan(pkt->t_in)) {
@@ -440,7 +407,7 @@ public:
     if (!std::isnan(pkt->pid_demand)) {
       last_peer_pid_demand = pkt->pid_demand;
       last_peer_pid_demand_time = millis();
-      has_peer_pid_demand = true; 
+      has_peer_pid_demand = true;
     }
 
     return changed;
@@ -510,7 +477,8 @@ public:
              "Building packet type %d. Clearing pending_broadcast.", type);
     VentilationPacket pkt;
     pkt.magic_header = 0x42;
-    pkt.protocol_version = PROTOCOL_VERSION; // FIXED K2: stamp version for peer validation
+    pkt.protocol_version =
+        PROTOCOL_VERSION; // FIXED K2: stamp version for peer validation
     pkt.floor_id = floor_id;
     pkt.room_id = room_id;
     pkt.device_id = device_id;

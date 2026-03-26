@@ -30,10 +30,10 @@
 /// Bridges the gap between YAML automations and the C++ VentilationController /
 /// VentilationLogic classes.
 ///
-/// NOTE (Bug #8 FIXED): All component pointers below use `extern` so this header
-/// can be compiled standalone. The actual definitions live in the ESPHome-generated
-/// main.cpp as `static` variables; because this file is #included directly from
-/// main.cpp, they are visible without linkage issues.
+/// NOTE (Bug #8 FIXED): All component pointers below use `extern` so this
+/// header can be compiled standalone. The actual definitions live in the
+/// ESPHome-generated main.cpp as `static` variables; because this file is
+/// #included directly from main.cpp, they are visible without linkage issues.
 
 #include "esp_mac.h"
 #include "esphome.h"
@@ -50,6 +50,7 @@
 #include "esphome/components/ntc/ntc.h"
 #include "esphome/components/output/float_output.h"
 #include "esphome/components/script/script.h"
+#include "esphome/components/sntp/sntp_component.h"
 #include "esphome/components/template/number/template_number.h"
 #include "esphome/components/template/select/template_select.h"
 #include "esphome/components/template/sensor/template_sensor.h"
@@ -62,12 +63,14 @@
 
 // --- Component pointer declarations (extern) ---------------------------
 // FIXED #8: All pointers are declared `extern` so this header can be compiled
-// independently. The definitions are the `static` variables in ESPHome-generated
-// main.cpp, visible here because we are #included from main.cpp.
+// independently. The definitions are the `static` variables in
+// ESPHome-generated main.cpp, visible here because we are #included from
+// main.cpp.
 
 /// @name Global variables
 /// @{
-extern esphome::globals::GlobalsComponent<bool> *system_on; ///< Master power state.
+extern esphome::globals::GlobalsComponent<bool>
+    *system_on; ///< Master power state.
 extern esphome::globals::GlobalsComponent<bool>
     *ventilation_enabled; ///< Ventilation enabled flag.
 extern esphome::globals::GlobalsComponent<int>
@@ -78,16 +81,20 @@ extern esphome::globals::RestoringGlobalsComponent<bool>
     *co2_auto_enabled; ///< CO2 auto-control enabled flag.
 extern esphome::globals::RestoringGlobalsComponent<int>
     *automatik_min_fan_level; ///< Min fan level for auto control (moisture
-                               ///< protection).
+                              ///< protection).
 extern esphome::globals::RestoringGlobalsComponent<int>
     *automatik_max_fan_level; ///< Max fan level for auto control (noise limit).
 
 extern esphome::globals::GlobalsComponent<bool> *auto_mode_active;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_co2_threshold_val;
-extern esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_val;
+extern esphome::globals::RestoringGlobalsComponent<int>
+    *auto_humidity_threshold_val;
 extern esphome::globals::RestoringGlobalsComponent<int> *auto_presence_val;
 extern esphome::globals::GlobalsComponent<float> *co2_pid_result;
 extern esphome::globals::GlobalsComponent<float> *humidity_pid_result;
+extern esphome::globals::RestoringGlobalsComponent<float>
+    *filter_operating_hours;
+extern esphome::globals::RestoringGlobalsComponent<int> *filter_last_change_ts;
 /// @}
 
 /// @name Template UI components
@@ -134,17 +141,22 @@ extern esphome::globals::RestoringGlobalsComponent<float>
 
 /// @name Scripts
 /// @{
-extern esphome::script::RestartScript<> *update_leds; ///< Refreshes all status LEDs.
-extern esphome::script::RestartScript<> *ui_timeout_script; ///< UI 30s timeout script.
-extern esphome::script::RestartScript<> *fan_speed_update;  ///< Re-applies fan speed.
+extern esphome::script::RestartScript<>
+    *update_leds; ///< Refreshes all status LEDs.
+extern esphome::script::RestartScript<>
+    *ui_timeout_script; ///< UI 30s timeout script.
+extern esphome::script::RestartScript<>
+    *fan_speed_update; ///< Re-applies fan speed.
 extern esphome::script::SingleScript<float, int>
-    *set_fan_speed_and_direction; ///< Sets PWM + direction.
+    *set_fan_speed_and_direction;               ///< Sets PWM + direction.
+extern esphome::sntp::SNTPComponent *sntp_time; ///< SNTP Time component.
 /// @}
 
 /// @name Fan hardware
 /// @{
-extern esphome::speed::SpeedFan *lueftung_fan;     ///< Main fan (speed platform).
-extern esphome::ledc::LEDCOutput *fan_pwm_primary; ///< Primary PWM output (GPIO19).
+extern esphome::speed::SpeedFan *lueftung_fan; ///< Main fan (speed platform).
+extern esphome::ledc::LEDCOutput
+    *fan_pwm_primary; ///< Primary PWM output (GPIO19).
 /// @}
 
 /// @name Sensors
@@ -153,8 +165,9 @@ extern esphome::sensor::Sensor *scd41_co2; ///< SCD41 CO2 sensor.
 extern esphome::template_::TemplateSensor
     *effective_co2; ///< Unified CO2 sensor (SCD41 or BME680 fallback).
 extern esphome::sensor::Sensor *temperature; ///< Room Temperature (SCD41)
-extern esphome::ntc::NTC *temp_zuluft;       ///< Supply Air Temperature (NTC Inside)
-extern esphome::ntc::NTC *temp_abluft;       ///< Exhaust Air Temperature (NTC Outside)
+extern esphome::ntc::NTC *temp_zuluft; ///< Supply Air Temperature (NTC Inside)
+extern esphome::ntc::NTC
+    *temp_abluft; ///< Exhaust Air Temperature (NTC Outside)
 extern esphome::sensor::Sensor *scd41_humidity; ///< Indoor Humidity
 extern esphome::homeassistant::HomeassistantSensor
     *outdoor_humidity; ///< Outdoor Humidity (HA)
@@ -174,7 +187,8 @@ extern esphome::light::LightState
     *status_led_master; ///< Master status LED (error indicator).
 extern esphome::light::LightState
     *status_led_mode_wrg; ///< Mode LED: Wärmerückgewinnung.
-extern esphome::light::LightState *status_led_mode_vent; ///< Mode LED: Ventilation.
+extern esphome::light::LightState
+    *status_led_mode_vent; ///< Mode LED: Ventilation.
 /// @}
 
 /// Ventilation controller component instance.
@@ -254,8 +268,9 @@ inline void register_peer_dynamic(const uint8_t *mac) {
  */
 inline void load_peers_from_runtime_cache() {
   if (!esphome::espnow::global_esp_now) {
-    ESP_LOGW("espnow_disc",
-             "global_esp_now not ready, skipping load_peers_from_runtime_cache");
+    ESP_LOGW(
+        "espnow_disc",
+        "global_esp_now not ready, skipping load_peers_from_runtime_cache");
     return;
   }
   std::string current_list = espnow_peers->value();
@@ -300,7 +315,10 @@ inline void send_discovery_broadcast() {
   uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   // FIXED #3: ESPNowComponent::send() signature is send(peer, payload, size).
   // Passing std::vector directly was silently wrong — must use .data()/.size().
-  esphome::espnow::global_esp_now->send(broadcast_mac, data.data(), data.size());
+  esphome::espnow::global_esp_now->send(broadcast_mac, data, [](esp_err_t err) {
+    /* no-op callback required: ESPNow crashes with std::bad_function_call
+       without it */
+  });
   ESP_LOGI("espnow_disc", "Sent discovery broadcast: %s", msg.c_str());
 }
 
@@ -316,7 +334,10 @@ inline void send_discovery_confirmation(const uint8_t *target_mac) {
   std::string msg(buffer);
   std::vector<uint8_t> data(msg.begin(), msg.end());
   // FIXED #3: Use correct send(peer, payload_ptr, size) signature.
-  esphome::espnow::global_esp_now->send(target_mac, data.data(), data.size());
+  esphome::espnow::global_esp_now->send(target_mac, data, [](esp_err_t err) {
+    /* no-op callback required: ESPNow crashes with std::bad_function_call
+       without it */
+  });
 }
 
 /** @brief Sends a sync packet to all registered peers via unicast. */
@@ -337,7 +358,13 @@ inline void send_sync_to_all_peers(const std::vector<uint8_t> &data) {
     auto mac = parse_mac_local(mac_str);
     if (mac.has_value())
       // FIXED #3: Use correct send(peer, payload_ptr, size) signature.
-      esphome::espnow::global_esp_now->send(mac->data(), data.data(), data.size());
+      esphome::espnow::global_esp_now->send(mac->data(), data,
+                                            [](esp_err_t err) {
+                                              /* no-op callback required: ESPNow
+                                                 crashes with
+                                                 std::bad_function_call without
+                                                 it */
+                                            });
     if (end == std::string::npos)
       break;
     start = end + 1;
@@ -368,11 +395,12 @@ inline bool handle_discovery_payload(const std::string &payload,
   return false;
 }
 
-/** @brief Sends a sync packet to all registered peers via unicast. 
+/** @brief Sends a sync packet to all registered peers via unicast.
  *  This is used for real-time mirroring of settings (CO2, fan levels, etc.)
  */
 inline void sync_settings_to_peers() {
-  if (ventilation_ctrl == nullptr) return;
+  if (ventilation_ctrl == nullptr)
+    return;
   // Build a MSG_STATE packet which includes all current settings
   auto data = ventilation_ctrl->build_packet(esphome::MSG_STATE);
   send_sync_to_all_peers(data);
@@ -430,10 +458,12 @@ inline esphome::optional<float> filter_ntc_stable(int sensor_idx,
   if (cycle_duration_ms < 30000) {
     ESP_LOGW("ntc_filter",
              "cycle_duration_ms=%u is very short (<30s). NTC stabilization "
-             "filter may never pass a value.", cycle_duration_ms);
+             "filter may never pass a value.",
+             cycle_duration_ms);
   }
 
-  // Dynamic wait time: 40% of the cycle (was 60%), but minimum 15 seconds (was 20)
+  // Dynamic wait time: 40% of the cycle (was 60%), but minimum 15 seconds (was
+  // 20)
   uint32_t wait_time_ms =
       std::max((uint32_t)15000, (uint32_t)(cycle_duration_ms * 0.4f));
 
@@ -443,7 +473,7 @@ inline esphome::optional<float> filter_ntc_stable(int sensor_idx,
   }
 
   // FIXED W5: Use a smaller, fixed window of 3 samples (9s) for stability.
-  // Dynamic window based on remaining time was too restrictive, often 
+  // Dynamic window based on remaining time was too restrictive, often
   // preventing any value from being published during the 70s cycle.
   const size_t target_window_size = 3;
 
@@ -500,11 +530,13 @@ inline int get_co2_fan_level(float co2_ppm, int current_level, int min_level,
 // Legacy CO2 control removed in favor of evaluate_auto_mode()
 
 /// @brief Calculates Wärmerückgewinnung (heat recovery) efficiency safely.
-inline float calculate_heat_recovery_efficiency(float t_raum, float t_zuluft, float t_aussen) {
+inline float calculate_heat_recovery_efficiency(float t_raum, float t_zuluft,
+                                                float t_aussen) {
   if (std::isnan(t_raum) || std::isnan(t_zuluft) || std::isnan(t_aussen)) {
     return NAN;
   }
-  return VentilationLogic::calculate_heat_recovery_efficiency(t_raum, t_zuluft, t_aussen);
+  return VentilationLogic::calculate_heat_recovery_efficiency(t_raum, t_zuluft,
+                                                              t_aussen);
 }
 
 /// @brief Core logic for the new Standard-Automatik mode.
@@ -580,23 +612,29 @@ inline void evaluate_auto_mode() {
   }
 
   // --- 3. Summer Cooling Logic ---
-  // [NEW v4] Strictly follows: 
+  // [NEW v4] Strictly follows:
   // - Activation: Indoor > 22.0°C AND Outdoor cooler by at least 1.5°C
-  // - Hysteresis: Disengage when Outdoor is < 0.5°C cooler than Indoor (or warmer)
+  // - Hysteresis: Disengage when Outdoor is < 0.5°C cooler than Indoor (or
+  // warmer)
   if (!std::isnan(eff_in) && !std::isnan(eff_out)) {
     if (internal_mode != esphome::MODE_VENTILATION) {
       if (eff_in > 22.0f && eff_out < (eff_in - 1.5f)) {
         internal_mode = esphome::MODE_VENTILATION;
-        ESP_LOGI("auto_mode", "Sommer-Kühlung AKTIVIERT: Innen=%.1f°C, Außen=%.1f°C (Delta > 1.5°C)",
+        ESP_LOGI("auto_mode",
+                 "Sommer-Kühlung AKTIVIERT: Innen=%.1f°C, Außen=%.1f°C (Delta "
+                 "> 1.5°C)",
                  eff_in, eff_out);
       } else if (internal_mode != esphome::MODE_ECO_RECOVERY) {
         internal_mode = esphome::MODE_ECO_RECOVERY;
       }
     } else {
-      // Return to WRG if outdoor is no longer significantly cooler or indoor is cool enough (<21.5 for basic hysteresis)
+      // Return to WRG if outdoor is no longer significantly cooler or indoor is
+      // cool enough (<21.5 for basic hysteresis)
       if (eff_out >= (eff_in - 0.5f) || eff_in < 21.5f) {
         internal_mode = esphome::MODE_ECO_RECOVERY;
-        ESP_LOGI("auto_mode", "Sommer-Kühlung DEAKTIVIERT (Hysterese erreicht): Innen=%.1f°C, Außen=%.1f°C",
+        ESP_LOGI("auto_mode",
+                 "Sommer-Kühlung DEAKTIVIERT (Hysterese erreicht): "
+                 "Innen=%.1f°C, Außen=%.1f°C",
                  eff_in, eff_out);
       }
     }
@@ -724,7 +762,8 @@ inline float get_current_target_speed() {
     }
     if (ventilation_ctrl != nullptr) {
       const uint32_t now = millis();
-      // FIXED W3: Use has_peer_pid_demand flag — time==0 sentinel unreliable after overflow
+      // FIXED W3: Use has_peer_pid_demand flag — time==0 sentinel unreliable
+      // after overflow
       if (ventilation_ctrl->has_peer_pid_demand &&
           (now - ventilation_ctrl->last_peer_pid_demand_time <
            PEER_TIMEOUT_MS)) {
@@ -821,7 +860,8 @@ inline void update_fan_logic() {
 
   // Apply software ramping factor if a controller is available
   if (ventilation_ctrl != nullptr) {
-    // FIXED #4: Use fully-qualified esphome::HardwareState (matches calculate_virtual_fan_rpm)
+    // FIXED #4: Use fully-qualified esphome::HardwareState (matches
+    // calculate_virtual_fan_rpm)
     esphome::HardwareState state =
         ventilation_ctrl->state_machine.get_target_state(millis());
     speed *= state.ramp_factor;
@@ -840,13 +880,6 @@ inline void update_fan_logic() {
       (fan_direction != nullptr && fan_direction->state) ? 1 : 0;
 
   set_fan_logic(speed, direction);
-}
-
-/// @brief Calculates heat-recovery efficiency as a percentage.
-inline float calculate_heat_recovery_efficiency(float t_raum, float t_zuluft,
-                                                float t_aussen) {
-  return VentilationLogic::calculate_heat_recovery_efficiency(t_raum, t_zuluft,
-                                                              t_aussen);
 }
 
 /// @brief Returns true if the manual speed slider is below the off threshold.
@@ -1195,12 +1228,17 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data) {
   // --- Configuration Settings Sync ---
   // ESP-NOW payloads carry all user settings. If another node has different
   // configuration values, we adopt them to ensure room-wide parity.
-  // FIXED #6: Guard the second cast — on_packet_received() already returns false
-  // for size mismatches, but this block runs even when changed==false.
   if (data.size() != sizeof(esphome::VentilationPacket)) {
-    return; // Packet too short; cast would be undefined behaviour.
+    return;
   }
   esphome::VentilationPacket *pkt = (esphome::VentilationPacket *)data.data();
+
+  // FIXED #11: Also check magic header and protocol version here to avoid
+  // processing invalid/old packets in this bridge function.
+  if (pkt->magic_header != 0x42 ||
+      pkt->protocol_version != esphome::PROTOCOL_VERSION) {
+    return;
+  }
 
   // Guard against corrupt packets with out-of-range values that could
   // crash/break logic
@@ -1384,7 +1422,8 @@ inline void handle_button_power_short_click() {
 /// Stops fan and PWM outputs.
 inline void handle_button_power_long_click() {
   if (ventilation_enabled->value()) {
-    // FIXED #5: Also set system_on=false (was missing, unlike cycle_operating_mode(4))
+    // FIXED #5: Also set system_on=false (was missing, unlike
+    // cycle_operating_mode(4))
     system_on->value() = false;
     ventilation_enabled->value() = false;
     ESP_LOGI("power", "System turned OFF by long press (>5s)");

@@ -58,7 +58,7 @@ Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PL
 | Lüfterregelung | 3 feste Stufen | **10 Stufen + stufenlos (PID)** |
 | Smart Home | ❌ | ✅ Home Assistant (nativ) |
 | Wartungsalarm | Timer-LED | ✅ Prädiktiv + Push |
-| Synchronisation | Steuerkabel | ✅ Kabellos (ESP-NOW) & Echtzeit-Sync |
+| Synchronisation | Steuerkabel | ✅ Kabellos (**ESP-NOW Protocol v4**) & Echtzeit-Sync |
 | Versionierung | Manuell | ✅ Vollautomatisch (Patch-Level) |
 | Updates | Servicetechniker | ✅ Over-the-Air (OTA) |
 | Lizenz | Proprietär | ✅ Open Source (MIT) |
@@ -145,7 +145,7 @@ Die Geräte kommunizieren über die [ESPHome ESP-NOW Komponente](https://esphome
 - 🔌 **Keine Steuerleitungen**: Es müssen keine Datenkabel durch Wände gezogen werden. Die Synchronisation erfolgt "Out-of-the-box" über Funk.
 - 📡 **Dynamische Discovery & Persistence**: Geräte im gleichen Raum finden sich beim Booten oder bei Konfigurationsänderungen automatisch über einen Discovery-Broadcast. Sobald ein Matching (gleiche Floor/Room ID) stattfindet, werden die MAC-Adressen der Peers dauerhaft im NVS (Flash) gespeichert.
 - ⚙️ **Effiziente Unicast-Kommunikation**: Nach der initialen Entdeckung erfolgt die eigentliche Datenübertragung (PID-Demand, Status, Sync) mittels gezielter Unicast-Pakete an die bekannten Peers. Dies reduziert das Grundrauschen im 2,4 GHz Band massiv und erhöht die Stabilität.
-- 🔧 **Globale Konfigurations-Synchronisation**: Änderungen an Einstellungen (z. B. CO2-Grenzwerte, Timer, Automatik-Modi) an einem Gerät via Home Assistant oder Bedienpanel werden in Echtzeit drahtlos an alle anderen synchronisierten Peers gespiegelt.
+- ⚙️ **Globale Konfigurations-Synchronisation**: Änderungen an Einstellungen (z. B. CO2-Grenzwerte, Timer, Automatik-Modi) an einem Gerät via Home Assistant oder Bedienpanel werden in Echtzeit drahtlos an alle anderen synchronisierten Peers gespiegelt.
 
 #### Discovery-Ablauf
 
@@ -154,7 +154,9 @@ Die Geräte kommunizieren über die [ESPHome ESP-NOW Komponente](https://esphome
 3. **Handshake**: Bei Übereinstimmung wird der Absender als Peer gespeichert und eine Bestätigung (`ROOM_CONF`) direkt (Unicast) zurückgeschickt.
 4. **Persistence**: Die Liste der Peers übersteht Neustarts und sorgt für sofortige Einsatzbereitschaft nach dem Bootvorgang.
 
-- ⚙️ **Globale Konfigurations-Synchronisation**: Änderungen an Einstellungen (z. B. CO2-Grenzwerte, Timer, Automatik-Modi) an einem Gerät via Home Assistant oder Bedienpanel werden in Echtzeit drahtlos an alle anderen Geräte in derselben Raumgruppe gespiegelt. So laufen alle Lüfter stets mit identischen Parametern, ohne dass jedes Gerät einzeln konfiguriert werden muss.
+- 🔒 **Protocol v4 & Validierung**: Einführung eines dedizierten Magic Headers (`0x42`) und strenger Versionsprüfung zur Vermeidung von Fehlkommunikation zwischen verschiedenen Firmware-Ständen.
+
+- ⚙️ **Echtzeit-Einstellungen-Mirroring**: Änderungen an Parametern (CO2-Grenzwerte, Fan-Levels, Timer) werden mittels ESP-NOW Unicast sofort an alle Partner-Geräte in der Raumgruppe übertragen, um ein einheitliches Regelungsverhalten sicherzustellen (Loop-Prevention inklusive).
 
 Weitere Informationen findest du in der [offiziellen ESPHome Dokumentation](https://esphome.io/components/espnow.html).
 
@@ -577,7 +579,7 @@ Außen → Keramikspeicher → Innenraum (vorgewärmt)
 Die NTC Sensoren messen die Temperatur am Keramikspeicher innen und außen (`temp_zuluft` und `temp_abluft`). Da die Lüfterrichtung im Wärmerückgewinnungs-Modus zyklisch (z.B. alle 70 Sekunden) wechselt, benötigen die Sensoren aufgrund ihrer thermischen Masse eine gewisse Zeit, um sich an die neue Lufttemperatur anzupassen. Um die Messung möglichst genau zu machen, werden sehr kleine NTC Sensoren genutzt, mit möglichst geringer Masse und hoher Genauigkeit. Dadurch wird die Anpassung an die wechselnde Temperatur je nach Lüftungsrichtung möglichst schnell und präzise.
 Um fehlerhafte Zwischenwerte in Home Assistant zu vermeiden, nutzen beide Sensoren eine **intelligente Temperatur-Stabilisierung**:
 
-- Nach einem Richtungswechsel (Push/Pull) wird die Messwertübertragung für **45 Sekunden pausiert**.
+- Nach einem Richtungswechsel (Push/Pull) wird die Messwertübertragung für **40% der Zyklusdauer (min. 15s)** pausiert (was ca. 25-30s entspricht).
 - Danach sammelt das System Messwerte in einem **30-Sekunden Sliding-Window**.
 - Erst wenn die Schwankung innerhalb dieses Fensters auf realistische **0,3 °C** oder weniger fällt, gilt der Wert als stabil und wird aktualisiert.
 
@@ -789,6 +791,14 @@ Um die Software-Wartung zu vereinfachen und sicherzustellen, dass jede Firmware-
   - ✅ **Grundeinstellungen**: Integration einer neuen Dashboard-Sektion für Geräte-ID, Floor ID, Room ID und Phase zur schnellen Vor-Ort-Konfiguration.
   - ✅ **Echtzeit-Graphen**: Erweiterung der Chart.js Integration für flüssige Visualisierung von CO2, Feuchte, Temp und RPM.
   - ✅ **Code-Health**: Bereinigung der Dashboard-Backend-Logik, Behebung von Typ-Mismatch Fehlern in C++ Lambdas und Entfernung von Deprecated-Warnungen.
+
+- **Protocol v4 & Stability (März 2026)**:
+  - ✅ **ESP-NOW v4 Upgrade**: Einführung von Magic Header (`0x42`) und Protokoll-Versionierung zur Vermeidung von Inkompatibilitäten.
+  - ✅ **Echtzeit-Settings-Sync**: Vollständiges Mirroring aller Benutzer-Konfigurationen (CO2-Grenzwerte, Fan-Levels, Timer) via Unicast.
+  - ✅ **Millis-Refactoring**: 64-Bit Arithmetik zur Vermeidung des 49-Tage Rollover Bugs in der `VentilationStateMachine`.
+  - ✅ **NTC-Performance**: Optimierung der Filter-Wartezeit (40% des Zyklus) für schnellere Wertlieferung bei gleicher Stabilität.
+  - ✅ **Sommer-Kühlung**: Präzisierung der Hysterese-Regelung (+1.5°C Aktivierung / -0.5°C Deaktivierung).
+  - ✅ **Modularisierung**: Saubere Trennung von C++ Kern und YAML-Zuschnitt zur Behebung von Linker-Errors und Verbesserung der Kompilierbarkeit.
 
 ### 🙏 Danksagungen / Credits
 
