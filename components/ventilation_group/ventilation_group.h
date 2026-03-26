@@ -29,7 +29,9 @@
 /// @brief ESPHome component that wraps VentilationStateMachine and adds
 /// hardware I/O (fan, direction switch) and ESP-NOW group synchronization.
 
-#include "esphome.h"
+#include "esphome/core/component.h"
+#include "esphome/core/helpers.h"
+#include "esphome/core/log.h"
 #include "ventilation_state_machine.h"
 #include <vector>
 
@@ -114,7 +116,7 @@ struct PeerState {
 /// @brief ESPHome Component that drives one ventilation unit.
 /// Owns a VentilationStateMachine for pure logic, adds hardware I/O
 /// (fan, direction switch) and ESP-NOW packet handling for group sync.
-class VentilationController : public Component {
+class VentilationController : public esphome::Component {
 public:
   // --- CONFIGURATION ---
   uint8_t floor_id = 1;   ///< Floor group for ESP-NOW filtering.
@@ -167,8 +169,8 @@ public:
       false; ///< True = YAML should send a packet next loop.
 
   // --- HARDWARE REFS (set by codegen) ---
-  fan::Fan *main_fan{nullptr};                ///< ESPHome fan component.
-  switch_::Switch *direction_switch{nullptr}; ///< ON = intake, OFF = exhaust.
+  esphome::fan::Fan *main_fan{nullptr};                ///< ESPHome fan component.
+  esphome::switch_::Switch *direction_switch{nullptr}; ///< ON = intake, OFF = exhaust.
 
   // --- SETTERS (called by ESPHome codegen from YAML config) ---
   void set_floor_id(uint8_t id) { floor_id = id; }   ///< Set floor group.
@@ -178,10 +180,10 @@ public:
     state_machine.is_phase_a = phase_a;
     update_hardware();
   } ///< Set phase group.
-  void set_main_fan(fan::Fan *fan) {
+  void set_main_fan(esphome::fan::Fan *fan) {
     main_fan = fan;
   } ///< Bind the fan component.
-  void set_direction_switch(switch_::Switch *sw) {
+  void set_direction_switch(esphome::switch_::Switch *sw) {
     direction_switch = sw;
   } ///< Bind the direction switch.
 

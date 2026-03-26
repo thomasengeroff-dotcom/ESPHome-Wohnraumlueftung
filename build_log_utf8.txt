@@ -1,0 +1,855 @@
+﻿py : INFO ESPHome 2026.3.1
+In Zeile:1 Zeichen:1
++ py -3.13 -m esphome compile esp_wohnraumlueftung.yaml > build_log.txt ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO ESPHome 2026.3.1:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO Reading configuration esp_wohnraumlueftung.yaml...
+INFO Detected timezone 'Europe/Berlin'
+INFO Detected timezone 'Europe/Berlin'
+WARNING 'Gerõte-Phase (A/B)' contains '/' which is reserved as a URL path separator. Automatically replacing with 'Gerõte-Phase (A\u2044B)' (Unicode FRACTION SLASH). Please update 
+your configuration. This will become an error in ESPHome 2026.7.0.
+INFO Generating C++ source...
+INFO Setting CONFIG_LWIP_MAX_SOCKETS to 13 (TCP=8 [api=3, web_server=5], UDP=2 [mdns=2], TCP_LISTEN=3 [api=1, ota=1, web_server_base=1])
+INFO Compiling app... Build path: C:\Users\thomas.engeroff\Documents\ESPHome-Projekte\ESPHome-Wohnraumlueftung\.esphome\build\espwrglueftung
+Processing espwrglueftung (board: esp32-c6-devkitc-1; framework: espidf; platform: https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip)
+
+--------------------------------------------------------------------------------
+
+
+
+>>> AUTOMATED VERSION BUMP: 0.6.54 <<<
+
+
+
+>>> AUTOMATED YAML UPDATE: C:\Users\thomas.engeroff\Documents\ESPHome-Projekte\ESPHome-Wohnraumlueftung\packages\esp32c6_common.yaml set to 0.6.54
+
+HARDWARE: ESP32C6 160MHz, 320KB RAM, 4MB Flash
+
+ - contrib-piohome @ 3.4.4 
+
+ - framework-espidf @ 3.50503.0 (5.5.3) 
+
+ - tool-cmake @ 4.0.3 
+
+ - tool-esp-rom-elfs @ 2024.10.11 
+
+ - tool-esptoolpy @ 5.1.2 
+
+ - tool-ninja @ 1.13.1 
+
+ - tool-scons @ 4.40801.0 (4.8.1) 
+
+ - toolchain-riscv32-esp @ 14.2.0+20251107
+
+Reading CMake configuration...
+
+Dependency Graph
+
+|-- noise-c @ 0.1.11
+
+|-- BME68x Sensor library @ 1.3.40408+sha.4f37df6
+
+|-- bsec2 @ 1.10.2610+sha.0dac6ea
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\adc\adc_sensor_common.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\adc\adc_sensor_esp32.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_buffer.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_connection.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_frame_helper.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_frame_helper_noise.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_pb2.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_pb2_service.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\api_server.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\list_entities.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\proto.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\api\subscribe_state.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\binary_sensor\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\binary_sensor\binary_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\binary_sensor\filter.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\bme68x_bsec2\bme68x_bsec2.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\bme68x_bsec2_i2c\bme68x_bsec2_i2c.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\bmp3xx_base\bmp3xx_base.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\bmp3xx_i2c\bmp3xx_i2c.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\button\button.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\climate\climate.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\climate\climate_mode.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\climate\climate_traits.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\display\display.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\display\display_buffer.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\display\rect.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\core.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\crash_handler.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\gpio.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\helpers.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\preferences.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\printf_stubs.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esp32\throw_stubs.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\esphome\ota\ota_esphome.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\espnow\espnow_component.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\fan\fan.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\font\font.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\gpio\binary_sensor\gpio_binary_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\gpio\switch\gpio_switch.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\homeassistant\sensor\homeassistant_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\homeassistant\time\homeassistant_time.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\http_request\http_request.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\http_request\http_request_idf.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\http_request\ota\ota_http_request.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\http_request\update\http_request_update.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\i2c\i2c.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\i2c\i2c_bus_esp_idf.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\json\json_util.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ld2450\ld2450.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ledc\ledc_output.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\addressable_light.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\esp_color_correction.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\esp_hsv_color.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\esp_range_view.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\light_call.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\light_color_values.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\light_effect.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\light_json_schema.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\light_output.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\light\light_state.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\logger\logger.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\logger\logger_esp32.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\logger\task_log_buffer_esp32.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\logger\task_log_buffer_zephyr.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\mcp23017\mcp23017.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\mcp23x17_base\mcp23x17_base.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\mcp23xxx_base\mcp23xxx_base.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\md5\md5.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\mdns\mdns_component.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\mdns\mdns_esp32.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\network\util.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ntc\ntc.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\number\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\number\number.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\number\number_call.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\number\number_traits.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ota\ota_backend.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ota\ota_backend_esp_idf.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ota\ota_backend_host.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\output\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\output\float_output.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\pca9685\pca9685_output.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\pid\pid_autotuner.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\pid\pid_climate.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\pid\pid_controller.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\pulse_counter\pulse_counter_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\resistance\resistance_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\restart\button\restart_button.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\safe_mode\safe_mode.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\scd4x\scd4x.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\script\script.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\select\select.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\select\select_call.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\select\select_traits.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\sensirion_common\i2c_sensirion.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\sensor\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\sensor\filter.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\sensor\sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\sha256\sha256.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\sntp\sntp_component.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\socket\bsd_sockets_impl.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\socket\socket.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\speed\fan\speed_fan.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ssd1306_base\ssd1306_base.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ssd1306_i2c\ssd1306_i2c.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\switch\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\switch\switch.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\template\binary_sensor\template_binary_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\template\number\template_number.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\template\select\template_select.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\template\sensor\template_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\template\switch\template_switch.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\template\text_sensor\template_text_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\text_sensor\filter.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\text_sensor\text_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\time\automation.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\time\posix_tz.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\time\real_time_clock.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\uart\uart.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\uart\uart_component.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\uart\uart_component_esp_idf.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\uart\uart_debugger.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\update\update_entity.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\uptime\sensor\uptime_seconds_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\uptime\sensor\uptime_timestamp_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ventilation_group\ventilation_state_machine.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\ventilation_logic\ventilation_logic.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\version\version_text_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\watchdog\watchdog.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\web_server\list_entities.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\web_server\web_server.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\web_server_base\web_server_base.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\web_server_idf\multipart.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\web_server_idf\utils.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\web_server_idf\web_server_idf.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\wifi\wifi_component.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\wifi\wifi_component_esp_idf.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\wifi_info\wifi_info_text_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\wifi_signal\wifi_signal_sensor.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\components\wrg_dashboard\wrg_dashboard.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\application.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\color.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\component.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\component_iterator.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\controller_registry.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\entity_base.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\gpio.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\helpers.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\log.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\lwip_fast_select.c.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\ring_buffer.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\scheduler.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\static_task.cpp.o
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp: In member function 'virtual bool 
+esphome::wrg_dashboard::WrgDashboard::canHandle(esphome::web_server_idf::AsyncWebServerRequest*) const':
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:40:21: warning: 'std::string esphome::web_server_idf::AsyncWebServerRequest::url() const' is deprecated: Use url_to() 
+instead. Removed in 2026.9.0 [-Wdeprecated-declarations]
+
+   40 |     if (request->url() == "/ui" || request->url() == "/state" ||
+
+      |         ~~~~~~~~~~~~^~
+In file included from src/esphome/components/web_server_base/web_server_base.h:11,
+
+                 from src/esphome/components/wrg_dashboard/wrg_dashboard.h:35,
+
+                 from src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:27:
+
+src/esphome/components/web_server_idf/web_server_idf.h:122:15: note: declared here
+
+  122 |   std::string url() const {
+
+      |               ^~~
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:40:48: warning: 'std::string esphome::web_server_idf::AsyncWebServerRequest::url() const' is deprecated: Use url_to() 
+instead. Removed in 2026.9.0 [-Wdeprecated-declarations]
+
+   40 |     if (request->url() == "/ui" || request->url() == "/state" ||
+
+      |                                    ~~~~~~~~~~~~^~
+src/esphome/components/web_server_idf/web_server_idf.h:122:15: note: declared here
+
+  122 |   std::string url() const {
+
+      |               ^~~
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:41:21: warning: 'std::string esphome::web_server_idf::AsyncWebServerRequest::url() const' is deprecated: Use url_to() 
+instead. Removed in 2026.9.0 [-Wdeprecated-declarations]
+
+   41 |         request->url() == "/set") {
+
+      |         ~~~~~~~~~~~~^~
+src/esphome/components/web_server_idf/web_server_idf.h:122:15: note: declared here
+
+  122 |   std::string url() const {
+
+      |               ^~~
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp: In member function 'virtual void 
+esphome::wrg_dashboard::WrgDashboard::handleRequest(esphome::web_server_idf::AsyncWebServerRequest*)':
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:125:19: warning: 'std::string esphome::web_server_idf::AsyncWebServerRequest::url() const' is deprecated: Use url_to() 
+instead. Removed in 2026.9.0 [-Wdeprecated-declarations]
+
+  125 |   if (request->url() == "/ui") {
+
+      |       ~~~~~~~~~~~~^~
+src/esphome/components/web_server_idf/web_server_idf.h:122:15: note: declared here
+
+  122 |   std::string url() const {
+
+      |               ^~~
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:127:26: warning: 'std::string esphome::web_server_idf::AsyncWebServerRequest::url() const' is deprecated: Use url_to() 
+instead. Removed in 2026.9.0 [-Wdeprecated-declarations]
+
+  127 |   } else if (request->url() == "/state") {
+
+      |              ~~~~~~~~~~~~^~
+src/esphome/components/web_server_idf/web_server_idf.h:122:15: note: declared here
+
+  122 |   std::string url() const {
+
+      |               ^~~
+
+src/esphome/components/wrg_dashboard/wrg_dashboard.cpp:129:26: warning: 'std::string esphome::web_server_idf::AsyncWebServerRequest::url() const' is deprecated: Use url_to() 
+instead. Removed in 2026.9.0 [-Wdeprecated-declarations]
+
+  129 |   } else if (request->url() == "/set") {
+
+      |              ~~~~~~~~~~~~^~
+src/esphome/components/web_server_idf/web_server_idf.h:122:15: note: declared here
+
+  122 |   std::string url() const {
+
+      |               ^~~
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\time.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\esphome\core\util.cpp.o
+
+Compiling .pioenvs\espwrglueftung\src\main.cpp.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_aead\chacha20poly1305\aead_chacha20poly1305.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_core\ed25519\ref10\ed25519_ref10.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_core\salsa\ref\core_salsa_ref.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_hash\crypto_hash.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_hash\sha256\cp\hash_sha256_cp.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_hash\sha256\hash_sha256.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_onetimeauth\crypto_onetimeauth.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_onetimeauth\poly1305\donna\poly1305_donna.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_onetimeauth\poly1305\onetimeauth_poly1305.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_scalarmult\crypto_scalarmult.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_scalarmult\curve25519\ref10\x25519_ref10.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_scalarmult\curve25519\scalarmult_curve25519.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\chacha20\ref\chacha20_ref.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\chacha20\stream_chacha20.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\crypto_stream.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\salsa20\ref\salsa20_ref.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\salsa20\stream_salsa20.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\salsa20\xmm6\salsa20_xmm6-asm.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\salsa20\xmm6\salsa20_xmm6.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\salsa20\xmm6int\salsa20_xmm6int-avx2.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_stream\salsa20\xmm6int\salsa20_xmm6int-sse2.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\crypto_verify\verify.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\randombytes\internal\randombytes_internal_random.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\randombytes\randombytes.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\randombytes\sysrandom\randombytes_sysrandom.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\sodium\codecs.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\sodium\core.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\sodium\runtime.o
+
+Compiling .pioenvs\espwrglueftung\lib339\libsodium\sodium\utils.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\openssl\cipher-aesgcm.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\ref\cipher-aesgcm.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\ref\cipher-chachapoly.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\ref\dh-curve25519.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\ref\hash-blake2b.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\ref\hash-blake2s.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\ref\hash-sha256.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\sodium\cipher-aesgcm.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\sodium\cipher-chachapoly.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\sodium\dh-curve25519.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\sodium\hash-blake2b.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\backend\sodium\hash-sha256.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\aes\rijndael-alg-fst.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\blake2\blake2b.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\blake2\blake2s.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\chacha\chacha.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\donna\curve25519-donna-c64.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\donna\curve25519-donna.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\donna\poly1305-donna.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\sha2\sha256.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\sha2\sha512.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\crypto\x25519\x25519.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\cipherstate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\dhstate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\errors.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\handshakestate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\hashstate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\internal.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\names.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\patterns.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\rand_os.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\rand_sodium.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\randstate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\signstate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\symmetricstate.o
+
+Compiling .pioenvs\espwrglueftung\lib682\noise-c\protocol\util.o
+
+Compiling .pioenvs\espwrglueftung\libd7c\BME68x Sensor library\bme68xLibrary.o
+
+Compiling .pioenvs\espwrglueftung\libd7c\BME68x Sensor library\bme68x\bme68x.o
+
+Compiling .pioenvs\espwrglueftung\lib55c\BSEC2 Software Library\bsec2.o
+
+Compiling .pioenvs\espwrglueftung\lib55c\BSEC2 Software Library\commMux\commMux.o
+
+Compiling .pioenvs\espwrglueftung\app_trace\app_trace.c.o
+
+Compiling .pioenvs\espwrglueftung\app_trace\app_trace_util.c.o
+
+Compiling .pioenvs\espwrglueftung\app_trace\host_file_io.c.o
+
+Compiling .pioenvs\espwrglueftung\app_trace\port\port_uart.c.o
+
+Compiling .pioenvs\espwrglueftung\app_update\esp_ota_ops.c.o
+
+Compiling .pioenvs\espwrglueftung\app_update\esp_ota_app_desc.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_common.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_common_loader.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_clock_init.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_mem.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_random.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_efuse.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\flash_encrypt.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\secure_boot.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_random_esp32c6.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\bootloader_flash\src\bootloader_flash.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\bootloader_flash\src\flash_qio_mode.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\bootloader_flash\src\bootloader_flash_config_esp32c6.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_utility.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\flash_partitions.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\esp_image_format.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\bootloader_sha.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\esp32c6\bootloader_ecdsa.c.o
+
+Compiling .pioenvs\espwrglueftung\bootloader_support\src\esp32c6\secure_boot_secure_features.c.o
+
+Compiling .pioenvs\espwrglueftung\console\commands.c.o
+
+Compiling .pioenvs\espwrglueftung\console\esp_console_common.c.o
+
+Compiling .pioenvs\espwrglueftung\console\esp_console_repl_internal.c.o
+
+Compiling .pioenvs\espwrglueftung\console\split_argv.c.o
+
+Compiling .pioenvs\espwrglueftung\console\linenoise\linenoise.c.o
+
+Compiling .pioenvs\espwrglueftung\console\esp_console_repl_chip.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_cmd.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_date.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_dbl.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_dstr.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_end.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_file.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_hashtable.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_int.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_lit.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_rem.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_rex.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_str.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\arg_utils.c.o
+
+Compiling .pioenvs\espwrglueftung\console\argtable3\argtable3.c.o
+
+Compiling .pioenvs\espwrglueftung\cxx\cxx_exception_stubs.cpp.o
+
+Compiling .pioenvs\espwrglueftung\cxx\cxx_guards.cpp.o
+
+Compiling .pioenvs\espwrglueftung\cxx\cxx_init.cpp.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\adc_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\adc_dma_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\timer_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\i2c\i2c.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\i2s_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\mcpwm_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\pcnt_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\rmt_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\sigma_delta_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\deprecated\rtc_temperature_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\driver\twai\twai.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\esp32c6\esp_efuse_table.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\esp32c6\esp_efuse_fields.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\esp32c6\esp_efuse_rtc_calib.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\esp32c6\esp_efuse_utility.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\src\esp_efuse_api.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\src\esp_efuse_fields.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\src\esp_efuse_utility.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\src\efuse_controller\keys\with_key_purposes\esp_efuse_api_key.c.o
+
+Compiling .pioenvs\espwrglueftung\efuse\src\esp_efuse_startup.c.o
+
+Compiling .pioenvs\espwrglueftung\esp-tls\esp_tls.c.o
+
+Compiling .pioenvs\espwrglueftung\esp-tls\esp-tls-crypto\esp_tls_crypto.c.o
+
+Compiling .pioenvs\espwrglueftung\esp-tls\esp_tls_error_capture.c.o
+
+Compiling .pioenvs\espwrglueftung\esp-tls\esp_tls_platform_port.c.o
+
+Compiling .pioenvs\espwrglueftung\esp-tls\esp_tls_mbedtls.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_oneshot.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_common.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_cali.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_cali_curve_fitting.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\deprecated\esp_adc_cal_common_legacy.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_continuous.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_monitor.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\gdma\adc_dma.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\adc_filter.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_adc\esp32c6\curve_fitting_coefficients.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_app_format\esp_app_desc.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_bootloader_format\esp_bootloader_desc.c.o
+
+In file included from src/main.cpp:454:
+
+src/automation_helpers.h: In function 'float get_current_target_speed()':
+
+src/automation_helpers.h:122:19: error: 'esphome::VentilationLogic' has not been declared
+
+  122 |   return esphome::VentilationLogic::level_to_speed(intensity);
+
+      |                   ^~~~~~~~~~~~~~~~
+src/automation_helpers.h: In function 'void update_fan_logic()':
+
+src/automation_helpers.h:307:24: error: 'esphome::VentilationLogic' has not been declared
+
+  307 |   float pwm = esphome::VentilationLogic::calculate_fan_pwm(target_speed * hw.ramp_factor, hw.direction_in);
+
+      |                        ^~~~~~~~~~~~~~~~
+src/automation_helpers.h: In function 'void set_fan_logic(float, int)':
+
+src/automation_helpers.h:314:24: error: 'esphome::VentilationLogic' has not been declared
+
+  314 |   float pwm = esphome::VentilationLogic::calculate_fan_pwm(speed, direction);
+
+      |                        ^~~~~~~~~~~~~~~~
+src/automation_helpers.h: In function 'void evaluate_auto_mode()':
+
+src/automation_helpers.h:459:74: error: 'class esphome::globals::GlobalsComponent<int>' has no member named 'publish_state'
+
+  459 |   if (target_level != fan_intensity_level->value()) fan_intensity_level->publish_state(target_level);
+
+      |                                                                          ^~~~~~~~~~~~~
+src/automation_helpers.h: In function 'void handle_button_level_click()':
+
+src/automation_helpers.h:550:20: error: 'esphome::VentilationLogic' has not been declared
+
+  550 |   level = esphome::VentilationLogic::get_next_fan_level(level);
+
+      |                    ^~~~~~~~~~~~~~~~
+src/automation_helpers.h: In function 'void handle_presence_change(bool)':
+
+src/automation_helpers.h:599:16: error: 'class esphome::globals::GlobalsComponent<bool>' has no member named 'publish_state'
+
+  599 |     ui_active->publish_state(true);
+
+      |                ^~~~~~~~~~~~~
+packages\sensors_climate.yaml: In lambda function:
+
+packages\sensors_climate.yaml:209:14: error: 'calculate_heat_recovery_efficiency' was not declared in this scope; did you mean 'heat_recovery_efficiency'?
+
+packages\sensors_climate.yaml: In lambda function:
+
+packages\sensors_climate.yaml:239:14: error: 'calculate_virtual_fan_rpm' was not declared in this scope
+
+packages\sensors_climate.yaml: In lambda function:
+
+packages\sensors_climate.yaml:315:14: error: 'get_co2_classification' was not declared in this scope
+
+packages\ui_controls.yaml: In lambda function:
+
+packages\ui_controls.yaml:122:7: error: 'set_ventilation_timer' was not declared in this scope
+
+packages\ui_controls.yaml: In lambda function:
+
+packages\ui_controls.yaml:137:7: error: 'set_sync_interval_handler' was not declared in this scope; did you mean 'set_sync_interval_slider'?
+
+Compiling .pioenvs\espwrglueftung\esp_coex\src\coexist.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_coex\src\lib_printf.c.o
+
+Archiving .pioenvs\espwrglueftung\esp-idf\esp_bootloader_format\libesp_bootloader_format.a
+
+Compiling .pioenvs\espwrglueftung\esp_coex\esp32c6\esp_coex_adapter.c.o
+
+Archiving .pioenvs\espwrglueftung\esp-idf\esp_app_format\libesp_app_format.a
+
+Compiling .pioenvs\espwrglueftung\esp_coex\src\coexist_debug_diagram.c.o
+
+Indexing .pioenvs\espwrglueftung\esp-idf\esp_bootloader_format\libesp_bootloader_format.a
+
+Compiling .pioenvs\espwrglueftung\esp_coex\src\coexist_debug.c.o
+
+Indexing .pioenvs\espwrglueftung\esp-idf\esp_app_format\libesp_app_format.a
+
+Compiling .pioenvs\espwrglueftung\esp_common\src\esp_err_to_name.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_driver_cam\esp_cam_ctlr.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_driver_cam\dvp_share_ctrl.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_driver_gpio\src\gpio.c.o
+
+Compiling .pioenvs\espwrglueftung\esp_driver_gpio\src\gpio_glitch_filter_ops.c.o
+
+*** [.pioenvs\espwrglueftung\src\main.cpp.o] Error 1
+
+========================= [FAILED] Took 430.56 seconds =========================
+
