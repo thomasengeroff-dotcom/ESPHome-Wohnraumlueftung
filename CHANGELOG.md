@@ -4,6 +4,32 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [0.6.60] - 2026-03-27
+
+### Added
+
+- **Gruppenweite UI-Synchronisierung**: Wenn ein Gerät in einer Lüftungsgruppe den Modus oder die Intensität ändert (via Taster, Dashboard oder Home Assistant), wachen nun automatisch die Displays (LEDs) aller Peer-Geräte im Raum auf.
+  - Aktiviert `ui_active` für 30 Sekunden auf allen synchronisierten Geräten.
+  - Sorgt für unmittelbares visuelles Feedback im gesamten Raum, auch wenn die Teilnehmer vorher gedimmt waren.
+- **Umfassende Roadmap-Erweiterung**: Integration zahlreicher Profi-Features in die Planung (inspiriert von Ambientika Smart):
+  - Außer-Haus-Modus (Schimmelschutz via Sicherheits-Entfeuchtung).
+  - Überwachungs-Modus (Sensor-Only ohne Sleep).
+  - Frostschutz-Automatik für den Wärmetauscher.
+  - Zeitgesteuerter Einrichtbetrieb (Manueller Timer).
+  - Autarker Wochenzeitplan (direkt auf dem ESP32).
+
+### Fixed
+
+- **ESP-NOW Hybrid-Synchronisation**: Optimierung der Sende-Logik für Statusänderungen. Kritische Änderungen (Modus/Stufe) werden nun sofort via Broadcast (für maximale Robustheit) und zusätzlich via Unicast (für Zuverlässigkeit) verteilt.
+- **Boot-Initialisierungs-Race-Condition**: Behebung eines Problems, bei dem Geräte-IDs beim Start fälschlicherweise als "0" initialisiert wurden, bevor die NVS-Wiederherstellung abgeschlossen war.
+  - `on_boot` Priorität auf `-100.0` (DATA) gesenkt.
+  - 2s Sicherheits-Delay vor der ersten Konfigurations-Synchronisation hinzugefügt.
+  - Zyklischer Integrity-Check (10s) erkennt und korrigiert unvollständige Initialisierungen automatisch.
+
+### Changed
+
+- **Versionierung**: Projektversion auf 0.6.60 angehoben.
+
 ## [0.6.50] - 2026-03-26
 
 ### Fixed
