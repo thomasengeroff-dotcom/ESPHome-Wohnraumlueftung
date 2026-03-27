@@ -260,50 +260,21 @@ sensor:
       name: "Radar Total Target Count"
 
   # ---------------------------------------------------------
-  # BME680 GAS SENSOR (Environmental Fallback)
-  # ---------------------------------------------------------
-  - platform: bme680
-    temperature:
-      name: "BME680 Temperatur"
-      id: bme680_temperature
-      oversampling: 16x
-    humidity:
-      name: "BME680 Luftfeuchtigkeit"
-      id: bme680_humidity
-    pressure:
-      name: "BME680 Luftdruck"
-      id: bme680_pressure
-    gas_resistance:
-      name: "BME680 Gaswiderstand"
-      id: gas_resistance
-    address: 0x77
-    update_interval: 60s
-
-  - platform: template
-    name: "BME680 Indoor Air Quality"
-    id: iaq
-    icon: "mdi:gauge"
-    # calculation: comp_gas = log(R_gas[ohm]) + 0.04 log(Ohm)/%rh * hum[%rh]
-    lambda: |-
-      return log(id(gas_resistance).state) + 0.04 * id(bme680_humidity).state;
-    state_class: "measurement"
-
-  # ---------------------------------------------------------
   # EFFECTIVE CO2 SENSOR (Unified Fallback)
   # ---------------------------------------------------------
-  # Prefers SCD41 (True CO2) but falls back to BME680 (eCO2) if not connected.
   - platform: template
     name: "Effektiver CO2 Wert"
     id: effective_co2
     unit_of_measurement: "ppm"
+    device_class: "carbon_dioxide"
+    state_class: "measurement"
     icon: "mdi:molecule-co2"
-    update_interval: 10s
-    accuracy_decimals: 0
+    update_interval: 30s
     lambda: |-
       if (!std::isnan(id(scd41_co2).state)) {
         return id(scd41_co2).state;
       }
-      return id(iaq).state;
+      return id(iaq_co2eq).state;
 
 # ---------------------------------------------------------
 # TEXT SENSORS (Status & Classification)
@@ -318,34 +289,6 @@ text_sensor:
     lambda: |-
       return get_co2_classification(id(effective_co2).state);
 
-  - platform: template
-    name: "BME680 IAQ Classification"
-    icon: "mdi:checkbox-marked-circle-outline"
-    lambda: |-
-      if (int(id(iaq).state) <= 50) {
-        return {"Excellent"};
-      }
-      else if (int(id(iaq).state) <= 100) {
-        return {"Good"};
-      }
-      else if (int(id(iaq).state) <= 150) {
-        return {"Lightly polluted"};
-      }
-      else if (int(id(iaq).state) <= 200) {
-        return {"Moderately polluted"};
-      }
-      else if (int(id(iaq).state) <= 250) {
-        return {"Heavily polluted"};
-      }
-      else if (int(id(iaq).state) <= 350) {
-        return {"Severely polluted"};
-      }
-      else if (int(id(iaq).state) <= 500) {
-        return {"Extremely polluted"};
-      }
-      else {
-        return {"unknown"};
-      }
 
 # ---------------------------------------------------------
 # HLK-LD2450 RADAR

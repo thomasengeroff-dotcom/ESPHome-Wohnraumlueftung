@@ -4,12 +4,39 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
-## [0.6.70] - 2026-03-27
+## [0.6.63] - 2026-03-27
 
 ### Added
 
-- **BME680 IAQ Template & Klassifizierung**: Implementierung einer leichtgewichtigen IAQ-Berechnung (`log(R) + 0.04 * RH`) und einer 7-stufigen Klartext-Bewertung (Exzellent bis Extrem belastet) direkt in YAML.
-- **Transparente CO2-Fallback-Logik**: Die Entität `effective_co2` nutzt nun das neue BME680 IAQ-Template als redundanten Indikator, falls der SCD41 Sensor nicht verfügbar ist.
+- **BME680 Standalone Package**: Auslagerung der kompletten BME680-Logik in eine modulare `BME680.yaml`.
+- **NVS-Baseline-Persistence**: Die Gas-Baseline wird nun dauerhaft im Flash gespeichert und bleibt nach einem Reboot erhalten.
+- **Erweiterte Umwelt-Metriken**: Hinzufügen von Berechnungen für Taupunkt, absolute Luftfeuchtigkeit und höhenkorrigierten (absoluten) Luftdruck.
+- **IAQ Trend-Analyse**: Berechnung der Luftqualitätsänderung pro Minute (ppm/min) inklusive Trend-Graphen und Richtungsanzeige.
+- **Sensor-Status & Burn-in Tracking**: Automatisches Tracking der 48h Burn-in Phase mit Statusanzeige (Aufwärmphase, Burn-in, Bereit).
+- **Diagnose-Tools**: Neuer Reset-Button zum manuellen Zurücksetzen der gelernten Baseline.
+
+### Changed
+
+- **Code-Struktur**: Bereinigung der `sensors_climate.yaml` durch Verschiebung aller BME680-bezogenen Sensoren in das neue Paket.
+
+## [0.6.62] - 2026-03-27
+
+### Added
+
+- **Selbstlernende BME680 Gas-Baseline**: Implementierung eines adaptiven Referenzwert-Algorithmus (`gas_baseline`), der den Sensor automatisch an die Umgebungsluft kalibriert (asymmetrisches Tracking).
+- **Präziser Pseudo-CO2 Sensor (iaq_co2eq)**: Neues Berechnungsmodell für eCO2 (400–5000 ppm) mit 80% Gas- und 20% Feuchtigkeitsgewichtung auf Basis der gelernten Baseline.
+- **SCD41-kompatible Luftqualitätsstufen**: Neuer Text-Sensor `iaq_level` zur Einstufung der Luftqualität in 5 Stufen (Ausgezeichnet bis Sehr schlecht).
+
+### Changed
+
+- **Hardware-Sensitivität**: Optimierung der BME680 Oversampling-Raten (Temp: 8x, Hum: 8x, Press: 4x) und Verkürzung des Update-Intervalls auf 30s.
+
+## [0.6.61] - 2026-03-27
+
+### Added
+
+- **BME680 IAQ Template & Klassifizierung**: Implementierung einer leichtgewichtigen IAQ-Berechnung (Gewichtet: 25% Hum / 75% Gas-R) und einer 7-stufigen Klartext-Bewertung (Exzellent bis Extrem belastet) direkt in YAML.
+- **Transparente CO2-Fallback-Logik**: Die Entität `effective_co2` nutzt nun das verbesserte BME680 IAQ-Template als redundanten Indikator und mappt diesen auf eine realistische CO2-Skala von 400 bis 2500 ppm.
 
 ### Changed
 

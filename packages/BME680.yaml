@@ -1,0 +1,349 @@
+# ---------------------------------------------------------
+# BME680 SENSOR COMPLETE
+# Includes: IAQ, Dewpoint, Absolute Pressure, Trend,
+#           Baseline Persistence, Sensor Status
+# ---------------------------------------------------------
+# Voraussetzungen:
+#   - I2C Bus "bus_a" muss konfiguriert sein
+#   - 48h Burn-in fuer stabile Gaswerte
+#   - Hoehe des Standorts in "ALTITUDE" anpassen
+# ---------------------------------------------------------
+
+globals:
+  # Baseline im Flash speichern (ueberlebt Reboot)
+  - id: saved_baseline
+    type: float
+    restore_value: true
+    initial_value: "0.0"
+  # Burn-in Zaehler (Minuten)
+  - id: burn_in_counter
+    type: int
+    restore_value: true
+    initial_value: "0"
+  # Letzter IAQ Wert fuer Trend-Berechnung
+  - id: last_iaq_value
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+sensor:
+  # ---------------------------------------------------------
+  # BME680 Hardware-Sensor (I2C)
+  # ---------------------------------------------------------
+  - platform: bme680
+    i2c_id: bus_a
+    address: 0x77
+    update_interval: 30s
+    temperature:
+      name: "BME680 Temperature Raw"
+      id: bme680_temperature_raw
+      oversampling: 8x
+      internal: true
+    pressure:
+      name: "BME680 Pressure Relative"
+      id: bme680_pressure_relative
+      oversampling: 4x
+      internal: true
+    humidity:
+      name: "BME680 Humidity"
+      id: bme680_humidity
+      oversampling: 8x
+      filters:
+        - clamp:
+            min_value: 0
+            max_value: 100
+    gas_resistance:
+      name: "BME680 Gas Resistance"
+      id: gas_resistance
+      filters:
+        - clamp:
+            min_value: 0
+            max_value: 1000000
+
+  # ---------------------------------------------------------
+  # Temperatur mit Offset-Korrektur
+  # BME680 hat Eigenwaerme durch Heizplatte (~1.5C)
+  # Offset nach Vergleich mit Referenzthermometer anpassen
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 Temperature"
+    id: bme680_temperature
+    icon: "mdi:thermometer"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: "temperature"
+    state_class: "measurement"
+    update_interval: 30s
+    lambda: |-
+      static const float TEMP_OFFSET = -1.5f;
+      float temp = id(bme680_temperature_raw).state;
+      if (std::isnan(temp)) return NAN;
+      return temp + TEMP_OFFSET;
+
+  # ---------------------------------------------------------
+  # Absoluter Luftdruck (hoehenkorrigiert)
+  # Standorthoehe in Metern anpassen!
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 Pressure Absolute"
+    id: bme680_pressure_absolute
+    icon: "mdi:gauge"
+    unit_of_measurement: "hPa"
+    accuracy_decimals: 1
+    device_class: "atmospheric_pressure"
+    state_class: "measurement"
+    update_interval: 30s
+    lambda: |-
+      // Standorthoehe in Metern ueber NN anpassen (passend zu SCD41: 250m)
+      static const float ALTITUDE = 250.0f;
+      float p = id(bme680_pressure_relative).state;
+      float t = id(bme680_temperature).state;
+      if (std::isnan(p) || std::isnan(t)) return NAN;
+      // Barometrische Hoehenformel
+      return p * powf(1.0f - (0.0065f * ALTITUDE / (t + 273.15f + 0.0065f * ALTITUDE)), -5.257f);
+
+  # ---------------------------------------------------------
+  # Taupunkt-Berechnung (Magnus-Formel)
+  # Wichtig fuer Lueftungssteuerung
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 Dewpoint"
+    id: bme680_dewpoint
+    icon: "mdi:water-thermometer"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: "temperature"
+    state_class: "measurement"
+    update_interval: 30s
+    lambda: |-
+      static const float A = 17.271f;
+      static const float B = 237.7f;
+      float t = id(bme680_temperature).state;
+      float h = id(bme680_humidity).state;
+      if (std::isnan(t) || std::isnan(h) || h <= 0.0f) return NAN;
+      float alpha = (A * t / (B + t)) + logf(h / 100.0f);
+      return (B * alpha) / (A - alpha);
+
+  # ---------------------------------------------------------
+  # Absolute Luftfeuchtigkeit (g/m3)
+  # Nuetzlich fuer Lueftungsvergleich innen/aussen
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 Absolute Humidity"
+    id: bme680_abs_humidity
+    icon: "mdi:water"
+    unit_of_measurement: "g/m³"
+    accuracy_decimals: 1
+    state_class: "measurement"
+    update_interval: 30s
+    lambda: |-
+      float t = id(bme680_temperature).state;
+      float h = id(bme680_humidity).state;
+      if (std::isnan(t) || std::isnan(h)) return NAN;
+      // Tetens-Formel
+      float es = 6.112f * expf(17.67f * t / (t + 243.5f));
+      float ea = es * h / 100.0f;
+      return (ea * 2.1674f) / (t + 273.15f);
+
+  # ---------------------------------------------------------
+  # Gas Baseline (selbstlernend + persistent)
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 Gas Baseline"
+    id: gas_baseline
+    icon: "mdi:chart-line"
+    unit_of_measurement: "Ω"
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      static float baseline = 0.0f;
+      static bool warmed_up = false;
+      static int sample_count = 0;
+      static int save_counter = 0;
+
+      float gas = id(gas_resistance).state;
+      if (std::isnan(gas) || gas < 1000.0f) return baseline;
+
+      // Gespeicherte Baseline beim ersten Start laden
+      if (baseline == 0.0f && id(saved_baseline) > 1000.0f) {
+        baseline = id(saved_baseline);
+        warmed_up = true;
+        ESP_LOGI("bme680", "Baseline restored: %.0f Ohm", baseline);
+      }
+
+      sample_count++;
+      id(burn_in_counter) = id(burn_in_counter) + 1;
+
+      if (!warmed_up) {
+        if (baseline == 0.0f) {
+          baseline = gas;
+        } else {
+          baseline = 0.95f * baseline + 0.05f * gas;
+        }
+        if (sample_count > 20) warmed_up = true;
+      } else {
+        if (gas > baseline) {
+          baseline = 0.998f * baseline + 0.002f * gas;
+        } else {
+          baseline = 0.9999f * baseline + 0.0001f * gas;
+        }
+      }
+
+      // Baseline alle 30 Minuten im Flash speichern
+      save_counter++;
+      if (save_counter >= 30) {
+        save_counter = 0;
+        id(saved_baseline) = baseline;
+        ESP_LOGD("bme680", "Baseline saved: %.0f Ohm", baseline);
+      }
+      return baseline;
+
+  # ---------------------------------------------------------
+  # BME680 IAQ als Pseudo-CO2 (400-5000 ppm)
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 Air Quality (CO2eq)"
+    id: iaq_co2eq
+    icon: "mdi:molecule-co2"
+    unit_of_measurement: "ppm"
+    accuracy_decimals: 0
+    device_class: "carbon_dioxide"
+    state_class: "measurement"
+    update_interval: 30s
+    lambda: |-
+      static const float HUM_IDEAL = 40.0f;
+      static const float HUM_WEIGHT = 0.20f;
+      static const float GAS_WEIGHT = 0.80f;
+      static const float PPM_MIN = 400.0f;
+      static const float PPM_MAX = 5000.0f;
+      static const float GAS_DIVISOR = 50.0f;
+
+      float gas_val = id(gas_resistance).state;
+      float hum_val = id(bme680_humidity).state;
+      float base = id(gas_baseline).state;
+
+      if (std::isnan(gas_val) || std::isnan(hum_val) || std::isnan(base) || base < 1000.0f) {
+        return NAN;
+      }
+
+      float log_clean = log10f(base);
+      float log_dirty = log10f(base / GAS_DIVISOR);
+      float log_val = log10f(fmaxf(gas_val, 1.0f));
+
+      float g_score = (log_clean - log_val) / (log_clean - log_dirty);
+      g_score = clamp(g_score, 0.0f, 1.0f);
+
+      float h_score;
+      if (hum_val >= HUM_IDEAL) {
+        h_score = (hum_val - HUM_IDEAL) / (100.0f - HUM_IDEAL);
+      } else {
+        h_score = (HUM_IDEAL - hum_val) / HUM_IDEAL;
+      }
+      h_score = clamp(h_score, 0.0f, 1.0f);
+
+      float combined = GAS_WEIGHT * g_score + HUM_WEIGHT * h_score;
+      float ppm = PPM_MIN + combined * (PPM_MAX - PPM_MIN);
+
+      // Trend speichern
+      id(last_iaq_value) = ppm;
+      return ppm;
+
+  # ---------------------------------------------------------
+  # IAQ Trend (Veraenderung pro Minute)
+  # Positiv = verschlechtert sich, Negativ = verbessert sich
+  # ---------------------------------------------------------
+  - platform: template
+    name: "BME680 IAQ Trend"
+    id: iaq_trend
+    icon: "mdi:trending-up"
+    unit_of_measurement: "ppm/min"
+    accuracy_decimals: 0
+    state_class: "measurement"
+    update_interval: 60s
+    filters:
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 1
+    lambda: |-
+      static float previous = 0.0f;
+      float current = id(iaq_co2eq).state;
+      if (std::isnan(current)) return NAN;
+      if (previous == 0.0f) {
+        previous = current;
+        return 0.0f;
+      }
+      float trend = current - previous;
+      previous = current;
+      return trend;
+
+text_sensor:
+  # IAQ Klassifizierung
+  - platform: template
+    name: "BME680 Air Quality Level"
+    id: iaq_level
+    icon: "mdi:air-filter"
+    update_interval: 30s
+    lambda: |-
+      float val = id(iaq_co2eq).state;
+      if (std::isnan(val)) return std::string("Unknown");
+      if (val <= 700) return std::string("Ausgezeichnet");
+      if (val <= 1000) return std::string("Gut");
+      if (val <= 1500) return std::string("Maessig");
+      if (val <= 2000) return std::string("Schlecht");
+      return std::string("Sehr schlecht");
+
+  # Trend als Text
+  - platform: template
+    name: "BME680 IAQ Trend Direction"
+    id: iaq_trend_direction
+    icon: "mdi:swap-vertical"
+    update_interval: 60s
+    lambda: |-
+      float trend = id(iaq_trend).state;
+      if (std::isnan(trend)) return std::string("Unknown");
+      if (trend < -50) return std::string("Stark verbessernd");
+      if (trend < -10) return std::string("Verbessernd");
+      if (trend <= 10) return std::string("Stabil");
+      if (trend <= 50) return std::string("Verschlechternd");
+      return std::string("Stark verschlechternd");
+
+  # Sensor-Status (Burn-in Erkennung)
+  - platform: template
+    name: "BME680 Sensor Status"
+    id: bme680_status
+    icon: "mdi:information"
+    update_interval: 60s
+    lambda: |-
+      int minutes = id(burn_in_counter);
+      float base = id(gas_baseline).state;
+      if (std::isnan(base) || base < 1000.0f) {
+        return std::string("Initialisierung");
+      }
+      if (minutes < 60) {
+        return std::string("Aufwaermphase");
+      }
+      if (minutes < 2880) {
+        char buf[48];
+        int hours = minutes / 60;
+        snprintf(buf, sizeof(buf), "Burn-in (%dh / 48h)", hours);
+        return std::string(buf);
+      }
+      return std::string("Bereit");
+
+# ---------------------------------------------------------
+# Diagnose-Button: Baseline zuruecksetzen
+# ---------------------------------------------------------
+button:
+  - platform: template
+    name: "BME680 Reset Baseline"
+    icon: "mdi:restart"
+    entity_category: "diagnostic"
+    on_press:
+      then:
+        - lambda: |-
+            id(saved_baseline) = 0.0f;
+            id(burn_in_counter) = 0;
+            ESP_LOGW("bme680", "Baseline reset! 48h burn-in required.");
+        - logger.log:
+            level: WARN
+            format: "BME680 baseline has been reset"

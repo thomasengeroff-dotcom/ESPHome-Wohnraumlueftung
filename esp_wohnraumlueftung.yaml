@@ -47,6 +47,7 @@ packages:
   device_config_pkg: !include packages/device_config.yaml
   hardware: !include packages/hardware_io.yaml
   sensors: !include packages/sensors_climate.yaml
+  bme680: !include packages/BME680.yaml
   ui: !include packages/ui_controls.yaml
   logic: !include packages/logic_automation.yaml
   diagnostics_display: !include packages/display_diagnostics.yaml
