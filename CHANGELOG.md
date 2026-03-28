@@ -4,6 +4,13 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [0.6.79] - 2026-03-29
+
+### Refactored
+
+- **C++ Modularisierung**: Die große Datei `automation_helpers.h` (~1750 Zeilen) wurde drastisch aufgeräumt und fachlich in kleinere, gekapselte Module im neuen Ordner `components/helpers/` unterteilt (z.B. `fan_control.h`, `auto_mode.h`, `network_sync.h`, `led_feedback.h`).
+- **Abhängigkeiten optimiert**: `automation_helpers.h` fungiert nun als sauberer *Umbrella-Header*, wodurch keine YAML-Änderungen an den Lambdas erforderlich sind. Zirkuläre Abhängigkeiten wurden durch automatisch generierte *Forward Declarations* in `globals.h` behoben.
+
 ## [0.6.74] - 2026-03-29
 
 ### Added

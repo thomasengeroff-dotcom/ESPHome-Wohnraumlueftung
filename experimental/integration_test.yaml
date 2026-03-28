@@ -13,6 +13,7 @@ external_components:
 esphome:
   includes:
     - ../components/automation_helpers.h
+    - ../components/helpers
   on_boot:
     priority: 500
     then:

@@ -60,6 +60,7 @@ external_components:
 esphome:
   includes:
     - components/automation_helpers.h # Helper functions logic
+    - components/helpers
   on_boot:
     - priority: -100.0 # Standard is 600. -100 ensures restore_value for template components is ready
       then:
