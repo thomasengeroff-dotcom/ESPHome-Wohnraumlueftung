@@ -56,7 +56,7 @@ enum MessageType {
 
 /// Ensure breaking packet schema changes are detected across nodes.
 /// Bump this whenever the VentilationPacket layout or semantics change.
-static const uint8_t PROTOCOL_VERSION = 4; // Bumped: protocol_version field added
+static const uint8_t PROTOCOL_VERSION = 5; // Bumped: max_led_brightness added
 /// @brief Binary packet exchanged between peer devices via ESP-NOW.
 /// Layout is packed and must be identical on all firmware builds.
 /// IMPORTANT: protocol_version is the second byte — increment PROTOCOL_VERSION
@@ -93,6 +93,9 @@ struct __attribute__((packed)) VentilationPacket {
   // Timer Settings payload
   uint16_t sync_interval_min; ///< ESP-NOW Broadcast Interval
   uint16_t vent_timer_min;    ///< Duration for Stoß/Durchlüften mode (minutes)
+
+  // UI Settings payload
+  float max_led_brightness; ///< Shared LED brightness limit (0.1–1.0)
 };
 
 /// @brief Represents the latest known state of a peer device in the same room.

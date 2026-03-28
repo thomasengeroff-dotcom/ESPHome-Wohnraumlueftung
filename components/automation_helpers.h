@@ -753,6 +753,8 @@ inline void evaluate_auto_mode() {
       (now - v->last_peer_pid_demand_time < PEER_TIMEOUT_MS)) {
     max_pid_demand = std::max(max_pid_demand, v->last_peer_pid_demand);
   }
+  // Clamp aggregated demand to [0.0, 1.0] range
+  max_pid_demand = std::max(0.0f, std::min(1.0f, max_pid_demand));
 
   if (max_pid_demand > 0.01f) {
     int min_level = automatik_min_fan_level->value();
@@ -765,6 +767,9 @@ inline void evaluate_auto_mode() {
     // show a representative average.
     float scaled_level = min_level + max_pid_demand * (max_level - min_level);
     target_level = std::max(target_level, (int)std::round(scaled_level));
+    // Clamp to hardware boundaries (1-10)
+    target_level = std::max(1, std::min(10, target_level));
+
     ESP_LOGD("auto_mode",
              "PID Demand=%.2f (Local=%.2f, Peer=%.2f) -> Boost level to %d",
              max_pid_demand, v->local_pid_demand, v->last_peer_pid_demand,
@@ -843,6 +848,8 @@ inline float get_current_target_speed() {
             std::max(max_pid_demand, ventilation_ctrl->last_peer_pid_demand);
       }
     }
+    // Clamp aggregated demand to [0.0, 1.0] range
+    max_pid_demand = std::max(0.0f, std::min(1.0f, max_pid_demand));
 
     float min_l = (float)automatik_min_fan_level->value();
     float max_l = (float)automatik_max_fan_level->value();
@@ -1441,8 +1448,11 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data) {
   // 5. System Timers
   if (pkt->sync_interval_min >= 1 && pkt->sync_interval_min <= 1440) {
     if (v->sync_interval_ms != (uint32_t)(pkt->sync_interval_min * 60 * 1000)) {
-      v->set_sync_interval(pkt->sync_interval_min * 60 * 1000);
+      v->sync_interval_ms = (uint32_t)(pkt->sync_interval_min * 60 * 1000);
       sync_interval_config->publish_state(pkt->sync_interval_min);
+      ESP_LOGI("vent_sync", "Synced sync_interval_min from peer: %d",
+               pkt->sync_interval_min);
+      dirty = true;
     }
   }
 
@@ -1454,6 +1464,17 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data) {
     ESP_LOGI("vent_sync", "Synced vent_timer from peer: %d min",
              pkt->vent_timer_min);
     // Note: setting the timer does not change the active mode.
+  }
+
+  // 6. UI Settings (LED Brightness)
+  if (pkt->max_led_brightness >= 0.05f && pkt->max_led_brightness <= 1.0f &&
+      std::abs(pkt->max_led_brightness - max_led_brightness->value()) > 0.01f) {
+    max_led_brightness->value() = pkt->max_led_brightness;
+    led_max_brightness_config->publish_state(pkt->max_led_brightness * 100.0f);
+    update_leds->execute();
+    ESP_LOGI("vent_sync", "Synced max_led_brightness from peer: %.2f",
+             pkt->max_led_brightness);
+    dirty = true;
   }
 
   // If any configs changed, re-evaluate the auto mode immediately to reflect
@@ -1658,6 +1679,9 @@ build_and_populate_packet(esphome::MessageType type) {
   pkt->sync_interval_min = (uint16_t)(v->sync_interval_ms / 60 / 1000);
   pkt->vent_timer_min =
       (uint16_t)(v->state_machine.ventilation_duration_ms / 60 / 1000);
+
+  // UI Settings
+  pkt->max_led_brightness = max_led_brightness->value();
 
   return data;
 }

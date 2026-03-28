@@ -167,6 +167,7 @@ number:
         - lambda: |-
             id(max_led_brightness) = x / 100.0f;
             id(update_leds).execute();
+            sync_settings_to_peers();
             ESP_LOGI("ui", "Max LED brightness set to %.2f", id(max_led_brightness));
 
   # Auto Mode: Min Fan Level (moisture protection)

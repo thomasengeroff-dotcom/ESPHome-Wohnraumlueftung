@@ -4,6 +4,18 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [0.6.74] - 2026-03-29
+
+### Added
+
+- **LED-Helligkeit Synchronisierung**: Unterstützung für die raumweite Synchronisierung der "Maximalen LED Helligkeit". Änderungen an einem Gerät werden nun sofort via ESP-NOW an alle Peer-Geräte übertragen.
+- **Protokoll-Update (v5)**: Erhöhung der `PROTOCOL_VERSION` auf 5 zur Unterstützung der Helligkeits-Synchronisierung. (Erfordert Neu-Flashen aller Geräte).
+
+### Fixed
+
+- **Lüfterstufen-Limit (Automatik)**: Implementierung einer strikten Bedarfs-Begrenzung (PID Clamping) und Hardware-Clamping (Stufe 10), um ein Überschreiten der konfigurierten "Max-Lüfterstufe" bei extremen CO2-Werten zu verhindern.
+- **Log-Spam Reduzierung**: Reduzierung der "Hardware Refresh" und "Ramping speed" Log-Frequenz auf 1s-Intervalle. Kritische Zustandsänderungen (z.B. Richtungswechsel) werden weiterhin sofort geloggt.
+
 ## [0.6.70] - 2026-03-28
 
 ### Fixed
