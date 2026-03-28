@@ -4,6 +4,17 @@ Alle erheblichen Änderungen an diesem Projekt werden in dieser Datei dokumentie
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [0.6.70] - 2026-03-28
+
+### Fixed
+
+- **C++ Kompilierfehler**: Behebung eines Typs-Konflikts in `automation_helpers.h`. Die Variable `fan_intensity_level` wurde auf `RestoringGlobalsComponent<int>` umgestellt, um mit der YAML-Einstellung `restore_value: true` übereinzustimmen.
+- **Filter-Laufzeit Logik**: Sicherstellung der Funktionsfähigkeit der Filter-Wartungsanzeige durch Verschiebung der SNTP-Zeitsynchronisation (`sntp_time`) in das Basis-Paket `packages/esp32c6_common.yaml`.
+
+### Removed
+
+- **Diagnose-Display**: Vollständige Entfernung des optionalen OLED-Pakets `display_diagnostics.yaml` sowie aller zugehörigen Code-Referenzen und Dokumentationseinträge.
+
 ## [0.6.67] - 2026-03-27
 
 ### Changed

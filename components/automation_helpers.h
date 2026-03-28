@@ -77,7 +77,7 @@ extern esphome::globals::GlobalsComponent<bool>
     *ventilation_enabled; ///< Ventilation enabled flag.
 extern esphome::globals::GlobalsComponent<int>
     *current_mode_index; ///< Active mode index (0–3).
-extern esphome::globals::GlobalsComponent<int>
+extern esphome::globals::RestoringGlobalsComponent<int>
     *fan_intensity_level; ///< Fan intensity (1–10).
 extern esphome::globals::RestoringGlobalsComponent<bool>
     *co2_auto_enabled; ///< CO2 auto-control enabled flag.

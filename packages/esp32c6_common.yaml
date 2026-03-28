@@ -27,7 +27,7 @@
 substitutions:
   # The project version is automatically updated by version_bump.py during build.
   # Do not change manually unless you know what you are doing.
-  project_version: "0.6.67"
+  project_version: "0.6.70"
 
 esphome:
   name: "${device_name}"
@@ -130,6 +130,9 @@ web_server:
 time:
   - platform: homeassistant
     id: homeassistant_time
+  - platform: sntp
+    id: sntp_time
+
 
 # ---------------------------------------------------------
 # SYSTEM DIAGNOSTICS (SENSORS)

@@ -696,7 +696,7 @@ ESPHome-Wohnraumlueftung/
 │   ├── sensors_climate.yaml       # Zentrale Klimasensorik (SCD41, BMP390, NTCs)
 │   ├── ui_controls.yaml           # HA GUI-Elemente (Slider, Selects, Alarm)
 │   ├── logic_automation.yaml      # Steuerungslogik, PIDs, Intervalle, Wartung
-│   └── display_diagnostics.yaml   # OLED-Display Diagnoseseiten
+
 ├── components/                    # Lokale Custom C++-Komponenten
 │   ├── automation_helpers.h       # C++ Helper-Funktionen für Lambdas
 │   └── ventilation_group/         # Lüftungssteuerung Logik
