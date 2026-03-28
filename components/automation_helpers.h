@@ -348,6 +348,22 @@ inline void send_discovery_broadcast() {
   ESP_LOGI("espnow_disc", "Sent discovery broadcast: %s", msg.c_str());
 }
 
+/** @brief Requests current status from all known peers.
+ *  Called shortly after boot once peers are discovered.
+ */
+inline void request_peer_status() {
+  if (!esphome::espnow::global_esp_now)
+    return;
+
+  ESP_LOGI("vent_sync", "Requesting current status from peers...");
+  auto data = build_and_populate_packet(esphome::MSG_STATUS_REQUEST);
+  uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+  esphome::espnow::global_esp_now->send(broadcast_mac, data, [](esp_err_t err) {
+    /* no-op callback */
+  });
+}
+
 /** @brief Sends a unicast confirmation to a discovered peer. */
 inline void send_discovery_confirmation(const uint8_t *target_mac) {
   if (!esphome::espnow::global_esp_now)
@@ -922,10 +938,13 @@ inline void update_fan_logic() {
         ventilation_ctrl->state_machine.get_target_state(millis());
     speed *= state.ramp_factor;
 
-    // Log ramping during transition phases for debugging
-    if (state.ramp_factor < 0.99f && state.ramp_factor > 0.01f) {
+    // Rate-limited log during transition phases for debugging
+    const uint32_t now = millis();
+    if (state.ramp_factor < 0.99f && state.ramp_factor > 0.01f &&
+        (now - ventilation_ctrl->last_ramp_log_ms > 1000)) {
       ESP_LOGD("fan_ramp", "Ramping speed: %.2f (Base: %.2f, Factor: %.2f)",
                speed, get_current_target_speed(), state.ramp_factor);
+      ventilation_ctrl->last_ramp_log_ms = now;
     }
   }
 
@@ -1222,7 +1241,69 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data) {
   if (v == nullptr)
     return;
 
+  if (data.size() != sizeof(esphome::VentilationPacket)) {
+    ESP_LOGI("vent_sync", "Invalid packet size: %d", data.size());
+    return;
+  }
+  esphome::VentilationPacket *pkt = (esphome::VentilationPacket *)data.data();
+
+  // Validate magic header and protocol version
+  if (pkt->magic_header != 0x42 ||
+      pkt->protocol_version != esphome::PROTOCOL_VERSION) {
+    ESP_LOGI("vent_sync", "Invalid packet header: %d %d", pkt->magic_header,
+             pkt->protocol_version);
+    return;
+  }
+
+  // Handle Request/Response Logic
+  if (pkt->msg_type == esphome::MSG_STATUS_REQUEST) {
+    if (pkt->floor_id == (int)config_floor_id->state &&
+        pkt->room_id == (int)config_room_id->state) {
+      ESP_LOGI("vent_sync", "Status request from peer %d. Sending response...",
+               pkt->device_id);
+      auto resp = build_and_populate_packet(esphome::MSG_STATUS_RESPONSE);
+      uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+      esphome::espnow::global_esp_now->send(broadcast_mac, resp,
+                                            [](esp_err_t err) {});
+    }
+    return;
+  }
+
   bool changed = v->on_packet_received(data);
+
+  if (pkt->msg_type == esphome::MSG_STATUS_RESPONSE && !v->is_state_synced) {
+    if (pkt->floor_id == (int)config_floor_id->state &&
+        pkt->room_id == (int)config_room_id->state) {
+      ESP_LOGI("vent_sync", "Adopting state from peer %d (REBOOT SYNC)",
+               pkt->device_id);
+
+      // Soft Transition: Start from 0 to ensure ramp-up
+      int target_intensity = pkt->fan_intensity;
+
+      // Apply mode
+      int mode_idx = 1; // Default to WRG
+      if (pkt->current_mode == esphome::MODE_VENTILATION)
+        mode_idx = 2;
+      else if (pkt->current_mode == esphome::MODE_STOSSLUEFTUNG)
+        mode_idx = 3;
+      else if (pkt->current_mode == esphome::MODE_OFF)
+        mode_idx = 4;
+
+      // Set mode and trigger ramp via cycle_operating_mode
+      cycle_operating_mode(mode_idx);
+
+      // Force intensity to 0 then ramp to target
+      fan_intensity_level->value() = 0;
+      fan_speed_update->execute();
+      
+      // Now set target intensity - the update_fan_logic will pick it up
+      v->set_fan_intensity(target_intensity);
+      fan_intensity_level->value() = target_intensity;
+      
+      v->is_state_synced = true;
+      return; // Skip further sync processing to avoid double-triggers
+    }
+  }
 
   if (changed) {
     // 1. Sync Fan Intensity
@@ -1292,17 +1373,6 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data) {
   // --- Configuration Settings Sync ---
   // ESP-NOW payloads carry all user settings. If another node has different
   // configuration values, we adopt them to ensure room-wide parity.
-  if (data.size() != sizeof(esphome::VentilationPacket)) {
-    return;
-  }
-  esphome::VentilationPacket *pkt = (esphome::VentilationPacket *)data.data();
-
-  // FIXED #11: Also check magic header and protocol version here to avoid
-  // processing invalid/old packets in this bridge function.
-  if (pkt->magic_header != 0x42 ||
-      pkt->protocol_version != esphome::PROTOCOL_VERSION) {
-    return;
-  }
 
   // Guard against corrupt packets with out-of-range values that could
   // crash/break logic

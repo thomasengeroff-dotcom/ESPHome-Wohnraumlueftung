@@ -214,6 +214,8 @@ script:
     then:
       - lambda: load_peers_from_runtime_cache(); # W4: renamed from load_peers_from_flash
       - lambda: send_discovery_broadcast();
+      - delay: 2s
+      - lambda: request_peer_status();
 
       # LED Self-Test and UI start (moved from boot to avoid bus contention)
       - delay: 500ms

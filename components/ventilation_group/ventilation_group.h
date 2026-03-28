@@ -47,23 +47,23 @@ namespace esphome {
 
 /// @brief ESP-NOW packet type identifiers.
 enum MessageType {
-  MSG_DISCOVERY = 1, ///< Announce presence after boot.
-  MSG_SYNC = 2,      ///< Periodic time-sync packet (cycle position).
-  MSG_STATE = 3      ///< Mode or fan-intensity change notification.
+  MSG_DISCOVERY = 1,      ///< Announce presence after boot.
+  MSG_SYNC = 2,           ///< Periodic time-sync packet (cycle position).
+  MSG_STATE = 3,          ///< Mode or fan-intensity change notification.
+  MSG_STATUS_REQUEST = 4, ///< Request current full status from peers.
+  MSG_STATUS_RESPONSE = 5 ///< Reply with full status (mode, intensity).
 };
 
 /// Ensure breaking packet schema changes are detected across nodes.
 /// Bump this whenever the VentilationPacket layout or semantics change.
-static const uint8_t PROTOCOL_VERSION =
-    4; // Bumped: protocol_version field added
+static const uint8_t PROTOCOL_VERSION = 4; // Bumped: protocol_version field added
 /// @brief Binary packet exchanged between peer devices via ESP-NOW.
 /// Layout is packed and must be identical on all firmware builds.
 /// IMPORTANT: protocol_version is the second byte — increment PROTOCOL_VERSION
 /// and do a simultaneous OTA rollout on all nodes whenever this struct changes.
 struct __attribute__((packed)) VentilationPacket {
   uint8_t magic_header; ///< Always 0x42 — used for basic validation.
-  uint8_t
-      protocol_version; ///< FIXED K2: Schema version — reject mismatched peers.
+  uint8_t protocol_version; ///< FIXED K2: Schema version — reject mismatched peers.
   uint8_t floor_id;     ///< Floor group (filters unrelated devices).
   uint8_t room_id;      ///< Room group within the floor.
   uint8_t device_id;    ///< Unique sender ID (used to ignore own packets).
@@ -73,8 +73,7 @@ struct __attribute__((packed)) VentilationPacket {
   // Live Data Synced States
   uint32_t timestamp_ms; ///< Sender's millis() at packet creation.
   uint32_t cycle_pos_ms; ///< Sender's position in the direction cycle.
-  uint32_t
-      remaining_duration_ms; ///< Remaining ventilation timer (0 = infinite).
+  uint32_t remaining_duration_ms; ///< Remaining ventilation timer (0 = infinite).
   bool phase_state;          ///< Sender's current global phase (A or B).
   float t_in;                ///< Sender's local indoor temperature (or NAN).
   float t_out;               ///< Sender's local outdoor temperature (or NAN).
@@ -165,9 +164,13 @@ public:
 
   // --- PEER TRACKING (For Dashboard) ---
   std::vector<PeerState> peers; ///< List of recently seen peers
-
+  bool is_state_synced =
+      false; ///< tracks if state has been synced from peer after boot
+  
   // --- INTERNAL ---
   uint32_t last_sync_tx = 0; ///< millis() of last sync broadcast.
+  uint32_t last_hw_log_ms = 0; ///< millis() of last hardware status log.
+  uint32_t last_ramp_log_ms = 0; ///< millis() of last ramp log.
   bool pending_broadcast =
       false; ///< True = YAML should send a packet next loop.
 
@@ -223,7 +226,7 @@ public:
                          "Triggering sync broadcast.");
         trigger_sync();
       }
-      update_hardware(state);
+      update_hardware(state, dirty);
     }
 
     // 3. Auto Sync Broadcast (Every sync_interval_ms)
@@ -292,6 +295,7 @@ public:
   /// @param data  Raw byte vector received via ESP-NOW.
   /// @return true if any local state was changed (caller should update UI).
   bool on_packet_received(std::vector<uint8_t> data) {
+    ESP_LOGD("vent", "on_packet_received() called"); 
     if (data.size() != sizeof(VentilationPacket)) {
       ESP_LOGD("vent_sync", "Size mismatch! Expected %d, got %d",
                sizeof(VentilationPacket), data.size());
@@ -315,8 +319,10 @@ public:
       return false;
     }
     if (pkt->floor_id != floor_id || pkt->room_id != room_id) {
-      ESP_LOGD("vent_sync", "Group mismatch! Floor %d/%d, Room %d/%d",
-               pkt->floor_id, floor_id, pkt->room_id, room_id);
+      ESP_LOGW("vent_sync",
+               "Group mismatch! Received: Floor %d, Room %d | Local: Floor %d, "
+               "Room %d. Peer ignored.",
+               pkt->floor_id, pkt->room_id, floor_id, room_id);
       return false;
     }
     if (pkt->device_id == device_id) {
@@ -330,7 +336,6 @@ public:
     ESP_LOGD("vent_sync", "Valid packet received from device %d!",
              pkt->device_id);
 
-    // Update peer tracking for dashboard
     bool found_peer = false;
     for (auto &peer : peers) {
       if (peer.device_id == pkt->device_id) {
@@ -423,16 +428,21 @@ public:
   /// @brief Applies the state machine's target state to the physical hardware.
   /// Sets the direction switch and handles fan on/off bridging.
   /// The actual PWM/speed logic is handled by update_fan_logic().
-  void update_hardware(const HardwareState &state) {
+  void update_hardware(const HardwareState &state, bool force_log = false) {
     bool target_in = state.direction_in;
     bool enable_fan = state.fan_enabled;
 
-    ESP_LOGI("vent",
-             "Hardware Refresh: Mode %d, Intensity %d, Phase: %s, Direction: "
-             "%s, Ramp: %.2f",
-             state_machine.current_mode, current_fan_intensity,
-             state_machine.is_phase_a ? "A" : "B",
-             target_in ? "ZULUFT (IN)" : "ABLUFT (OUT)", state.ramp_factor);
+    // Rate-limited log during loop calls to avoid loop spam
+    uint32_t now = millis();
+    if (force_log || (now - last_hw_log_ms > 1000)) {
+      ESP_LOGD("vent",
+               "Hardware Refresh: Mode %d, Intensity %d, Phase: %s, Direction: "
+               "%s, Ramp: %.2f",
+               state_machine.current_mode, current_fan_intensity,
+               state_machine.is_phase_a ? "A" : "B",
+               target_in ? "ZULUFT (IN)" : "ABLUFT (OUT)", state.ramp_factor);
+      last_hw_log_ms = now;
+    }
 
     // 1. Direction switch (only toggle if changed)
     if (direction_switch) {

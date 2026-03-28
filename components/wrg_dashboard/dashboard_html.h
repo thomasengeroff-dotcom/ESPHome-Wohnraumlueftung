@@ -373,8 +373,8 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
             const modeNames = ["Aus", "WRG", "Durchlüften", "Stoßlüftung"];
             const mode = peer.mode >= 0 && peer.mode <= 3 ? modeNames[peer.mode] : "Unbekannt";
             const phase = peer.phase ? "<span class='text-accent font-bold px-2 py-0.5 bg-accent/10 rounded-full text-xs'>IN</span>" : "<span class='text-danger font-bold px-2 py-0.5 bg-danger/10 rounded-full text-xs'>OUT</span>";
-            const tIn = peer.t_in ? peer.t_in.toFixed(1) + " °C" : "--";
-            const tOut = peer.t_out ? peer.t_out.toFixed(1) + " °C" : "--";
+            const tIn = (peer.t_in !== undefined && peer.t_in !== null) ? peer.t_in.toFixed(1) + " °C" : "--";
+            const tOut = (peer.t_out !== undefined && peer.t_out !== null) ? peer.t_out.toFixed(1) + " °C" : "--";
             const pid = peer.pid_demand !== undefined && peer.pid_demand !== null ? (Math.round(peer.pid_demand*100) + "%") : "--";
             
             html += `<div class="bg-gray-800/80 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors">

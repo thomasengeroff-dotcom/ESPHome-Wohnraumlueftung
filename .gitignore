@@ -17,3 +17,4 @@ __pycache__/
 *$py.class
 components/wrg_dashboard/__pycache__/__init__.cpython-313.pyc
 documentation/inspiration/*
+wsl_info.md
