@@ -245,7 +245,7 @@ inline void sync_settings_to_peers() {
 // --- Inline wrappers (called from YAML lambdas) -----------------------
 
 // Global constants
-static const uint32_t PEER_TIMEOUT_MS = 300000; // 5 minutes
+
 
 /// Last PWM level sent to fan_pwm_primary via set_level() (0.0–1.0).
 /// Used by the 'Lüfter PWM Ansteuerung' template sensor since LEDCOutput has no

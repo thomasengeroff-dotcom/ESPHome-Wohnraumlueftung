@@ -63,6 +63,14 @@
 #include "esphome/components/ventilation_group/ventilation_group.h"
 #include "esphome/components/ventilation_logic/ventilation_logic.h"
 
+// --- Constants ---------------------------------------------------------
+static constexpr float SUMMER_COOLING_THRESHOLD_INDOOR = 22.0f;
+static constexpr float SUMMER_COOLING_THRESHOLD_INDOOR_HYSTERESIS = 21.5f;
+static constexpr float SUMMER_COOLING_MIN_DELTA = 1.5f;
+static constexpr float SUMMER_COOLING_HYSTERESIS = 0.5f;
+static constexpr uint32_t PEER_TIMEOUT_MS = 300000; // 5 minutes
+static constexpr float PID_SYNC_THRESHOLD = 0.05f;  // Minimum demand change to trigger sync
+
 // --- Component pointer declarations (extern) ---------------------------
 // FIXED #8: All pointers are declared `extern` so this header can be compiled
 // independently. The definitions are the `static` variables in
