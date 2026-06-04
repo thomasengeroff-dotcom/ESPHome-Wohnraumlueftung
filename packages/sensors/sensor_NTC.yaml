@@ -59,14 +59,14 @@ sensor:
   - platform: adc
     id: ntc_innen_source
     pin: GPIO1                    # XIAO Pin D1
-    attenuation: 11db             # 0–3.3V range (ESP-IDF v5+ naming)
+    attenuation: 12db             # 0–3.3V range (ESP-IDF v5+ naming)
     update_interval: 5s
     internal: true
 
   - platform: adc
     id: ntc_aussen_source
     pin: GPIO0                    # XIAO Pin D0
-    attenuation: 11db
+    attenuation: 12db
     update_interval: 5s
     internal: true
 
