@@ -36,8 +36,7 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 - [🖱️ Eigene Platine - PCB](#🖱️-eigene-platine---pcb)
 - [🛠️ Hardware & Bill of Materials (BOM)](#🛠️-hardware--bill-of-materials-bom)
 - [🔌 Pinbelegung & Verkabelung](#🔌-pinbelegung--verkabelung)
-- [🛠️ Installation & Software](#🛠️-installation--software)
-- [📲 OTA Updates & Initiale Einrichtung](#📲-ota-updates--initiale-einrichtung)
+- [🛠️ Einrichtung & Installation](#🛠️-einrichtung--installation)
 - [🎮 Bedienung & Steuerung](#🎮-bedienung--steuerung)
 - [🧠 Wärmerückgewinnung - So funktioniert's](#🧠-wärmerückgewinnung---so-funktionierts)
 - [🔧 Technische Details & Optimierungen](#🔧-technische-details--optimierungen)
@@ -45,7 +44,6 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 - [🏗️ Code-Architektur & Wartbarkeit](#🏗️-code-architektur--wartbarkeit)
 - [🚀 Automatisierte Release & Versionierung](#🚀-automatisierte-release--versionierung)
 - [⚠️ Sicherheitshinweise](#⚠️-sicherheitshinweise)
-- [🛠️ Entwicklungsumgebung - Installation & Software](#🛠️-entwicklungsumgebung---installation--software)
 - [⚖️ Rechtlicher Haftungsausschluss](#⚖️-rechtlicher-haftungsausschluss)
 - [📜 Lizenz](#📜-lizenz)
 
@@ -426,51 +424,119 @@ graph TD
 
 ---
 
-## 🛠️ Installation & Software
+## 🛠️ Einrichtung & Installation
 
-### 🚀 Schritt-für-Schritt Inbetriebnahme
+### 1. Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)
+
+Für eine stabile Entwicklungsumgebung wird dringend empfohlen, ESPHome in einer **virtuellen Python-Umgebung** (`venv`) zu installieren. Dies vermeidet Konflikte mit systemweiten Paketen und ist die einzige offiziell unterstützte manuelle Installationsmethode unter Linux.
+
+```bash
+# 1. Virtuelle Umgebung erstellen
+python3 -m venv venv
+
+# 2. Umgebung aktivieren
+source venv/bin/activate
+
+# 3. ESPHome installieren
+pip install --upgrade esphome
+```
+
+*(Hinweis: Denke immer daran, `source venv/bin/activate` auszuführen, bevor du den Befehl `esphome` in einer neuen Terminal-Sitzung verwendest.)*
+
+#### 🔄 Umgebung aktualisieren
+
+Um deine Entwicklungsumgebung auf dem neuesten Stand zu halten, verwende die folgenden Befehle:
+
+**ESPHome aktualisieren (innerhalb der venv):**
+
+```bash
+# Sicherstellen, dass venv aktiv ist
+source venv/bin/activate
+# Auf die neueste Version aktualisieren
+pip install --upgrade esphome
+```
+
+**Vollständiges System- & Python-Update (Linux):**
+
+```bash
+# Paketliste aktualisieren und alle Systempakete upgraden
+sudo apt update && sudo apt upgrade -y
+```
+
+**pip & setuptools aktualisieren (innerhalb der venv):**
+
+```bash
+pip install --upgrade pip setuptools
+```
+
+### 2. Konfiguration & Kompilierung
+
+VentoSync nutzt eine modulare Hardware-Architektur. Wähle je nach verbauter Hardware die passende Konfigurationsdatei:
+
+- **`ventosync.yaml`**: Vollversion (SCD41, BME680, LD2450)
+- **`ventosync_bme680_only.yaml`**: Variante mit BME680 (ohne SCD41/LD2450)
+- **`ventosync_radar_only.yaml`**: Variante mit Radar (ohne Klima-Sensoren)
+- **`ventosync_nosensor.yaml`**: Basis-Lüftungssteuerung ohne Sensoren
+
+Nutze das Skript `upload_all.sh` für automatisches Kompilieren und Flashen lokal auf deine Geräte:
+
+```bash
+# Kompiliert und flasht alle im Skript definierten Geräte
+./upload_all.sh
+```
+
+Alternativ manuell für ein einzelnes Gerät per ESPHome CLI:
+
+```bash
+# 1. Konfiguration validieren (prüft auf YAML-Fehler)
+esphome config ventosync_nosensor.yaml
+
+# 2. Kompilieren & via OTA flashen (lädt automatisch auf die angegebene IP hoch)
+esphome run ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
+
+# 3. Nur kompilieren (generiert die Binärdatei ohne Upload)
+esphome compile ventosync_nosensor.yaml
+
+# 4. Nur flashen (nützlich, wenn die Binärdatei bereits kompiliert wurde)
+esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
+```
+
+### 3. Erstmaliges Flashen & Inbetriebnahme
 
 1. **Firmware vorbereiten**: Kompiliere die Firmware mit deinen eigenen WLAN-Zugangsdaten (via `secrets.yaml`).
-2. **Initiales Flashen**: Flashe den ESP (XIAO) initial per USB mit der VentoSync Firmware über das ESPHome Dashboard.
+2. **Initiales Flashen**: Flashe den ESP (XIAO) initial per USB mit der VentoSync Firmware über das ESPHome Dashboard oder per ESPHome CLI-Befehl:
+   ```bash
+   esphome run ventosync.yaml --device /dev/ttyACM0
+   ```
 3. **Hardware-Einbau**:
    > [!CAUTION]
    > **LEBENSGEFAHR:** Der Einbau des PCB und ESP in das VentoMaxx Lüftungsgerät erfordert Arbeiten an der **230V Netzspannung**. Dieser Schritt darf **ausnahmslos nur von einer Elektrofachkraft** durchgeführt werden.
    Baue das PCB und den ESP gemäß Schaltplan in das Gehäuse des Lüftungsgerätes ein.
-4. **Netzwerk-Konfiguration**: Hinterlege die IP-Adresse im Router als **feste IP (Static IP)**, um eine dauerhaft stabile Erreichbarkeit zu garantieren.
-5. **Home Assistant Integration**: Füge das Gerät in Home Assistant unter der ESPHome-Integration hinzu (es wird i. d. R. sofort automatisch erkannt).
-6. **Einstellungen anpassen**: Passe nach der Integration die folgenden Basis-Einstellungen in der Home Assistant UI oder dem lokalen Dashboard an:
+4. **Initiale Einrichtung (Captive Portal)**:
+   Die kompilierten Firmware-Binaries auf GitHub sind "secret-free" und enthalten keine fest einkompilierten WLAN-Zugangsdaten. Wenn du ein OTA-Update mit diesen offiziellen Release-Dateien durchführst oder dein Gerät die WLAN-Verbindung verliert, befolge diese Schritte, um die WLAN-Verbindung wiederherzustellen:
+   1. Suche mit deinem Smartphone oder PC nach dem WLAN **"VentoSync Hotspot"**.
+   2. Verbinde dich mit dem Passwort: `ventosync`
+   3. Es sollte sich automatisch ein Fenster (Captive Portal) öffnen. (Falls nicht, rufe im Browser `192.168.4.1` auf).
+   4. Wähle dein Heim-WLAN aus der Liste aus und gib dein Passwort ein.
+   **Fertig!** ESPHome hat nun deine Zugangsdaten dauerhaft im NVS-Flash gesichert. **Alle zukünftigen OTA-Updates werden diese Zugangsdaten automatisch nutzen und sich sofort verbinden.**
+5. **Netzwerk-Konfiguration**: Hinterlege die IP-Adresse im Router als **feste IP (Static IP)**, um eine dauerhaft stabile Erreichbarkeit zu garantieren.
+
+### 4. OTA-Updates & Home Assistant Integration
+
+1. **Home Assistant Integration**: Füge das Gerät in Home Assistant unter der ESPHome-Integration hinzu (es wird i. d. R. sofort automatisch erkannt).
+2. **Einstellungen anpassen**: Passe nach der Integration die folgenden Basis-Einstellungen in der Home Assistant UI oder dem lokalen Dashboard an:
    - **Device ID** (Eindeutige Nummer des Geräts)
    - **Room ID** (Geräte mit gleicher Room ID synchronisieren sich)
    - **Floor ID**
-7. **Alternative - Web Dashboard**: Alternativ können (auch ohne Home Assistant) alle Settings über das lokale Web-Dashboard konfiguriert werden unter `http://<device-ip>` oder `http://<device-ip>/ui`.
-8. **Spaß haben**: Genieße dein smartes, energieeffizientes Lüftungssystem!
+3. **Alternative - Web Dashboard**: Alternativ können (auch ohne Home Assistant) alle Settings über das lokale Web-Dashboard konfiguriert werden unter `http://<device-ip>` oder `http://<device-ip>/ui`.
+4. **Spaß haben**: Genieße dein smartes, energieeffizientes Lüftungssystem!
+5. **OTA-Updates**:
+   Beispiel eines OTA Updates in Home Assistant:
+   ![OTA Update in Home Assistant](documentation/screenshots/OTA-Update.png)
 
 ### Kalibrierung der NTCs
 
 Die Konfiguration ist optimiert für den NTC-Thermistor **[ENTC-10K9777-02](https://www.reichelt.de/de/de/shop/produkt/thermistor_ntc_-40_bis_125_c-350474)** (10kΩ, B-Wert 3435). Falls du andere Sensoren verwendest, müssen die Werte für `b_constant` und `reference_resistance` im YAML-Code entsprechend angepasst werden.
-
----
-
-## 📲 OTA Updates & Initiale Einrichtung
-
-Die kompilierten Firmware-Binaries auf GitHub sind "secret-free" und enthalten keine fest einkompilierten WLAN-Zugangsdaten. Wenn du ein OTA-Update mit diesen offiziellen Release-Dateien durchführst, befolge diese Schritte, um die durchgängige WLAN-Verbindung sicherzustellen:
-
-### Initiale Einrichtung (Captive Portal)
-
-Wenn dein Gerät nach einem OTA-Update von einer lokal kompilierten Firmware auf ein GitHub-Release die WLAN-Verbindung verliert, liegt das daran, dass ESPHome deine lokal fest einkompilierten Zugangsdaten nicht automatisch permanent im Flash-Speicher hinterlegt hat.
-
-So stellst du die Verbindung wieder her (einmaliger Vorgang):
-
-1. Suche mit deinem Smartphone oder PC nach dem WLAN **"VentoSync Hotspot"**.
-2. Verbinde dich mit dem Passwort: `ventosync`
-3. Es sollte sich automatisch ein Fenster (Captive Portal) öffnen. (Falls nicht, rufe im Browser `192.168.4.1` auf).
-4. Wähle dein Heim-WLAN aus der Liste aus und gib dein Passwort ein.
-
-**Fertig!** ESPHome hat nun deine Zugangsdaten dauerhaft im internen Speicher (NVS) gesichert. **Alle zukünftigen OTA-Updates werden diese Zugangsdaten automatisch nutzen und sich sofort verbinden.**
-
-Beispiel eines OTA Updates in Home Assistant:
-
-![OTA Update in Home Assistant](documentation/screenshots/OTA-Update.png)
 
 ---
 
@@ -1017,84 +1083,7 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 - Dieses Projekt arbeitet im 12V Bereich, was generell sicher ist.
 - Das Netzteil (230V zu 12V) muss fachgerecht installiert werden.
 
----
 
-## 🛠️ Entwicklungsumgebung - Installation & Software
-
-### 1. ESPHome Installation (Linux)
-
-Für eine stabile Entwicklungsumgebung wird dringend empfohlen, ESPHome in einer **virtuellen Python-Umgebung** (`venv`) zu installieren. Dies vermeidet Konflikte mit systemweiten Paketen und ist die einzige offiziell unterstützte manuelle Installationsmethode unter Linux.
-
-```bash
-# 1. Virtuelle Umgebung erstellen
-python3 -m venv venv
-
-# 2. Umgebung aktivieren
-source venv/bin/activate
-
-# 3. ESPHome installieren
-pip install --upgrade esphome
-```
-
-*(Hinweis: Denke immer daran, `source venv/bin/activate` auszuführen, bevor du den Befehl `esphome` in einer neuen Terminal-Sitzung verwendest.)*
-
-### 🔄 Umgebung aktualisieren
-
-Um deine Entwicklungsumgebung auf dem neuesten Stand zu halten, verwende die folgenden Befehle:
-
-**ESPHome aktualisieren (innerhalb der venv):**
-
-```bash
-# Sicherstellen, dass venv aktiv ist
-source venv/bin/activate
-# Auf die neueste Version aktualisieren
-pip install --upgrade esphome
-```
-
-**Vollständiges System- & Python-Update (Linux):**
-
-```bash
-# Paketliste aktualisieren und alle Systempakete upgraden
-sudo apt update && sudo apt upgrade -y
-```
-
-**pip & setuptools aktualisieren (innerhalb der venv):**
-
-```bash
-pip install --upgrade pip setuptools
-```
-
-### 2. Firmware Kompilieren & Flashen
-
-VentoSync nutzt eine modulare Hardware-Architektur. Wähle je nach verbauter Hardware die passende Konfigurationsdatei:
-
-- **`ventosync.yaml`**: Vollversion (SCD41, BME680, LD2450)
-- **`ventosync_bme680_only.yaml`**: Variante mit BME680 (ohne SCD41/LD2450)
-- **`ventosync_radar_only.yaml`**: Variante mit Radar (ohne Klima-Sensoren)
-- **`ventosync_nosensor.yaml`**: Basis-Lüftungssteuerung ohne Sensoren
-
-Nutze das Skript `upload_all.sh` für automatisches Kompilieren und Flashen lokal auf deine Geräte:
-
-```bash
-# Kompiliert und flasht alle im Skript definierten Geräte
-./upload_all.sh
-```
-
-Alternativ manuell für ein einzelnes Gerät per ESPHome CLI:
-
-```bash
-# 1. Konfiguration validieren (prüft auf YAML-Fehler)
-esphome config ventosync_nosensor.yaml
-
-# 2. Kompilieren & via OTA flashen (lädt automatisch auf die angegebene IP hoch)
-esphome run ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
-
-# 3. Nur kompilieren (generiert die Binärdatei ohne Upload)
-esphome compile ventosync_nosensor.yaml
-
-# 4. Nur flashen (nützlich, wenn die Binärdatei bereits kompiliert wurde)
-esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
-```
 
 ## Suchbegriffe
 

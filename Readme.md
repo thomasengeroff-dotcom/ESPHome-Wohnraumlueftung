@@ -38,8 +38,7 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 - [🖱️ Custom Circuit Board - PCB](#🖱️-custom-circuit-board---pcb)
 - [🛠️ Hardware & Bill of Materials (BOM)](#🛠️-hardware--bill-of-materials-bom)
 - [🔌 Pin Assignment & Wiring](#🔌-pin-assignment--wiring)
-- [🛠️ Installation & Software](#🛠️-installation--software)
-- [📲 OTA Updates & Initial Provisioning](#📲-ota-updates--initial-provisioning)
+- [🛠️ Setup & Installation](#🛠️-setup--installation)
 - [🎮 Operation & Control](#🎮-operation--control)
 - [🧠 Heat Recovery - How it works](#🧠-heat-recovery---how-it-works)
 - [🔧 Technical Details & Optimizations](#🔧-technical-details--optimizations)
@@ -47,7 +46,6 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 - [🏗️ Code Architecture & Maintainability](#🏗️-code-architecture--maintainability)
 - [🚀 Automated Release & Versioning](#🚀-automated-release--versioning)
 - [⚠️ Safety Instructions](#⚠️-safety-instructions)
-- [🛠️ Development Environment - Installation & Software](#🛠️-development-environment---installation--software)
 - [⚖️ Legal Disclaimer](#⚖️-legal-disclaimer)
 - [📜 License](#📜-license)
 
@@ -201,6 +199,7 @@ To ensure an optimal user experience, the original control panel of the VentoMax
     | **3x Blinks** | Wi-Fi Loss | Connection to the Wi-Fi router is interrupted. App control is currently not possible. *(Triggers after 30s continuous loss to suppress roaming drops.)* |
     | **4x Blinks** | Heat Warning | Temperature inside the housing is critical (50–60°C). The system remains active but should be checked. The device automatically shuts down above 60°C. |
     | **Slow Pulse** *(1s On, 2s Off)* | Window Guard | Window Guard active. All fans in the room are stopped. *(Starts after 5s, stops after 35s to avoid light pollution.)* |
+
 - You can find the detailed description of operation and control under [Operation](#-operation--control).
 
 ### 🏠 Home Assistant Integration
@@ -335,7 +334,7 @@ To achieve the highest possible accuracy, I developed a secondary PCB specifical
 
 - **Thermal Isolation**: A specialized milling slot and copper-free zones "thermally decouple" the sensor from the PCB's heat mass.
 - **Precision Filtering**: Proper decoupling capacitors are placed in immediate proximity to the sensor.
-- **Perfect Fit**: Designed with a 1.25mm pitch connector to align perfectly with the VentoMaxx housing's ventilation intake.
+- **Perfect Fit**: Designed with a 1.25mm pitch connector to align perfectly with the VentoMaxx housing's ventilation intake (connector H2).
 
 ![SCD41 Prototype](EasyEDA-Pro/PCB%20SCD41%20Prototype%20Images/SCD41-PCB-3D-top_small.png)
 
@@ -366,7 +365,7 @@ To achieve the highest possible accuracy, I developed a secondary PCB specifical
 ![Fan Connection](EasyEDA-Pro/PCB%20mounting/PCB-Anschluss-FAN2.jpg)
 *Fan connector wiring, with original cable.*
 
-The complete Bill of Materials (BOM) is located in the [EasyEDA-Pro](EasyEDA-Pro/) subfolder in the [BOM](EasyEDA-Pro/BOM_ESPHome%20VentoSync%20PWM_PCB_ESPHome-WRG_ESP32_PWM_2026-03-01.csv).
+The complete Bill of Materials (BOM) is located in the [EasyEDA-Pro](EasyEDA-Pro/) subfolder in the [BOM](EasyEDA-Pro/BOM_VentoSync_PWM_PCB_VentoSync-WRG_ESP32_PWM_2026-03-01.csv).
 
 ### 🖱️ On-Device Control Panel
 
@@ -433,51 +432,119 @@ graph TD
 
 ---
 
-## 🛠️ Installation & Software
+## 🛠️ Setup & Installation
 
-### 🚀 Getting Started (Step-by-Step)
+### 1. Development Environment (Linux `venv` & ESPHome CLI)
+
+For a stable development environment, it is strongly recommended to install ESPHome within a **Python virtual environment** (`venv`). This avoids conflicts with system-wide packages and is the only officially supported manual installation method on Linux.
+
+```bash
+# 1. Create a virtual environment
+python3 -m venv venv
+
+# 2. Activate the environment
+source venv/bin/activate
+
+# 3. Install ESPHome
+pip install --upgrade esphome
+```
+
+*(Note: Always remember to run `source venv/bin/activate` before using the `esphome` command in a new terminal session.)*
+
+#### 🔄 Updating the Environment
+
+To keep your development environment up to date, use the following commands:
+
+**Update ESPHome (inside venv):**
+
+```bash
+# Ensure venv is active
+source venv/bin/activate
+# Update to latest version
+pip install --upgrade esphome
+```
+
+**Full System & Python Update (Linux):**
+
+```bash
+# Update package list and upgrade all system packages
+sudo apt update && sudo apt upgrade -y
+```
+
+**Update pip & setuptools (inside venv):**
+
+```bash
+pip install --upgrade pip setuptools
+```
+
+### 2. Configuration & Compilation
+
+VentoSync now uses a modular hardware architecture. Depending on your hardware setup, select the appropriate configuration file:
+
+- **`ventosync.yaml`**: Full version (SCD41, BME680, LD2450)
+- **`ventosync_bme680_only.yaml`**: Fallback/Test version (BME680, no SCD41, no LD2450)
+- **`ventosync_radar_only.yaml`**: Devices with mmWave presence detection but no climate sensors
+- **`ventosync_nosensor.yaml`**: Basic ventilation control without environmental sensors
+
+Use the provided `upload_all.sh` script to automatically compile and upload the correct variant to all your devices locally:
+
+```bash
+# Upload to all devices defined in the script
+./upload_all.sh
+```
+
+Or manually for a single device using the ESPHome CLI:
+
+```bash
+# 1. Validate configuration (checks for YAML errors)
+esphome config ventosync_nosensor.yaml
+
+# 2. Compile & Upload via OTA (automatically uploads to the specified IP)
+esphome run ventosync_nosensor.yaml --device <IP-Address> --no-logs
+
+# 3. Only compile (generates the binary without uploading)
+esphome compile ventosync_nosensor.yaml
+
+# 4. Only upload (useful if you already compiled the binary)
+esphome upload ventosync_nosensor.yaml --device <IP-Address> --no-logs
+```
+
+### 3. Initial Flashing & Provisioning
 
 1. **Prepare Firmware**: Compile the firmware with your own Wi-Fi settings (using `secrets.yaml`).
-2. **Initial Flash**: Flash the ESP32-C6 (XIAO) initially via USB with the VentoSync firmware using the ESPHome dashboard.
+2. **Initial Flash**: Flash the ESP32-C6 (XIAO) initially via USB with the VentoSync firmware using the ESPHome dashboard or ESPHome CLI command:
+   ```bash
+   esphome run ventosync.yaml --device /dev/ttyACM0
+   ```
 3. **Hardware Installation**:
    > [!CAUTION]
    > **DANGER TO LIFE:** The installation of the PCB and ESP into the VentoMaxx ventilation unit involves working with **230V mains voltage**. This step **MUST only be performed by a qualified electrician**.
    Mount the PCB and ESP into the ventilation unit housing according to the wiring diagram as a drop-in replacement.
-4. **Network Configuration**: Locate the device in your router and assign a **static IP address** to ensure reliable communication.
-5. **Home Assistant Integration**: Add the device to Home Assistant under the ESPHome integration (it should be automatically discovered immediately).
-6. **Configure Device Settings**: Once integrated, adjust the following parameters in the Home Assistant UI or the local Dashboard:
+4. **Initial Provisioning (Captive Portal)**:
+   VentoSync firmware binary releases on GitHub are "secret-free" and do not contain any hardcoded Wi-Fi credentials. When performing an OTA update using these official release binaries, or if your device loses its Wi-Fi connection, follow these steps to restore connectivity:
+   1. Search for the Wi-Fi network **"VentoSync Hotspot"** on your smartphone or PC.
+   2. Connect to it using the password: `ventosync`
+   3. A Captive Portal window should automatically open (if not, browse to `192.168.4.1`).
+   4. Select your home Wi-Fi network from the list and enter your password.
+   **Done!** ESPHome has now permanently saved your credentials to the ESP32's internal non-volatile storage (NVS). **All future OTA updates will automatically use these stored credentials and connect seamlessly.**
+5. **Network Configuration**: Locate the device in your router and assign a **static IP address** to ensure reliable communication.
+
+### 4. OTA Updates & Home Assistant Integration
+
+1. **Home Assistant Integration**: Add the device to Home Assistant under the ESPHome integration (it should be automatically discovered immediately).
+2. **Configure Device Settings**: Once integrated, adjust the following parameters in the Home Assistant UI or the local Dashboard:
    - **Device ID** (Unique number for this device)
    - **Room ID** (Devices with the same Room ID will synchronize)
    - **Floor ID**
-7. **Alternative - Web Dashboard**: If you don't use Home Assistant, you can configure all settings via the local web dashboard at `http://<device-ip>` and `http://<device-ip>/ui`.
-8. **Enjoy**: Sit back and enjoy your smart HRV system!
+3. **Alternative - Web Dashboard**: If you don't use Home Assistant, you can configure all settings via the local web dashboard at `http://<device-ip>` and `http://<device-ip>/ui`.
+4. **Enjoy**: Sit back and enjoy your smart HRV system!
+5. **OTA Updates**:
+   Example of Update process in Home Assistant:
+   ![OTA Update in Home Assistant](documentation/screenshots/OTA-Update.png)
 
 ### Calibration of NTCs
 
 The configuration is optimized for the **[ENTC-10K9777-02](https://www.reichelt.de/de/de/shop/produkt/thermistor_ntc_-40_bis_125_c-350474)** NTC thermistor (10kΩ, B-value 3435). If you use other sensors, you must adapt the `b_constant` and `reference_resistance` values in the YAML code accordingly.
-
----
-
-## 📲 OTA Updates & Initial Provisioning
-
-VentoSync firmware binary releases on GitHub are "secret-free" and do not contain any hardcoded Wi-Fi credentials. When performing an OTA update using these official release binaries, follow these steps to ensure continuous connectivity:
-
-### Initial Provisioning (Captive Portal)
-
-If your device loses its Wi-Fi connection after an OTA update from a locally compiled firmware to a GitHub release, it is because ESPHome did not permanently save your locally hardcoded credentials.
-
-To restore connectivity:
-
-1. Search for the Wi-Fi network **"VentoSync Hotspot"** on your smartphone or PC.
-2. Connect to it using the password: `ventosync`
-3. A Captive Portal window should automatically open (if not, browse to `192.168.4.1`).
-4. Select your home Wi-Fi network from the list and enter your password.
-
-**Done!** ESPHome has now permanently saved your credentials to the ESP32's internal non-volatile storage (NVS). **All future OTA updates will automatically use these stored credentials and connect seamlessly.**
-
-Example of Update process in Home Assistant:
-
-![OTA Update in Home Assistant](documentation/screenshots/OTA-Update.png)
 
 ---
 
@@ -1043,84 +1110,6 @@ A special thank you goes to **[patrickcollins12](https://github.com/patrickcolli
 
 - This project operates in the 12V range, which is generally safe.
 - The power supply (230V to 12V) on the PCB and the PCB itself must be professionally installed!
-
----
-
-## 🛠️ Development Environment - Installation & Software
-
-### 1. ESPHome Installation (Linux)
-
-For a stable development environment, it is strongly recommended to install ESPHome within a **Python virtual environment** (`venv`). This avoids conflicts with system-wide packages and is the only officially supported manual installation method on Linux.
-
-```bash
-# 1. Create a virtual environment
-python3 -m venv venv
-
-# 2. Activate the environment
-source venv/bin/activate
-
-# 3. Install ESPHome
-pip install --upgrade esphome
-```
-
-*(Note: Always remember to run `source venv/bin/activate` before using the `esphome` command in a new terminal session.)*
-
-### 🔄 Updating the Environment
-
-To keep your development environment up to date, use the following commands:
-
-**Update ESPHome (inside venv):**
-
-```bash
-# Ensure venv is active
-source venv/bin/activate
-# Update to latest version
-pip install --upgrade esphome
-```
-
-**Full System & Python Update (Linux):**
-
-```bash
-# Update package list and upgrade all system packages
-sudo apt update && sudo apt upgrade -y
-```
-
-**Update pip & setuptools (inside venv):**
-
-```bash
-pip install --upgrade pip setuptools
-```
-
-### 2. Compiling & Flashing Firmware
-
-VentoSync now uses a modular hardware architecture. Depending on your hardware setup, select the appropriate configuration file:
-
-- **`ventosync.yaml`**: Full version (SCD41, BME680, LD2450)
-- **`ventosync_bme680_only.yaml`**: Fallback/Test version (BME680, no SCD41, no LD2450)
-- **`ventosync_radar_only.yaml`**: Devices with mmWave presence detection but no climate sensors
-- **`ventosync_nosensor.yaml`**: Basic ventilation control without environmental sensors
-
-Use the provided `upload_all.sh` script to automatically compile and upload the correct variant to all your devices locally:
-
-```bash
-# Upload to all devices defined in the script
-./upload_all.sh
-```
-
-Or manually for a single device using the ESPHome CLI:
-
-```bash
-# 1. Validate configuration (checks for YAML errors)
-esphome config ventosync_nosensor.yaml
-
-# 2. Compile & Upload via OTA (automatically uploads to the specified IP)
-esphome run ventosync_nosensor.yaml --device <IP-Address> --no-logs
-
-# 3. Only compile (generates the binary without uploading)
-esphome compile ventosync_nosensor.yaml
-
-# 4. Only upload (useful if you already compiled the binary)
-esphome upload ventosync_nosensor.yaml --device <IP-Address> --no-logs
 
 ```
 
