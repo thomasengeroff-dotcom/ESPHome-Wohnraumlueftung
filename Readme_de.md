@@ -26,24 +26,56 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 
 ## 📑 Inhaltsverzeichnis
 
+- [⚖️ Disclaimer](#⚖️-disclaimer)
 - [🚀 Zusammenfassung & Überblick](#🚀-zusammenfassung--überblick)
-- [Motivation](#motivation)
-- [🛠️ Maßgefertigte Leiterplatte (PCB)](#🛠️-maßgefertigte-leiterplatte-pcb)
-- [🔄 Vergleich mit VentoMaxx V-WRG](#🔄-vergleich-mit-ventomaxx-v-wrg)
+  - [Motivation](#motivation)
+  - [🛠️ Maßgefertigte Leiterplatte (PCB)](#🛠️-maßgefertigte-leiterplatte-pcb)
+  - [🔄 Vergleich mit VentoMaxx V-WRG](#🔄-vergleich-mit-ventomaxx-v-wrg)
 - [✨ Leistungsmerkmale](#✨-leistungsmerkmale)
+  - [⚙️ Intelligente Betriebsmodi](#⚙️-intelligente-betriebsmodi)
+  - [🛡️ Präzisions-Sensorik & Monitoring](#🛡️-präzisions-sensorik--monitoring)
+  - [⚡ Extrem niedriger Stromverbrauch](#⚡-extrem-niedriger-stromverbrauch)
+  - [🖥️ Bedienung am Lüftungsgerät](#🖥️-bedienung-am-lüftungsgerät)
+  - [🏠 Home Assistant Integration](#🏠-home-assistant-integration)
+  - [📊 VentoSync Dashboard - Lokales Web-Dashboard](#📊-ventosync-dashboard---lokales-web-dashboard)
 - [📡 ESP-NOW: Kabellose Autonomie](#📡-esp-now-kabellose-autonomie)
+  - [Vorteile im Überblick](#vorteile-im-überblick)
+  - [Discovery-Ablauf](#discovery-ablauf)
 - [🗺️ Roadmap & Zukünftige Erweiterungen](#🗺️-roadmap--zukünftige-erweiterungen)
 - [🖱️ Eigene Platine - PCB](#🖱️-eigene-platine---pcb)
+  - [Passgenaues SCD41 Sensor Board](#specialized-scd41-sensor-board)
 - [🛠️ Hardware & Bill of Materials (BOM)](#🛠️-hardware--bill-of-materials-bom)
+  - [Zentrale Einheit](#zentrale-einheit)
+  - [Aktoren & Sensoren](#aktoren--sensoren)
+  - [🖱️ Bedienpanel am Gerät](#🖱️-bedienpanel-am-gerät)
 - [🔌 Pinbelegung & Verkabelung](#🔌-pinbelegung--verkabelung)
+  - [📊 Schematische Darstellung (Konzept)](#📊-schematische-darstellung-konzept)
 - [🛠️ Einrichtung & Installation](#🛠️-einrichtung--installation)
+  - [1. Entwicklungsumgebung (Linux venv & ESPHome-CLI)](#1-entwicklungsumgebung-linux-venv--esphome-cli)
+  - [2. Konfiguration & Kompilierung](#2-konfiguration--kompilierung)
+  - [3. Erstmaliges Flashen & Inbetriebnahme](#3-erstmaliges-flashen--inbetriebnahme)
+  - [4. OTA-Updates & Home Assistant Integration](#4-ota-updates--home-assistant-integration)
+  - [Kalibrierung der NTCs](#kalibrierung-der-ntcs)
 - [🎮 Bedienung & Steuerung](#🎮-bedienung--steuerung)
+  - [🖐️ Bedienpanel (VentoMaxx Style)](#🖐️-bedienpanel-ventomaxx-style)
+  - [🔄 Detaillierte Betriebsmodi (Programme)](#🔄-detaillierte-betriebsmodi-programme)
+  - [📱 Steuerung über Home Assistant](#📱-steuerung über-home-assistant)
 - [🧠 Wärmerückgewinnung - So funktioniert's](#🧠-wärmerückgewinnung---so-funktionierts)
+  - [Grundprinzip](#grundprinzip)
+  - [Betriebszyklus (50s bis 70s pro Phase)](#betriebszyklus-50s-bis-70s-pro-phase)
+  - [Phase 1: Abluft (Rausblasen) - 70 Sekunden](#phase-1-abluft-rausblasen---70-sekunden)
+  - [Phase 2: Zuluft (Reinblasen) - 70 Sekunden](#phase-2-zuluft-reinblasen---70-sekunden)
+  - [NTC Sensoren (Temperatur-Stabilisierung)](#ntc-sensoren-temperatur-stabilisierung)
+  - [Luftqualität & Gassensorik (BME680)](#luftqualität--gassensorik-bme680)
+  - [Effizienzberechnung (Energiebasiert)](#effizienzberechnung-energiebasiert)
+  - [Optimierung der Effizienz](#optimierung-der-effizienz)
+  - [Synchronisation mehrerer Geräte](#synchronisation-mehrerer-geräte)
 - [🔧 Technische Details & Optimierungen](#🔧-technische-details--optimierungen)
 - [📁 Projektstruktur](#📁-projektstruktur)
 - [🏗️ Code-Architektur & Wartbarkeit](#🏗️-code-architektur--wartbarkeit)
 - [🚀 Automatisierte Release & Versionierung](#🚀-automatisierte-release--versionierung)
 - [⚠️ Sicherheitshinweise](#⚠️-sicherheitshinweise)
+- [Suchbegriffe](#suchbegriffe)
 - [⚖️ Rechtlicher Haftungsausschluss](#⚖️-rechtlicher-haftungsausschluss)
 - [📜 Lizenz](#📜-lizenz)
 
@@ -194,6 +226,7 @@ Um ein optimales Bedienerlebnis zu gewährleisten, wird das originale Bedienpane
     | **3x Blinken** | WLAN-Verlust | Die Verbindung zum WLAN-Router ist unterbrochen. Die App-Steuerung ist aktuell nicht möglich. *(Greift erst nach 30s dauerhaftem Verbindungsverlust — kurze Roaming-Drops werden unterdrückt.)* |
     | **4x Blinken** | Hitzewarnung | Temperatur im Gehäuse ist kritisch (50–60°C). Die Anlage läuft weiter, sollte aber geprüft werden. Automatische Abschaltung erfolgt bei über 60°C. |
     | **Langsamer Puls** *(1s An, 2s Aus)* | Fenstersperre aktiv | Alle Lüfter im Raum sind gestoppt. Der Puls startet nach 5s und erlischt nach 35s, um Lichtverschmutzung nachts zu vermeiden. |
+
 - Die detaillierte Beschreibung der Bedienung und Steuerung findest du unter [Bedienung](#-bedienung--steuerung).
 
 ### 🏠 Home Assistant Integration
@@ -320,9 +353,9 @@ Eine eigens entwickelte Platine (PCB) wurde entworfen, um alle Kernkomponenten (
 
 ![PCB Prototype](EasyEDA-Pro/PCB%20Prototype%20Images/Screenshot%202026-03-01%20175142.png)
 
-### Specialized SCD41 Sensor Board
+### Passgenaues SCD41 Sensor Board
 
-Um die höchstmögliche Genauigkeit zu erzielen, wurde eine separate Platine speziell für den **Sensirion SCD41** entwickelt. Im Gegensatz zu generischen Breakout-Boards implementiert dieses Design die Referenzspezifikationen des Herstellers zur Entkopplung:
+Um die höchstmögliche Genauigkeit zu erzielen, wurde eine separate Platine speziell für den **Sensirion SCD41** entwickelt. Im Gegensatz zu generischen Breakout-Boards implementiert dieses Design die Referenzspezifikationen des Herstellers zur Entkopplung und hat genau die Dimensionen, so dass der Sensor an der exakten Zuluftöffnung positioniert werden kann:
 
 - **Thermische Entkopplung**: Ein spezieller Frässchlitz und kupferfreie Zonen "entkoppeln" den Sensor thermisch von der Wärmekapazität der Hauptplatine.
 - **Präzisionsfilterung**: Korrekte Entkopplungskondensatoren sind in unmittelbarer Nähe des Sensors platziert.
@@ -505,9 +538,11 @@ esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
 
 1. **Firmware vorbereiten**: Kompiliere die Firmware mit deinen eigenen WLAN-Zugangsdaten (via `secrets.yaml`).
 2. **Initiales Flashen**: Flashe den ESP (XIAO) initial per USB mit der VentoSync Firmware über das ESPHome Dashboard oder per ESPHome CLI-Befehl:
+
    ```bash
    esphome run ventosync.yaml --device /dev/ttyACM0
    ```
+
 3. **Hardware-Einbau**:
    > [!CAUTION]
    > **LEBENSGEFAHR:** Der Einbau des PCB und ESP in das VentoMaxx Lüftungsgerät erfordert Arbeiten an der **230V Netzspannung**. Dieser Schritt darf **ausnahmslos nur von einer Elektrofachkraft** durchgeführt werden.
@@ -1082,8 +1117,6 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 
 - Dieses Projekt arbeitet im 12V Bereich, was generell sicher ist.
 - Das Netzteil (230V zu 12V) muss fachgerecht installiert werden.
-
-
 
 ## Suchbegriffe
 
