@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.21] - 2026-06-09
+
+### Changed
+
+- **Dashboard UI Overhaul** (`dashboard_html.h`): Complete redesign of the WRG web dashboard with premium dark mode aesthetics and modern UX patterns:
+  - **Typography**: Replaced system default font with Google Fonts *Inter* for a professional, modern appearance. Applied `font-variant-numeric: tabular-nums` for aligned numeric displays.
+  - **Color Palette**: Migrated from neutral dark gray (`#121212`/`#1e1e1e`) to a premium Slate-Blue palette (`#0f172a`/`#1e293b`) with a harmonious extended color system (`accent`, `danger`, `warning`, `success`, `muted`, `subtle`).
+  - **Label/Value Contrast**: Labels now use muted gray (`#64748b`) while values use high-contrast white (`#f1f5f9`, `font-weight: 600`). Unit suffixes (`°C`, `%`, `ppm`) rendered in smaller, subdued style to emphasize the actual data.
+  - **Semantic Status Badges**: All status indicators (IN/OUT, Luftrichtung, CO2 Bewertung, Filter Alarm, Radar Präsenz) now use colored pill badges with semi-transparent backgrounds instead of plain text. Fixed misleading green color for "Stillstand" — now rendered in neutral gray.
+  - **Layout Optimization**: Luftqualität and Wartung cards now stack vertically in the third column, eliminating the wasted space from the previous single-row Wartung card. Einstellungen section split into two logical groups: "Steuerung" and "Schwellwerte & Automatik".
+  - **Section Headers**: Each card now features an icon badge with color-coded background for visual orientation (⚙ blue, 📡 cyan, 🌿 emerald, 🔧 amber, 🎛 violet, 📶 sky, 📈 pink).
+  - **Micro-Animations**: Added `sensor-row:hover` highlight effect, card hover transitions (`border-color`, `box-shadow`), pulsing online indicators for connected ESP-NOW peers, input focus glow rings, and slider thumb glow effects.
+  - **Input Styling**: All number inputs and selects now have rounded corners (`border-radius: 8px`), subtle borders, and a cyan focus ring. Hover effects on setting groups improve discoverability.
+  - **Chart Improvements**: Reduced grid line opacity to ~15% for cleaner data visualization. Added semi-transparent area fill under RPM line. Improved tooltip styling with rounded corners and slate background. Applied Inter font to legends and axis labels.
+  - **ESP-NOW Peer Cards**: Improved layout with more spacing and clearer value hierarchy. Local device visually distinguished with "(lokal)" label. Remote peers show pulsing cyan dot when online.
+
 ## [0.9.20] - 2026-06-09
 
 ### Fixed
