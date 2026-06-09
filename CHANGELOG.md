@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.20] - 2026-06-09
+
+### Fixed
+
+- **Dashboard Mode Dropdown**: Fix Lueftermodus dropdown: option value Automatik -> Smart-Automatik to match actual ESPHome select entity option string in `dashboard_html.h`.
+
+### Changed
+
+- **Documentation Restructuring**: Restructured Setup & Installation sections in `Readme.md` / `Readme_de.md` with a unified hierarchical table of contents.
+- **NTC Sensor Attenuation**: Updated deprecated attenuation `11db` -> `12db` in `sensor_NTC.yaml`.
+
 ## [0.9.19] - 2026-05-21
 
 ### Fixed
