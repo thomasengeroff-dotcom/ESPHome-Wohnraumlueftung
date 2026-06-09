@@ -1,6 +1,6 @@
 {
   "name": "thomasengeroff.ventosync",
-  "version": "0.9.22",
+  "version": "0.9.23",
   "builds": [
     {
       "chipFamily": "ESP32-C6",

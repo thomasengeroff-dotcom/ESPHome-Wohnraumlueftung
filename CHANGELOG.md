@@ -5,15 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-
-## [0.9.22] - 2026-06-09
+## [0.9.23] - 2026-06-09
 
 ### Changed
 
 - **Dashboard Design Reverted**: Reverted the custom styling, premium slate-blue color palette, Inter font, custom badges, and chart styles back to the original dark-gray and cyan theme, while keeping all structural layout improvements (stacked air quality/maintenance cards and split settings groups).
 
-## [0.9.21] - 2026-06-09
+## [0.9.22] - 2026-06-09
 
 ### Changed
 
@@ -96,7 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Absolute Humidity Guard**: Expanded the Enthalpy-Balance section from a one-liner into a full explanation with a 3-scenario comparison table (normal summer day ☀️, rainy/muggy day 🌧️, winter night ❄️). Added a TIP note explaining why this sets VentoSync apart from conventional HRV units.
   - Updated CO2 priority statement to accurately reflect the new `max(co2, humidity)` logic.
 
-
 ## [0.9.16] - 2026-05-17
 
 ### Added
@@ -133,7 +130,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Pointer-Syntax (`->value()`, `->execute()`, `->publish_state()`) statt
   `id()`, da die Funktionen in einem C++-Header laufen, nicht in einem
   YAML-Lambda-Kontext.
-
 
 ## [0.9.14] - 2026-05-17
 
@@ -242,263 +238,330 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Implizite Peer-Cache-Logik dokumentiert**: Im Original-Code invalidierte `floor_id` und `room_id` den Peer-Cache, `device_id` jedoch nicht – ohne erkennbare Dokumentation dieser Designentscheidung. Das Verhalten ist nun im `update_config_id()`-Handler explizit kommentiert und über den `ConfigField`-Enum-Switch nachvollziehbar.
 
-
 ## [0.9.11] - 2026-05-16
 
 ### Added
+
 - **Advanced BME680 IAQ Engine**: Migration der BME680-Logik auf eine dedizierte C++ Engine (`BME680IAQEngine`). Diese bietet präzises Baseline-Tracking, einen Health-Watchdog und intelligentes Flash-Wear-Leveling zur Schonung des Speichers.
 - **Dynamische Thermokompensation**: Einführung eines temperaturabhängigen Offsets für den BME680 zur Kompensation der Eigenwärme basierend auf der Umgebungstemperatur.
 - **Heater-Profil Optimierung**: Umstellung des BME680 Heaters auf 300°C / 150ms gemäß Bosch-Empfehlungen für Wohnraum-IAQ-Anwendungen.
 
 ### Changed
+
 - **Code-Struktur**: Bereinigung der globalen Variablen und Korrektur der Include-Pfade in den Sensor-Paketen.
 - **Dokumentation**: Ausführliche Beschreibung der neuen BME680-Architektur in den Readme-Dateien (DE/EN) hinzugefügt.
 
 ## [0.9.10] - 2026-05-16
 
 ### Added
+
 - **Unified NTC Filter**: Implementierung der C++ Funktion `filter_ntc_combined()`, die Phase-Lock, thermische Wartezeit und saisonale Min/Max-Selektion in einer Pipeline vereint. Dies garantiert 100% Datenintegrität durch Ausschluss von Fehlmessungen während der falschen Luftrichtung.
 - **Robustness Features**: Erhöhung des NTC-Timeouts auf 120s (konfigurierbar via `ntc_timeout`), um "Unavailable"-Zustände in Home Assistant bei langen Lüftungszyklen zu verhindern.
 - **Median Fallback**: Einführung eines Median-basierten Fallbacks für NTC-Sensoren zur Auflösung von zirkulären Abhängigkeiten beim Systemstart.
 
 ### Changed
+
 - **Dokumentations-Parität**: Vollständige Synchronisierung der englischen und deutschen Readme-Dateien bezüglich der neuen Filter-Architektur und technischer Exzellenz-Optimierungen.
 - **Hardware-Abstraktion**: Umstellung auf `11db` ADC Attenuation (ESP-IDF v5+) und Optimierung der Sensor-Deklarationsreihenfolge im YAML.
 
 ## [0.9.9] - 2026-05-16
 
 ### Fixed
+
 - **Volumenstrom-Schätzung**: Korrektur der bisherigen linearen Heuristik (4,5 m³/h pro Stufe). Diese wurde durch eine präzise, nicht-lineare Lookup-Tabelle ersetzt, welche die 10 benutzerdefinierten Lüfterstufen auf die realen Herstellerdaten des Ventomaxx v-wrg-1 (17–43 m³/h) abbildet. Dies stellt die physikalische Korrektheit der berechneten Wattstunden (Wh) sicher.
 
 ### Added
+
 - **Technische Dokumentation (v0.9.9)**: Ergänzung der Readme-Dateien um wichtige technische Details: NVS-Flash-Schutz (8h-Speicherintervall), LED-Selbsttest beim Booten und die NTC-Fallback-Logik (NaN bei Sensorausfall).
 
 ### Changed
+
 - **Energie-Integration**: Verfeinerung der HRV-Integrator-Logik. Die Berechnung der zurückgewonnenen thermischen Energie nutzt nun die realen Volumenstromwerte der jeweiligen Lüfterstufe für ein exaktes energetisches Abbild.
 
 ## [0.9.8] - 2026-05-15
 
 ### Fixed
+
 - **WRG Effizienz Mapping**: Korrektur der Sensor-Zuweisung in `sensor_hrv_efficiency.yaml`. Die Zuluft-Temperatur (`t_supply`) wird nun korrekt vom ungefilterten Innensensor (`temp_abluft_raw`) bezogen, da der Haupt-Innensensor während der Zuluft-Phase thermisch stabilisiert ("eingefroren") bleibt. Dies behebt den Fehler, bei dem die Effizienz dauerhaft `0.0 %` anzeigte.
 - **Release-Workflow**: Die Sperrdatei `.version_bump_lock` wird nun vor jedem Build automatisch gelöscht, um sicherzustellen, dass die Versionsnummer bei manuellen Release-Aufrufen zuverlässig hochgezählt wird.
 
 ### Added
+
 - **Volumenstrom-Schätzung**: Implementierung einer heuristischen Volumenstrom-Berechnung (ca. 4,5 m³/h pro Lüfterstufe). Dies ermöglicht dem HRV-Integrator die Berechnung der tatsächlich zurückgewonnenen thermischen Energie in **Wattstunden (Wh)**.
 
 ## [0.9.4] - 2026-05-15
 
 ### Added
+
 - **Energiebasierte WRG-Effizienz**: Die Berechnung der Wärmerückgewinnung nutzt nun eine numerische Trapez-Integration über den gesamten Luftzyklus (gemäß DIN EN 13141-8). Dies löst das Problem mathematisch instabiler "Live"-Werte bei geringen Temperaturdifferenzen in der Übergangszeit und liefert ein echtes physikalisches Abbild der zurückgewonnenen Energie.
 
 ### Fixed
+
 - **NTC Sensor-Dokumentation**: Korrektur der vertauschten Sensor-Beschreibungen in den Readme-Dateien (Indoor/Outdoor Mapping) zur Vermeidung von Missverständnissen bei der Verkabelung.
 - **C++ Namespace Konflikt**: Behebung des Fehlers `ventosync was not declared in this scope` beim Firmware-Build. Die globale Instanziierung des HRV-Rechners über ESPHomes `globals` wurde auf ein natives und threadsicheres C++ Singleton-Pattern (`get_calculator()`) umgestellt.
 
 ## [0.9.1] - 2026-05-14
 
 ### Fixed
+
 - **UI Latenz & Synchronisation**: Behebung drastischer Verzögerungen bei der Aktualisierung von Template-Sensoren im Home Assistant Dashboard (z.B. "Lüfter Richtung" und "WRG Effizienz").
 - **Event-Driven Template Sensors**: Fehlende `update_interval` Angaben führten dazu, dass Template-Sensoren, die auf C++ Variablen (`globals`) basieren, auf den langsamen 60-Sekunden Standard-Polling-Zyklus von ESPHome zurückfielen. Entsprechende Sensoren erzwingen nun via `update_interval: 1s` oder `5s` sofortige HA-Statusupdates.
 - **WRG-Effizienz Schwebung**: Ein statisches 60-Sekunden-Intervall führte dazu, dass die Effizienz-Berechnung fast nie das korrekte 42-Sekunden-Zuluft-Fenster traf. Dies wurde in einen Event-gesteuerten Modus mit 5-Sekunden-Takt (`update_interval: 5s`) umgeschrieben. Die Effizienzkurve wird nun live und hochauflösend gerendert.
 
 ### Changed
+
 - **NTC Sensor Mapping**: Konsequenter Tausch der NTC-Rollen zur physischen Realität: `temp_abluft` repräsentiert die Referenz-Innentemperatur (gemessen während der Abluft-Phase), während `temp_zuluft` die Außentemperatur repräsentiert.
 - **Median-Filter Tuning**: Anpassung der Window-Send-Rate in `sensor_NTC.yaml` (`send_every: 3` -> `1`), um die trägen thermischen Messwerte mit der sehr kurzen 70-Sekunden Richtungsphase zu synchronisieren und das "Verschlucken" von gültigen Fenstern zu beenden.
 - **CO2 Bewertung**: Die Text-Klassifizierung ("Gut", "Schlecht") reagiert nun ohne 60-Sekunden Verzögerung latenzfrei auf Änderungen des darunterliegenden CO2-Wertes.
 
 ## [0.8.259] - 2026-05-13
+
 ### Fixed
+
 - **UI Responsiveness**: Resolved an issue where the "Lüfter Intensität" slider and "ESP-NOW Peerprüfung" switch in Home Assistant would take up to 60 seconds to update or revert to their previous state.
 - Added explicit `publish_state()` calls to the `set_action` and `turn_on/off_action` blocks for template entities configured with `optimistic: false`.
 
 ## [0.8.257] - 2026-05-08
 
 ### Added
+
 - **Automated Versioning**: Implemented a "Single Source of Truth" system where `esp32c6_common.yaml` dynamically pulls its version from `version.json` via YAML `!include`.
 
 ### Changed
+
 - **Refactored `version_bump.py`**: Simplified the build script by removing manual YAML mutation logic, now relying on ESPHome's native JSON parsing capabilities.
 - **Improved Maintainability**: Reduced the number of manual version update points from three to one (`version.json`).
 
 ## [0.8.256] - 2026-05-08
 
 ### Changed
+
 - **Project Structure Optimization**: Moved `ventosync_base.yaml` to `packages/base/` for a cleaner root directory and improved modularity.
 - **Path Resolution**: Updated all internal `!include` and `external_components` paths to ensure correct resolution from the new nested directory structure.
 
 ### Fixed
+
 - **Pre-compile Script Path**: Corrected root-relative path to `version_bump.py` in `esp32c6_common.yaml` after the move.
 
 ### Added
+
 - **Documentation Parity**: Updated `Readme.md`, `Readme_de.md`, and architectural reviews to reflect the new file locations and ensure consistent documentation.
 
 ## [0.8.255] - 2026-05-07
 
 ### Added
+
 - **ESP-NOW Staggering**: Added random jitter (up to 5s) to periodic heartbeat broadcasts to prevent RF collisions in multi-device environments.
 
 ### Changed
+
 - **Peer Reliability**: Increased peer stale timeout from 5 to 15 minutes (`PEER_TIMEOUT_MS = 900000`) to improve dashboard persistence during intermittent packet loss.
 - **Queue Optimization**: Doubled ESP-NOW receive queue size (`RX_QUEUE_MAX_DEPTH`) from 16 to 32 packets to handle concurrent bursts from multiple nodes.
 - **Sync Interval**: Reduced default `sync_interval_config` from 180 to 1 minute to ensure high-frequency status updates for the web dashboard.
 
 ### Fixed
+
 - **Dashboard Synchronization**: Improved heartbeat authority logic to ensure peers remain visible even if cycle synchronization is ignored by Slaves.
 
 ## [0.8.253] - 2026-05-07
+
 ### Changed
+
 - **NVS Verschleiß-Schutz**: Das Speicherintervall für die Filter-Betriebsstunden wurde von 30 Minuten auf 8 Stunden erhöht. Dies reduziert die Schreibzugriffe auf den Flash-Speicher drastisch (max. 3x pro Tag statt 48x).
 - **LED Self-Test**: Beim Start (Boot) werden die LEDs jetzt explizit auf 100% Helligkeit gezwungen, unabhängig von der Nutzereinstellung. Direkt nach dem 3-sekündigen Test stellt das System automatisch die vom Nutzer konfigurierte Helligkeit wieder her (`update_leds_logic` wurde um einen `force` Parameter erweitert, um den LED-Cache sicher zu überschreiben).
 - **Code Qualität**: Die verbliebenen deutschen Kommentare in `system_lifecycle.h` wurden ins Englische übersetzt, um einen einheitlichen und sauberen Quellcode zu gewährleisten.
 
 ## [0.8.252] - 2026-05-07
+
 ### Changed
+
 - **NTC Sensor Fallback**: Verbesserung der `filter_ntc_stable` und Wärmerückgewinnung-Logik. Nicht angeschlossene NTC-Sensoren (die ~87°C melden) werden nun frühzeitig herausgefiltert und als `NaN` (Unknown) deklariert.
 - **WRG-Effizienz Anzeige**: Die Berechnung der Wärmerückgewinnungs-Effizienz wird sofort abgebrochen (und liefert `NaN`), wenn relevante NTC-Sensoren fehlen. Dadurch zeigt das System saubere Sensor-Zustände in Home Assistant, anstatt ungültige Messwerte auszugeben.
 
 ## [0.8.251] - 2026-05-06
+
 ### Added
+
 - **OTA Dokumentation**: Ausführlicher Abschnitt in `Readme.md` und `Readme_de.md` zur Ersteinrichtung über das Captive Portal ("VentoSync Hotspot"), inklusive Passwort-Hinweis (`ventosync`) und Screenshots.
 - **WLAN-Stabilität**: Klärung des "Secret-Free" Prinzips in der Dokumentation, um Nutzer bei der Migration von lokalen zu GitHub-Releases zu unterstützen.
 
 ### Changed
+
 - **Update-Intervall**: Das Intervall für die Firmware-Überprüfung (`update_interval`) in `esp32c6_common.yaml` wurde von 10 Minuten auf 30 Minuten erhöht, um unnötigen Netzwerk-Traffic zu reduzieren.
 
 ## [0.8.250] - 2026-05-06
+
 ### Fixed
+
 - **WLAN Verbindungsabbruch nach OTA**: Ein Fehler in der CI-Pipeline (`build.yaml`) wurde behoben. Das `sed`-Kommando zum Entfernen lokaler Netzwerkdaten schnitt zu viel ab und machte die YAML-Struktur für `wifi:` ungültig. Dadurch verlor der ESP nach dem OTA-Update seine Netzwerkeinstellungen.
 - **Workflow Release Notes**: Der "unexpected EOF"-Absturz im GitHub-Actions-Workflow wurde behoben, indem die Changelog-Extraktion nun `release_notes.md` nutzt anstatt den Text als Bash-Variable zu übergeben (Escaping-Probleme mit Backticks gelöst).
 
 ### Changed
+
 - **SMB Deployment entfernt**: Der automatische Netzwerk-Kopiervorgang (`shutil.copy2`) auf Windows-SMB-Pfade (`\\192.168.178.45\...`) wurde aus `version_bump.py` entfernt, da er unter Linux/WSL zu Fehlern führte.
 - **OTA Update-Intervall**: Das OTA-Abfrage-Intervall in der `esp32c6_common.yaml` wurde auf `10min` (statt `15min`) verkürzt.
 
 ## [0.8.249] - 2026-05-05
+
 ### Fixed
+
 - **OTA-Update-Fehler behoben**: Die `http_request`-Komponente verwendet nun einen deutlich größeren Transmit-Puffer (`buffer_size_tx: 20248`). Dies behebt das Problem, dass OTA-Updates über GitHub-Releases (HTTPS/TLS) aufgrund von Puffer-Überläufen beim Handshake oder Redirect stillschweigend fehlschlugen.
 - **Update-Entität Stabilisierung**: Durch die Speicher-Optimierung wird die Update-Entität in Home Assistant nun zuverlässig aktualisiert, sobald ein neues Release auf GitHub verfügbar ist.
 
 ## [0.8.247] - 2026-05-05
+
 ### Changed
+
 - **OTA-Update-Optimierung**: Das Abfrage-Intervall der `http_request` Update-Plattform wurde auf **15 Minuten** optimiert. Dies beschleunigt die Benachrichtigung über neue Firmware-Releases in Home Assistant erheblich.
 - **Fehlerbehebung CI**: Der `IndentationError` im GitHub-Workflow wurde durch Umstellung auf eine einzeilige Python-Generierung behoben.
 - **Workflow-Vollendung**: Der automatisierte Release-Prozess (Changelog-Generierung & Git-Push) ist nun vollständig einsatzbereit.
 
-
 ## [0.8.234] - 2026-05-04
+
 ### Added
+
 - **Multi-Varianten CI Build**: GitHub Action baut nun alle 4 Firmware-Varianten (`full`, `nosensor`, `radar_only`, `bme680_only`) automatisch als Matrix. Bei GitHub Releases werden OTA-Binaries und `manifest.json` als Assets hochgeladen.
 - **WiFi Provisioning**: `captive_portal` und `improv_serial` hinzugefügt für die Ersteinrichtung neuer Geräte ohne serielle Verbindung.
 - **OTA ohne Secrets**: Neue `wifi_ota.yaml` für CI-Builds — der ESP nutzt NVS-gespeicherte WiFi-Credentials vom initialen Flash, keine Secrets im Repository nötig.
 
 ### Fixed
+
 - **Sanftanlauf (Slew-Rate) Intervall**: Das Aufrufintervall für `update_fan_logic()` wurde von 10s auf **1s** korrigiert. Das bisherige 10s-Intervall lag über der 5s-Recovery-Schwelle, wodurch jeder einzelne Tick die "Long pause detected"-Warnung auslöste und die Slew-Rate effektiv auf 1% pro Tick statt der vorgesehenen 10%/Sekunde reduziert wurde.
 
 ## [0.8.231] - 2026-05-03
+
 ### Changed
+
 - **Härtung der State-Machine**:
-    - **Stoßlüftung Sanftanlauf**: Implementierung von Sanftanlauf (Soft-Start) und Sanftstopp (Soft-Stop) für die Übergänge zwischen Pausen- und Aktivphasen in der Stoßlüftung zur Schonung der Lüftermotoren.
-    - **Sync-Stabilität**: Behebung eines potenziellen Überlaufs in der Zeit-Synchronisierungslogik (`sync_time`) durch Nutzung von 64-Bit-Arithmetik für die Offset-Berechnung.
-    - **Code-Bereinigung**: Entfernung von redundantem Code in der Zyklus-Synchronisierung (`set_cycle_duration`).
+  - **Stoßlüftung Sanftanlauf**: Implementierung von Sanftanlauf (Soft-Start) und Sanftstopp (Soft-Stop) für die Übergänge zwischen Pausen- und Aktivphasen in der Stoßlüftung zur Schonung der Lüftermotoren.
+  - **Sync-Stabilität**: Behebung eines potenziellen Überlaufs in der Zeit-Synchronisierungslogik (`sync_time`) durch Nutzung von 64-Bit-Arithmetik für die Offset-Berechnung.
+  - **Code-Bereinigung**: Entfernung von redundantem Code in der Zyklus-Synchronisierung (`set_cycle_duration`).
 
 ## [0.8.230] - 2026-05-03
+
 ### Changed
+
 - **Präzisierung der PID-Regelung**: Die Dokumentation wurde korrigiert, um klarzustellen, dass die PID-Regelung (CO2/Feuchte) die Lüfterstufe in 10 diskreten Schritten ansteuert, statt stufenlos. Betrifft `Readme.md`, `Readme_de.md` und den VentoMaxx-Vergleich.
-- **Härtung der Ventilation Group Komponente**: 
-    - **Window Guard**: Korrektur der Inkonsistenz zwischen Code und Dokumentation. Die Fenstersperre greift nach **5 Sekunden** (wie im Code implementiert), Logs und Kommentare wurden entsprechend angepasst.
-    - **Heartbeat-Intervall**: Das periodische Senden des Status (Heartbeat) berücksichtigt nun korrekt den via UI/YAML konfigurierbaren `sync_interval_ms` Wert, statt hartkodiert auf 60 Sekunden festzuliegen.
-    - **Timing-Konsistenz**: Optimierung der Paketverarbeitung (`on_packet_received`) und Paketerstellung (`build_packet`) durch Nutzung eines einheitlichen Zeitstempels (`now`) pro Funktionsaufruf zur Vermeidung minimaler Zeitdrifts.
-    - **Code-Qualität**: Refactoring der Peer-Verwaltung zur Vermeidung von Code-Duplizierung (DRY) durch Einführung eines zentralen Helpers für die Peer-Status-Aktualisierung.
+- **Härtung der Ventilation Group Komponente**:
+  - **Window Guard**: Korrektur der Inkonsistenz zwischen Code und Dokumentation. Die Fenstersperre greift nach **5 Sekunden** (wie im Code implementiert), Logs und Kommentare wurden entsprechend angepasst.
+  - **Heartbeat-Intervall**: Das periodische Senden des Status (Heartbeat) berücksichtigt nun korrekt den via UI/YAML konfigurierbaren `sync_interval_ms` Wert, statt hartkodiert auf 60 Sekunden festzuliegen.
+  - **Timing-Konsistenz**: Optimierung der Paketverarbeitung (`on_packet_received`) und Paketerstellung (`build_packet`) durch Nutzung eines einheitlichen Zeitstempels (`now`) pro Funktionsaufruf zur Vermeidung minimaler Zeitdrifts.
+  - **Code-Qualität**: Refactoring der Peer-Verwaltung zur Vermeidung von Code-Duplizierung (DRY) durch Einführung eines zentralen Helpers für die Peer-Status-Aktualisierung.
 
 ## [0.8.226] - 2026-04-28
+
 ### Added
+
 - **Kindersicherung (Child Protection Mode)**: Implementierung einer Sperrfunktion für die physische Bedienoberfläche zur Vermeidung ungewollter Interaktionen.
-    - **Home Assistant Integration**: Neue Entität `switch.kindersicherung` (Kategorie Konfiguration) zum raumweiten oder gerätespezifischen Sperren der Tasten.
-    - **Physischer Override**: Lokales Deaktivieren/Aktivieren direkt am Gerät durch Halten der **Modus**-Taste für 5 Sekunden möglich.
-    - **Visuelles Feedback**: 
-        - 3-faches Aufblinken aller LEDs bei blockiertem Tastendruck signalisiert aktive Sperre.
-        - 2-faches Aufblinken aller LEDs bestätigt die erfolgreiche Umschaltung via Tastenkombination.
-    - **HA-Priorität**: Änderungen über Home Assistant sind jederzeit möglich und werden nicht durch die Kindersicherung blockiert.
-    - **Persistenz**: Der Status der Sperre bleibt über Neustarts hinweg erhalten (NVS).
+  - **Home Assistant Integration**: Neue Entität `switch.kindersicherung` (Kategorie Konfiguration) zum raumweiten oder gerätespezifischen Sperren der Tasten.
+  - **Physischer Override**: Lokales Deaktivieren/Aktivieren direkt am Gerät durch Halten der **Modus**-Taste für 5 Sekunden möglich.
+  - **Visuelles Feedback**:
+    - 3-faches Aufblinken aller LEDs bei blockiertem Tastendruck signalisiert aktive Sperre.
+    - 2-faches Aufblinken aller LEDs bestätigt die erfolgreiche Umschaltung via Tastenkombination.
+  - **HA-Priorität**: Änderungen über Home Assistant sind jederzeit möglich und werden nicht durch die Kindersicherung blockiert.
+  - **Persistenz**: Der Status der Sperre bleibt über Neustarts hinweg erhalten (NVS).
 
 ## [0.8.210] - 2026-04-26
+
 ### Added
+
 - **Konfigurierbarer Urlaubsmodus**: Einführung neuer Home Assistant Entitäten zur individuellen Konfiguration des Urlaubsmodus.
-    - `select.urlaubsmodus_betriebsmodus`: Auswahl des Zielmodus (z.B. Stoßlüftung, Wärmerückgewinnung, Aus).
-    - `number.urlaubsmodus_intensitat`: Einstellung der Lüfterstufe (1-10) für die Dauer der Abwesenheit.
-    - Diese Einstellungen erlauben es, das Systemverhalten bei längerer Abwesenheit präzise an saisonale Anforderungen oder persönliche Vorlieben anzupassen.
+  - `select.urlaubsmodus_betriebsmodus`: Auswahl des Zielmodus (z.B. Stoßlüftung, Wärmerückgewinnung, Aus).
+  - `number.urlaubsmodus_intensitat`: Einstellung der Lüfterstufe (1-10) für die Dauer der Abwesenheit.
+  - Diese Einstellungen erlauben es, das Systemverhalten bei längerer Abwesenheit präzise an saisonale Anforderungen oder persönliche Vorlieben anzupassen.
 - **Rechtlicher Haftungsausschluss (Legal Disclaimer)**: Ergänzung der Dokumentation um einen Haftungsausschluss zur Klarstellung der Unabhängigkeit von der VentoMaxx GmbH und der Eigenverantwortung des Nutzers bei Installation und Betrieb.
 
 ### Changed
+
 - **Zentralisierung der Betriebsmodi (C++ Constants)**: Refactoring der Betriebsmodus-Namen in eine zentrale Konstante in `globals.h`.
-    - Alle C++ Komponenten und YAML-Lambdas greifen nun auf eine "Single Source of Truth" (`MODE_NAMES[]`) zu.
-    - Dies verbessert die Wartbarkeit signifikant, da Modus-Bezeichnungen nun an einer einzigen Stelle im Code gepflegt werden können.
+  - Alle C++ Komponenten und YAML-Lambdas greifen nun auf eine "Single Source of Truth" (`MODE_NAMES[]`) zu.
+  - Dies verbessert die Wartbarkeit signifikant, da Modus-Bezeichnungen nun an einer einzigen Stelle im Code gepflegt werden können.
 - **Dokumentations-Update**: Aktualisierung der `Readme.md` und `Readme_de.md` bezüglich der neuen Urlaubsmodus-Funktionen und der Roadmap.
 
 ## [0.8.200] - 2026-04-25
+
 ### Added
+
 - **Vollständiges Dokumentations-Audit (Doxygen)**: Umfassende Dokumentation des gesamten C++-Codes im `components/`-Verzeichnis. Alle Funktionen und Methoden in `.h` und `.cpp` Dateien verfügen nun über standardisierte Doxygen-Kommentare (`@brief`, `@param`, `@return`), um die Wartbarkeit und die Onboarding-Experience für neue Entwickler zu verbessern.
-    - Betrifft: `VentilationController`, `VentilationStateMachine`, `VentilationLogic`, `WrgDashboard` sowie alle Hilfs-Header in `components/helpers/`.
+  - Betrifft: `VentilationController`, `VentilationStateMachine`, `VentilationLogic`, `WrgDashboard` sowie alle Hilfs-Header in `components/helpers/`.
 - **Hybrid-Offline Dokumentation**: Aktualisierung der README-Dateien zur Klarstellung des Asset-Status. Das lokale Web-Dashboard nutzt für maximale Flexibilität Tailwind CSS und Chart.js über CDNs, während die gesamte physikalische Steuerungslogik (PID, Sensor-Fusion, ESP-NOW) weiterhin zu 100% lokal und offline-fähig auf dem ESP32-C6 läuft.
 
 ## [0.8.197] - 2026-04-24
+
 ### Fixed
+
 - **ESP-NOW Peer-Tracking & Dashboard-Anzeige**: Behebung eines Fehlers, bei dem Peers im Web-Dashboard überschrieben wurden oder gar nicht erschienen, wenn mehrere Geräte die gleiche `device_id` (z.B. Standardwert 1) verwendeten.
-    - Umstellung des Peer-Trackings im `VentilationController` von `device_id` auf die eindeutige **MAC-Adresse** (`src_mac`).
-    - Härtung der Loopback-Erkennung: Eigene Pakete werden nun zuverlässig anhand der lokalen MAC-Adresse gefiltert (`is_local_mac`), statt sich auf die konfigurierbare `device_id` zu verlassen.
-    - Dies stellt sicher, dass das Dashboard auch bei ID-Kollisionen alle physischen Geräte korrekt auflistet und die gegenseitige Steuerung (Mode/Fan-Sync) robust funktioniert.
+  - Umstellung des Peer-Trackings im `VentilationController` von `device_id` auf die eindeutige **MAC-Adresse** (`src_mac`).
+  - Härtung der Loopback-Erkennung: Eigene Pakete werden nun zuverlässig anhand der lokalen MAC-Adresse gefiltert (`is_local_mac`), statt sich auf die konfigurierbare `device_id` zu verlassen.
+  - Dies stellt sicher, dass das Dashboard auch bei ID-Kollisionen alle physischen Geräte korrekt auflistet und die gegenseitige Steuerung (Mode/Fan-Sync) robust funktioniert.
 
 ## [0.8.187] - 2026-04-23
+
 ### Added
+
 - **Tiered NVS Storage für Filter-Betriebsstunden**: Die Filter-Laufzeit wird nun im RAM minutengenau akkumuliert, aber nur alle 30 Minuten dauerhaft im Flash (NVS) gespeichert. Dies verhindert den Verschleiß des Flash-Speichers durch zu häufige Schreibvorgänge (NVS Wear-Out) bei gleichzeitiger Erhaltung der Persistenz über Reboots hinweg.
 
 ### Changed
+
 - **Nomenklatur der Luftdruck-Sensoren**: Umbenennung der BME680-Entitäten zur fachlichen Korrektheit. `bme680_pressure` wurde zu `bme680_pressure_absolute` (statischer Druck) und `bme680_sea_level_pressure` zu `bme680_pressure_relative` (auf Meereshöhe korrigiert).
 - **Härtung der Einstellungen-Synchronisation**: Optimierung der Zuweisungslogik für via ESP-NOW empfangene Parameter. Die Nutzung des ESPHome-eigenen Polling-Mechanismus garantiert nun, dass Konfigurationsänderungen (z.B. CO2-Grenzwerte) nur bei tatsächlicher Änderung in den Flash geschrieben werden, was die Systemstabilität erhöht.
 
 ### Fixed
+
 - **BME680 NVS Wear-Out (Kritisch)**: Behebung eines kritischen Architekturfehlers, bei dem der Gas-Basiswert-Zähler (`burn_in_counter`) jede Minute einen Flash-Schreibvorgang auslöste. Die neue RAM-basierte Zählung mit 30-minütigem Sync-Intervall reduziert die Schreiblast von 1440 auf max. 48 Vorgänge pro Tag.
 - **Filter-Persistenz**: Korrektur eines Fehlers, bei dem die akkumulierten Filter-Betriebsstunden nach einem Neustart des Geräts verloren gingen.
 - **Dokumentations-Update**: Aktualisierung der `Entities_Documentation.md` zur Erläuterung der "Tiered Storage" Strategie und der neuen Sensor-IDs.
 
 ## [0.8.177] - 2026-04-22
+
 ### Added
+
 - **Weitere Hardware-Variante**: `ventosync_bme680_only.yaml` für Geräte mit BME680, aber ohne SCD41/LD2450.
 - **Granulare Sensor-Mocks**: Aufteilung der Mocks in `mock_scd41.yaml` und `mock_bme680.yaml` für maximale Flexibilität bei der Sensor-Kombination.
 - **Automatisierte Bereitstellung**: Das `upload_all.sh` Skript wurde vollständig auf die neue modulare Struktur umgestellt und weist jedem Gerät (Büro, Flur, Wohnraum) automatisch die passende Firmware-Variante zu.
 
 ### Changed
+
 - **Verfeinerte Build-Flags**: Umstellung auf granulare Flags (`-DVENTOSYNC_NO_SCD41`, `-DVENTOSYNC_NO_BME680`, `-DVENTOSYNC_NO_RADAR`) für präzise C++ Typ-Steuerung in `globals.h`.
 - **Standardisierte Datei-Header**: Alle Haupt-Konfigurationsdateien verfügen nun über den vollständigen GPLv3-Standardheader.
 
 ## [0.8.173] - 2026-04-21
+
 ### Added
+
 - **Hardware-Varianten (Wrapper)**: Neue Konfigurationsdateien für unterschiedliche Hardware-Ausstattungen (`ventosync_nosensor.yaml` und `ventosync_radar_only.yaml`).
 - **Sensor-Mocks**: Neue Pakete `mock_climate.yaml` und `mock_radar.yaml` ermöglichen das Kompilieren der Firmware auch ohne SCD41, BME680 oder LD2450. Diese Mocks verhindern Spamming im Log und geben saubere `NAN`/`false`-Werte an die internen C++-Regler weiter.
 - **C++ Preprocessor Flags**: Einführung von `-DVENTOSYNC_NO_CLIMATE` und `-DVENTOSYNC_NO_RADAR` Build-Flags für saubere, konfliktfreie C++-Deklarationen in `globals.h`.
 
 ### Changed
+
 - **Base-Konfiguration (`packages/base/ventosync_base.yaml`)**: Die `ventosync.yaml` wurde vollständig entschlackt. Der gesamte gemeinsame Code (Hardware-Pins, UI, Netzwerk, Lüfter) liegt nun zentral in der Base-Datei. Die Hauptdateien fungieren nur noch als schlanke Wrapper.
 - **Home Assistant Entitäten aufgeräumt**: Fehlende Sensoren (via Mocks) und davon abgeleitete Berechnungen (z.B. "Effektiver CO2 Wert", "WRG Effizienz") werden durch `internal: true` dynamisch vor Home Assistant versteckt. Es gibt keine "Unknown"-Sensoren mehr im Dashboard.
 
 ## [0.8.171] - 2026-04-21
+
 ### Added
+
 - **Standardisierte Datei-Header**: Alle YAML-Konfigurationsdateien in `packages/` und die Hauptdatei `ventosync.yaml` verfügen nun über einen einheitlichen, professionellen Header inklusive GPLv3-Lizenz, Dateibeschreibung und Metadaten.
 - **Neue Sub-Pakete**: Einführung von `ui_lights.yaml`, `ui_diagnostics.yaml` und `homeassistant.yaml` zur besseren Kapselung von UI-Elementen und externen Integrationen.
 
 ### Changed
+
 - **Struktur-Refactoring (Modularisierung)**: Komplette Reorganisation des `packages/`-Verzeichnisses in eine hierarchische Unterordner-Struktur (`base/`, `actuators/`, `io/`, `ui/`, `integration/`, `sensors/`). Dies verbessert die Übersichtlichkeit und Wartbarkeit erheblich.
 - **Logik-Entkopplung**:
-    - Hochperformante Steuerungslogik (Lüfter-Skripte, Urlaubsmodus) wurde in `actuators/logic_automation.yaml` zentralisiert.
-    - Sicherheitshritische thermische Abschaltung wurde in ein eigenes Modul `actuators/logic_safety.yaml` ausgelagert.
-    - Externe Home Assistant Datenpunkte wurden konsequent in `integration/homeassistant.yaml` isoliert, um das System unabhängiger von der Zentrale betreiben zu können.
+  - Hochperformante Steuerungslogik (Lüfter-Skripte, Urlaubsmodus) wurde in `actuators/logic_automation.yaml` zentralisiert.
+  - Sicherheitshritische thermische Abschaltung wurde in ein eigenes Modul `actuators/logic_safety.yaml` ausgelagert.
+  - Externe Home Assistant Datenpunkte wurden konsequent in `integration/homeassistant.yaml` isoliert, um das System unabhängiger von der Zentrale betreiben zu können.
 - **Dokumentations-Update**: Die `packages/Readme.md` wurde vollständig überarbeitet und spiegelt nun die neue Verzeichnisstruktur und die funktionalen Zuständigkeiten der Module wider.
 
 ### Fixed
+
 - **ID-Konflikt gelöst**: Behebung eines Fehlers mit doppelt definierten IDs (`pid_humidity_output`), der durch die Extraktion der PID-Logik entstanden war.
 
 ## [0.8.169] - 2026-04-18
+
 ### Fixed
+
 - **Smart-Automatik Modus springt zurück zu Wärmerückgewinnung (BUGFIX)**
   Beim Wechsel in den Modus "Smart-Automatik" wurde die HA-Select-Entity sofort
   auf "Wärmerückgewinnung" zurückgesetzt. Ursache: String-Mismatch zwischen den
@@ -511,18 +574,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Session: die YAML-Optionen wurden damals aktualisiert, die C++-Strings nicht.
   
 - **Smart-Automatik Modus-Sync über ESP-NOW wird vom Slave ignoriert (BUGFIX)**
-  Ein Wechsel auf Smart-Automatik durch den Master wurde von den Slaves nicht übernommen, 
-  wenn diese bereits in "Wärmerückgewinnung" waren. Ursache: Beide Modi basieren auf 
+  Ein Wechsel auf Smart-Automatik durch den Master wurde von den Slaves nicht übernommen,
+  wenn diese bereits in "Wärmerückgewinnung" waren. Ursache: Beide Modi basieren auf
   dem gleichen Enum (`MODE_ECO_RECOVERY`). Die alte ESP-NOW Logik verglich nur dieses
   Enum und hielt den Sync für unnötig, wodurch der Wechsel ignoriert wurde.
-  Fix: Die Sync-Bedingung in `ventilation_group.h` prüft nun zusätzlich den via ESP-NOW 
+  Fix: Die Sync-Bedingung in `ventilation_group.h` prüft nun zusätzlich den via ESP-NOW
   übertragenen HA-Modus-Index (`pkt->current_mode_index`). `network_sync.h` übernimmt
   diesen Index 1:1, um das UI und das globale `auto_mode_active`-Flag präzise zu steuern.
 
 - **Lokale UI Auswahl von Smart-Automatik wird ignoriert (BUGFIX)**
   Die C++ Funktion `set_operating_mode_select` in `user_input.h` erwartete beim
-  Klick im Dashboard noch immer den String `"Automatik"`. Da das ESPHome-Select 
-  aber `"Smart-Automatik"` liefert, wurde die Eingabe mit einer Log-Warnung verworfen 
+  Klick im Dashboard noch immer den String `"Automatik"`. Da das ESPHome-Select
+  aber `"Smart-Automatik"` liefert, wurde die Eingabe mit einer Log-Warnung verworfen
   und der Modus fiel zurück.
   Fix: String auf `"Smart-Automatik"` aktualisiert.
 
@@ -537,13 +600,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   erneut angewendet werden.
 
 ## [0.8.163] - 2026-04-18
+
 ### Security / Stability
+
 - **K-2 — Stoßlüftungs-Konstanten mit Compile-Zeit-Verifikation abgesichert**
   `STOSS_ACTIVE_MS` und `STOSS_PAUSE_MS` verwendeten `UL`-Suffix statt portablem `u`. Da `unsigned long` auf 32-Bit-Plattformen (ESP32-C6 RISC-V) nur 32 Bit breit ist, wäre ein zukünftiger Wert >4,29 Milliarden still übergelaufen. Jetzt: `u`-Suffix + `static_assert` verifiziert die erwarteten Werte und den Gesamtzyklus zur Compile-Zeit.
 - **H-2 — `VentilationMode` Enum um expliziten `uint8_t` Underlying Type ergänzt**
   Der Enum ohne Typ-Angabe ließ dem Compiler freie Wahl (potenziell `int` = 4 Byte). Da `VentilationPacket::current_mode` als `uint8_t` serialisiert und über ESP-NOW übertragen wird, ist eine implizite Narrowing-Conversion die Folge. Mit `enum VentilationMode : uint8_t` ist die Paket-Kompatibilität nun vom Typ-System garantiert. `static_assert(sizeof(VentilationMode) == sizeof(uint8_t))` verifiziert dies zur Compile-Zeit.
 
 ### Changed
+
 - **H-1 — Parameternamen-Konflikt `now_ms` vs. `now` zwischen Header und Implementation behoben**
   `get_target_state()` und `get_remaining_duration()` verwendeten `now_ms` im Header aber `now` im .cpp — inkonsistent mit `get_cycle_pos(uint32_t now)`. Alle Deklarationen auf konsistentes `now` normalisiert.
 - **H-3 — Totes Feld `needs_update` aus `HardwareState` entfernt**
@@ -554,11 +620,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Explizite Warnung im Doxygen-Kommentar, dass die Enum-Werte nicht umbenannt werden dürfen, da sie über ESP-NOW serialisiert werden. Trailing-Comma für zukünftige Erweiterbarkeit.
 
 ### Not fixed (audited, no action required)
+
 - **K-1 — Default `cycle_duration_ms = 70000`**
   Der Default-Wert ist eine bewusste Engineering-Entscheidung: Das System startet in einem sicheren, bekannten Zustand. Das Boot-Race-Window (~100-2000ms mit dem Default statt dem konfigurierten Wert) ist folgenlos, da der Slew-Rate-Limiter den Motor ohnehin sanft hochfährt. Die K-4-Guards im .cpp (Division-by-Zero bei 0) fangen den Fall ab, falls jemand den Default auf 0 ändert.
 
 ## [0.8.162] - 2026-04-18
+
 ### Security / Stability
+
 - **K-1 — int64→int32 Cast-Overflow in `set_cycle_duration()` behoben (KRITISCH)**
   `time_offset_ms = (int32_t)target_offset` wurde ohne Bereichsprüfung ausgeführt. Wenn `target_offset` nach der Normalisierung außerhalb des int32_t-Bereichs lag, führte dies zu falschen Richtungswechsel-Zeitpunkten. Jetzt: `std::clamp` gegen `INT32_MAX` vor dem Cast.
 - **K-2 — Division-by-Zero und Ramp-Overlap in `get_target_state()` behoben (KRITISCH)**
@@ -569,17 +638,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `raw_pos % (int64_t)period` crashte wenn `cycle_duration_ms == 0` (period = 0 → Modulo durch Null). Guard `if (cycle_duration_ms == 0) return 0;` + Overflow-Prüfung für `period = cycle_duration_ms * 2` eingefügt.
 
 ### Changed
+
 - **H-2 — Zero-Guard für `sync_time()` eingefügt**
   `time_offset_ms %= (int32_t)period` ohne vorherige Prüfung auf `cycle_duration_ms == 0` crashte mit Division-by-Zero. Guard hinzugefügt, C-Style-Cast durch `static_cast` ersetzt.
 - **H-3 — Input-Validierung in `set_cycle_duration()` gehärtet**
   `ms == 0` Guard gegen ungültige Eingaben und Overflow-Guard für `ms * 2` eingefügt. `new_period` und `old_half` als `const` deklariert, Code-Reihenfolge optimiert.
 
 ### Not fixed (audited, no action required)
+
 - **H-1 — Future-Start-Time Guard in `update()`**
   Der vorgeschlagene Guard `if (ventilation_start_time <= now)` würde die korrekte `millis()`-Wraparound-Behandlung nach 49,7 Tagen brechen. Beispiel: `start_time = 4.294.000.000`, `now = 500.000` (5s nach Overflow) — der Guard würde den Timer fälschlicherweise zurücksetzen, obwohl `now - start_time` korrekt ~5s ergibt. uint32_t-Subtraktion ist inhärent überlaufsicher; der Finding erübrigt sich.
 
 ## [0.8.161] - 2026-04-18
+
 ### Security / Stability
+
 - **K-1 — Strict-Aliasing-Verletzung in `on_packet_received()` behoben (KRITISCH)**
   Der C-Style-Cast `(VentilationPacket *)data.data()` auf `uint8_t*`-Rohdaten ist nach C++17 [basic.lval]/11 Undefined Behavior. Mit `-O2` darf der Compiler annehmen, dass `uint8_t*` und `VentilationPacket*` niemals denselben Speicher adressieren und Lese-/Schreibzugriffe rund um den Cast neu ordnen — mit potenziell silenten Datenfehlern. Ersetzt durch `std::memcpy` auf eine Stack-lokale `VentilationPacket`-Instanz. Für trivially-copyable Typen ist dieser Copy bei `-O2` zero-cost (NRVO).
 - **K-3 — Direktes State-Mutation-Antipattern in `update_hardware()` behoben (KRITISCH)**
@@ -588,6 +661,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `std::vector<PeerState> peers` wuchs bei jedem unbekannten `device_id` unbegrenzt. Ohne Limit könnte ein Gerät mit wechselnden IDs (z.B. nach mehreren Firmware-Updates oder in Testszenarien) den Heap fragmentieren und einen OOM-Reset provozieren. Implementiert: LRU-Eviction — bei vollem Slot (>= 10) wird der am längsten inaktive Peer anhand von `last_seen_ms` ermittelt und entfernt, bevor der neue eingetragen wird.
 
 ### Changed
+
 - **H-1 — `on_packet_received()` Parameter auf `const`-Referenz umgestellt**
   `bool on_packet_received(std::vector<uint8_t> data)` erzeugte bei jedem eingehenden Paket eine unnötige Heap-Allokation und -Kopie. Geändert auf `const std::vector<uint8_t> &data` — zero-copy, kombiniert mit dem K-1-Fix (memcpy auf Stack-Objekt).
 - **H-2 — Doppelte Schrittnummerierung im Loop-Kommentar korrigiert**
@@ -602,21 +676,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `static const` für eine Compile-Time-Integer-Konstante erzeugt eine Variable mit Speicheradresse und Linker-Symbol. `static constexpr` ist die semantisch korrekte Wahl: kein Speicher, kein Linker-Symbol, kann in `static_assert` und Template-Parametern verwendet werden.
 
 ## [0.8.160] - 2026-04-18
+
 ### Fixed
+
 - **NVS-Verlust der Fenstersperre ("Fenstersperre ignorieren") behoben**
-  Der UI-Switch hat seinen Status nach System-Updates (OTA) oder Stromverlust regelmäßig vergessen, weil ESPHome Änderungen über Lambda-Zuweisungen nicht von selbst in den Flash-Speicher wegschreibt. 
+  Der UI-Switch hat seinen Status nach System-Updates (OTA) oder Stromverlust regelmäßig vergessen, weil ESPHome Änderungen über Lambda-Zuweisungen nicht von selbst in den Flash-Speicher wegschreibt.
+
 ### Refactored
+
 - **Nativer NVS Restore-Mode für UI Switches (Wohnraumlüftung)**
   Die überflüssige globale Variable (`ignore_window_guard_val`) wurde zur Speichereffizienz komplett gestrichen. Der Switch nutzt jetzt seinen nativen `restore_mode` via `optimistic: true` Evaluierung und synchronisiert diesen beim Boot-Vorgang naturgemäß in den C++ Core-Controller (Priorität `-10.0`).
 
 ## [0.8.156] - 2026-04-18
+
 ### Security / Stability
+
 - **K-1 — UI Slider Overflow Limits (KRITISCH)**
   Ein fehlerhafter Float-Rundungsguard für die manuelle Timer- bzw. Sync-Intervall Steuerung in der UI wurde korrigiert, um eine uint32_t Multiplikationskorruption zu vermeiden. Die Werte kappen jetzt verlässlich Hardware-Sicherheitsgrenzen zwischen 1m und 1440m um physikalisch kritische Auslastungen zu unterbinden.
 - **K-2, H-3 — Absolute Timestamps aus Netzwerk-Sync entfernt (KRITISCH)**
   Die Race-Condition durch Überlaufe beim Sync-Timeout (49-Tage ESP32 `millis()` Overflow Limit) wurde restrukturiert und auf Delta-Berechnungen umgebaut. Dies verhindert den "Brainfreeze" des Master-Syncs, bei dem ein ESP nach rund 49 Tagen Laufzeit nie wieder die Steuerung von anderen Peers übernimmt.
 
 ### Changed
+
 - **H-1 — Slider Stufen Rundung korrigiert**
   Vermeidung von Off-By-One Level Truncations durch direkte Float-auf-Integer Casts bei Touch-Device Slidern.
 - **H-2 — Modus Array-Crash Loop korrigiert**
@@ -627,7 +708,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Whitespaces via Automatisierungs-Systeme und Templates konnten API-Steuerbefehle korrumpieren, dies wird nun trim-normalisiert.
 
 ## [0.8.155] - 2026-04-18
+
 ### Security / Stability
+
 - **K-1 — Durchlüften Timer Overflow behoben (KRITISCH)**
   Ein reiner Float-Overflow-Bug in der Dauerberechnung wurde geschlossen. Der `vent_timer` (Float) wird nun vor der Konvertierung in Millisekunden (uint32_t) strikt geclampt, um Implementation-Defined Behavior und unvorhersehbare Auto-Fallback Dauern bei NVS-Fehlern zu vermeiden.
 - **K-2 — Sicherung der ESPHome State-Konsistenz (KRITISCH)**
@@ -636,6 +719,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Ein korrupter Parameterwert für den `current_mode_index` konnte Systemzustände aus dem Tritt bringen. Harte Bounds-Checks am Eintritt der Orchestration fangen invalide Enums ab und forcieren "Wärmerückgewinnung" (Modus 1) als sicheren Standard.
 
 ### Changed
+
 - **H-1 — Filter-Betriebsstunden: Langzeit-Rundung behoben**
   Das direkte Akkumulieren von asynchron tickenden Millisekunden in einer Float-Repräsentation führte systembedingt nach ~40 Tagen zu einem heimlichen Einfrieren des Filter-Trackers durch Limitierungen der 23-Bit Gleitkomma-Genauigkeit. Eine separierte Integer-Engine bereinigt das.
 - **H-2 — NVS Cast-Safeguards**
@@ -646,24 +730,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Poka-Yoke-Überprüfungen im Startup der visuellen LEDs deaktivieren den "Knight-Rider" Bootsequence Mode nicht mehr komplett, sobald eine singuläre Indicator-LED einen defekten Bus meldet.
 
 ## [0.8.154] - 2026-04-18
+
 ### Security / Stability
+
 - **K-1 — Sanftanlauf-Limiter Bootstrap behoben (KRITISCH)**
   Die Initialisierung des Variablen `current_smoothed_speed` beim ersten Aufruf wurde auf `0.0` korrigiert. Damit entfällt ein vorher existierender, ungebremster 100%-Anlauf des Motors bei Systemstart. Der Slew-Rate-Limiter erzwingt nun konsistent einen Material-schonenden Hochlauf aus dem Stillstand.
 - **K-2 — Sicherung der internen PWM State Updates (KRITISCH)**
-  Die unsaubere Kapselung der PWM-Wertverfolgung für die virtuellen RPM-Statistiken ist behoben. Ein fehlender PWM-Treiber (z.B. im Software-Testbetrieb) friert nicht mehr versehentlich die `last_fan_pwm_level` für abhängige Routinen wie `calculate_virtual_fan_rpm()` ein. 
+  Die unsaubere Kapselung der PWM-Wertverfolgung für die virtuellen RPM-Statistiken ist behoben. Ein fehlender PWM-Treiber (z.B. im Software-Testbetrieb) friert nicht mehr versehentlich die `last_fan_pwm_level` für abhängige Routinen wie `calculate_virtual_fan_rpm()` ein.
 - **K-3 — Freeze-Recovery nach Watchdog oder OTA-Updates**
   Wenn das Betriebssystem außergewöhnlich lange Pausen (>5s) einlegen musste (z.B. Firmware Update Download), versuchte der Slew-Rate Limiter anschließend den Motor sprunghaft in Position zu bringen. Ein neuer 5000ms Trigger resetet nun sanft den Puffer auf halbe Fahrtrichtung, um Mechanik-Sprünge zu verhindern.
 - **H-1 — Heimliche Clamp-Verletzungen der Präsenz-Kompensation**
   Wenn das Radar (+2 Stufen) den Basiswert (Stufe 9) ins physikalisch unmögliche verschob, schlug blind der Limit-Clamp auf Stufe 10 an und der Nutzer sah keine Aktion. Das Ranging ist nun gefixt und im Log nachvollziehbar dokumentiert.
 
 ### Changed
+
 - **H-3, H-4 — Richtungszuweisungen & History Redundanz**
   Der Target-Speed Logger erhält die Windrichtung nun synchron aus der State-Machine Arrays und nicht mehr aus der langsameren UI-Switch-Repräsentation (`fan_direction->state`). Redundante Pufferlöschoperationen entfallen, da sie von der Klimakontrolle (`filter_ntc_stable`) abgefangen werden, wie es konzeptionell gedacht war.
 - **M-1, M-2, M-3 — Type Safety & Log-Polishing**
   Fehlende Bounds-Checks bei Floats auf Float-Ramping Arrays (0-99 iterations) wurden geschlossen (`std::clamp`) und ein Bug im State-Logger ("Ramping complete" wurde asynchron geworfen) bereinigt.
 
 ## [0.8.152] - 2026-04-17
+
 ### Security / Stability
+
 - **K-1 — WRG-Effizienz Ausgabe-Validierung (KRITISCH)**
   Ein fehlender Clamp in der Effizienzberechnung (`calculate_heat_recovery_efficiency`) konnte potenziell Werte jenseits von 1.0 (z.B. >100%) oder mathematische Fehler (NaN/Inf) bei Gleichheit der Temperaturen direkt an Home Assistant melden. Eingefügte Plausibilitätskorridore ([0.0, 1.1]) und ein harter Clamp auf `1.0` garantieren sichere Anzeige-Metriken.
 - **K-2 — NTC-Filter: Sliding-Window Invalidierung (KRITISCH)**
@@ -672,6 +761,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Der von außen übergebene `sensor_idx` für die History greift nun nicht mehr blind auf das Array zu, sondern wird vorher strikt mittels Bounds-Check auf das Sensor-Limit `(0, 1)` geprüft.
 
 ### Changed
+
 - **H-2 — WRG-Effizienz: Boot-Safety Guard**
   Die Heuristik zum Messen der Effizienz ("erst 30s nach Flip") triggerte versehentlich sofort nach dem ESP-Kaltstart, weil `last_direction_change_time = 0` falsch evaluiert wurde. Ein dediziertes 60s Boot-Flag sorgt jetzt dafür, dass während der Anlaufphase keine instabilen Messungen durchrutschen.
 - **H-3 — NTC-Filter: Safety-Clamp bei kurzen Zyklen gefixt**
@@ -680,7 +770,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Der ungenutzte Wrapper `get_co2_classification()` validiert Werte vor der Weitergabe nun gegen `NaN`, tieferliegendes Negative und astronomische Werte (über `10000 ppm`), um komische Strings in Home Assistant abzufangen.
 
 ## [0.8.151] - 2026-04-17
+
 ### Security / Stability
+
 - **K-1 — Division-by-Zero in Hysterese-Berechnung behoben (KRITISCH)**
   Ein Fehler in der Hysterese-Kalkulation des Automatikmodus konnte potenziell Inf/NaN Werte provozieren, wenn `current_level` außerhalb der Bandbreite zwischen `min_l` und `max_l` lag. Es wurde ein defensiver `std::clamp` implementiert, um den Wert vorher zu limitieren und Endlos-Ramping zu unterbinden.
 - **K-2 — Numerische Instabilität bei absoluter Feuchtekalkulation behoben (KRITISCH)**
@@ -691,17 +783,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Beim Kreuzabgleichen der Injektions- und Extraktionskanäle kam es im `Ventilation`-Modus zu falsch zugeordneten Sensoren (`local_in`/`local_out`), wodurch das System temporär blind für Innenwerte werden konnte. Der Sensor-Mapping-Prozess nutzt nun stabile Fallbacks und logische Symmetrie durch das `read_sensor()` Lambda.
 
 ### Changed
+
 - **H-1, K-3 — Klarstellung Master Peer Authority Logiken**
   Dokumentations-Refactoring zur Klärung, weshalb der Master im Auto Mode über die lokale `v->peers` Variable iteriert (Staleness <= PEER_TIMEOUT_MS) und Begradigung der fehlerhaften Schrittnummerierungen in der Automode-Evaluation.
 
 ## [0.8.149] - 2026-04-17
+
 ### Security / Stability
+
 - **K-1 — Null-Pointer-Dereferenzierungen in LED-Steuerung (KRITISCH)**
   Die ungeschützten Pointer-Aufrufe in `led_feedback.h` (`status_led_...->turn_off()`) wurden durch die neuen `led_guard`-Helferfunktionen abgelöst. Ein fehlender Eintrag im YAML crasht nun nicht mehr den ESP32, da jeder Zugriff sicher via `if (led != nullptr)` geschützt ist. Fehlen essenzielle Zeiger wie der der Power-LED, führt dies nun zu einem ausfallsicheren Early-Exit (M-3).
 - **K-2 — Variables Shadowing in Master-LED behoben**
   Eine gefährliche Re-Deklaration von `max_b` im inneren Scope der Master-Funktion logisch korrigiert, um asynchrones Helligkeits-Clipping künftig auszuschließen.
 
 ### Changed
+
 - **H-1, H-2 — Stabileres State-Tracking & Sentinel Boot-Flags**
   Static Initializer wurden durch dedizierte Bool-Flags (`first_call`, `initialized`) ersetzt. Dies stoppt False-Positive WLAN-Fehler während der Boot-Phase auf dem Master und erzwingt garantiert ein sicheres erstes Initial-Rendering aller Status-LEDs aus jedem beliebigen Boot-Zustand.
 - **H-3, M-2 — Refactoring zu Lookup-Table ("Fill Bar") + I2C-Overhead halbiert**
@@ -711,7 +807,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Die Heuristik zum Triggern des Master-Peer-Fehlers (2x Blinken) wurde geschärft. Es wird nicht mehr ein abgeleiteter Demand geprüft, sondern direkt die Timestamps der einzelnen verbuchten Peers auslesbar gemacht.
 
 ## [0.8.147] - 2026-04-17
+
 ### Security / Stability
+
 - **K-1 — Thread-Safety: ACK-Callback greift nicht mehr direkt auf `peer_cache` zu (KRITISCH)**
   Die WiFi-Task-Send-Callbacks von `send_sync_to_all_peers()` mutierten `peer_cache` direkt aus dem WiFi-Task-Kontext — ein Data Race, der auf dem Single-Core ESP32-C6 via Task-Preemption zu Heap-Korruption und Watchdog-Resets führen kann. Die Callbacks schreiben nun ausschließlich ein `PeerEvent` (MAC + Ergebnis) in eine neue, Mutex-geschützte `peer_event_queue`. Die Mutation von `peer_cache` (`fail_count++`, `remove_stale_peer()`, usw.) erfolgt sicher im Main-Loop-Kontext durch die neue Funktion `process_peer_events()`.
   - Neue Typen in `globals.h`: `PeerEvent` (Struct mit MAC-Array + `Type::SEND_OK`/`SEND_FAIL`), `peer_event_queue` (`std::queue<PeerEvent>`), `peer_event_mutex` (`std::mutex`).
@@ -726,6 +824,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Einziger Cast-Punkt: `std::memcpy(&pkt, data.data(), sizeof(pkt))` — formal Strict-Aliasing-sicher (im Gegensatz zu `reinterpret_cast`). Alle Checks (Magic, Version, Groesse, Wertebereich) haben nun eigene `ESP_LOGW`-Ausgaben fuer bessere Diagnosierbarkeit.
 
 ### Changed
+
 - **H-1 — `register_peer_dynamic()`: `peer_cache` als einzige Source of Truth**
   Direkter Append auf `espnow_peers->value()` entfernt. Die NVS-Repraesentation wird nun ausschliesslich ueber `rebuild_peers_string()` abgeleitet — Divergenz zwischen binaeren Cache und persistiertem String strukturell unmoglich.
 
@@ -739,105 +838,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Frueherer Kommentar "benign race" ohne Begruendung. Ersetzt durch akkurate Erklaerung: 32-bit-aligned read ist natuerlich atomar auf RISC-V; der echte Schutz gegen Korruption liegt im `lock_guard` darunter.
 
 ### Not fixed (audited, no action required)
+
 - **K-3**: `handle_espnow_receive()` Deduplication-Statics — nur aus einem Task aufgerufen, kein echter Race.
 - **K-4**: Buffer-Overread in `validate_packet()` — Cast erfolgte erst nach dem strikten Size-Check. Unabhaengig durch N-2 aufgeraeumt.
 - **H-5**: Null-Checks in `handle_state_sync()` — korrekt durch implizite `if (ptr)` gesichert.
 - **N-1**: Integer Overflow in Timer-Berechnung — `uint16_t` wird durch C++ Integral Promotion zu `int` (32-bit) hochgestuft; `1440 x 60 x 1000 = 86.400.000 << INT32_MAX`.
 
 ## [0.8.135] - 2026-04-15
+
 ### Added
+
 - **Globaler Urlaubsmodus (Vacation Mode)**: Einführung eines hausweiten Energiesparmodus, der über einen Home Assistant Helfer (`input_boolean.ventosync_vacation_mode`) gesteuert wird.
   - **Automatisches Save/Restore**: Das System speichert beim Aktivieren den aktuellen Modus und die Intensität und stellt diese beim Deaktivieren nahtlos wieder her.
   - **Energiespar-Logik**: Automatische Umstellung aller Geräte auf „Stoßlüftung“ (Stufe 1) während der Abwesenheit.
   - **Detaillierte Dokumentation**: Neue Schritt-für-Schritt-Anleitungen (`documentation/Vacation-Mode-HA-Setup-DE.md`) für die Einrichtung des Helfers in Home Assistant.
 
 ## [0.8.134] - 2026-04-14
+
 ### Changed
+
 - **Smart-Automatik Rebranding**: Projektweite Umstellung des primären Automatik-Modus von „Standard Automatic“ auf **„Smart automatic“** (Englisch) bzw. „Smart-Automatik“ (Deutsch) in Dokumentation, UI und Home Assistant Entitäten.
 - **UI & Entitäten-Update**: Umbenennung der Steuerungs-Entitäten in Home Assistant für ein einheitliches Markenbild und bessere Benutzerführung.
 - **Dokumentations-Refining**: Aktualisierung der README mit korrekter Hersteller-Nennung (**Bosch**) für den BME680-Sensor und Präzisierung der Automatik-Beschreibungen.
 
 ## [0.8.133] - 2026-04-12
+
 ### Added
+
 - **"Fenstersperre ignorieren" Bypass**: Einführung eines gerätespezifischen Overrides, um die raumweite Fenstersperre für einzelne Einheiten zu deaktivieren. Inklusive NVS-Persistenz.
 - **Detaillierte Logik-Dokumentation**: Neues Dokument `documentation/Automatic-Mode-Logic.md` zur präzisen Beschreibung der Entscheidungsmatrix und PID-Steuerung des Automatik-Modus.
 - **Erweiterte Roadmap**: Detaillierung fortgeschrittener mmwave-Radar-Strategien (Silent Sleep, Personenzählung, Abwesenheits-Absenkung).
 
 ### Changed
+
 - **Globales Rebranding**: Projektweite Umstellung des Namens von „WRG Wohnraumlüftung“ auf **„VentoSync HRV“** in allen Headers, Log-Ausgaben und Beschreibungen.
 - **Standardisierte Datei-Header**: Alle YAML- und C++-Dateien erhielten einen einheitlichen Header mit Lizenz- (GPL v3), Autor- und Versionsinformationen.
 - **LED-Feedback Optimierung**: Das "Window Guard" Blinkmuster wird nun unterdrückt, wenn der lokale Bypass aktiv ist. Die Grundhelligkeit der Master-LED bei aktiven Effekten wurde auf 30% reduziert, um Blendung bei Nacht zu vermeiden.
 
 ## [0.8.131] - 2026-04-11
+
 ### Added
+
 - **Status-Entität für Fenstersperre**: Neuer Binär-Sensor in Home Assistant (`binary_sensor.fenstersperre_aktiv`), der den gefilterten Zustand der Sperre anzeigt.
 
 ### Changed
+
 - **Fenstersperre Aktivierungs-Verzögerung**: Die Sperre greift nun erst nach **10 Sekunden** durchgehender Fenster-Öffnung, um kurzes Lüften/Nachschauen abzufedern.
 - **LED-Feedback Timeout**: Das Pulsieren der Master-LED ist nun auf **5 Minuten** begrenzt. Bei dauerhaft offenem Fenster kehrt die LED in den Normalzustand zurück, während der Lüfter zum Schutz vor Wärmeverlust weiterhin gestoppt bleibt.
 - **Dokumentations-Refactoring**: Die detaillierte Anleitung zur Home Assistant Konfiguration wurde in separate Dokumentationsdateien ausgelagert, um die Übersichtlichkeit der READMEs zu erhöhen.
 
 ### Fixed
+
 - **Fenstersperre (Window Guard) Motor-Stopp**: Korrektur der Motorsteuerung, die den "AUS"-Befehl der Fenstersperre im Hardware-Loop ignorierte. Der Lüfter bremst nun bei geöffnetem Fenster wie vorgesehen sanft bis zum Stillstand ab.
 
 ## [0.8.128] - 2026-04-11
+
 ### Added
+
 - **Fenstersperre (Window Guard)**: Implementierung einer raumübergreifenden Schutzfunktion. Wenn ein Fenster im Raum geöffnet wird (erkannt über einen Home Assistant Gruppen-Sensor), pausieren alle VentoSync-Geräte im Raum sofort ihre Lüfter.
 - **Smart-Resume Logik**: Das System behält seinen aktuellen Modus (z. B. Automatik) bei und nimmt den Betrieb nahtlos wieder auf, sobald alle Fenster geschlossen sind.
 - **Visuelles Feedback für Fenstersperre**: Die Master-LED pulsiert in einem 1s/2s Rhythmus, um anzuzeigen, dass das System aufgrund eines offenen Fensters pausiert.
 - **Konfigurierbare Sensor-ID**: Über die YAML-Substitution `window_sensor_id` lässt sich die HA-Entity pro Raum flexibel zuweisen (Standard: `binary_sensor.ventosync_window_lock_room_${room_id}`).
 
 ### Changed
+
 - **Architektur-Härtung (Dependency Injection)**: Umstellung der Sensor-Integration in der `VentilationController`-Komponente auf Dependency Injection. Dies löst Linker-Konflikte und verbessert die Stabilität bei der Kompilierung komplexer Raum-Konfigurationen.
 
 ## [0.8.121] - 2026-04-11
+
 ### Fixed
+
 - **Mesh-Stabilität (Stale Peer Fix)**: Korrektur eines Race-Conditions in der Peer-Verwaltung. Durch das erneute Abrufen von `millis()` vor dem Bereinigungs-Loop und zusätzliche Plausibilitätsprüfungen (`now >= last_seen_ms`) wird verhindert, dass Peers fälschlicherweise unmittelbar nach Empfang aufgrund eines `uint32_t` Underflows gelöscht werden.
 - **Netzwerk-Synchronisierung der PID-Sollwerte**: Änderungen an den CO2- und Feuchte-Grenzwerten werden nun sofort an die lokalen PID-Controller auf allen Zielgeräten im Raum übertragen. Zuvor wurden nur die UI-Slider aktualisiert, während die Regellogik auf alten Werten verharrte.
 - **Boot-Initialisierung der PID-Regler**: Die beim Systemstart aus dem NVS wiederhergestellten Grenzwerte werden nun explizit als Sollwerte (Setpoint) an die PID-Controller übergeben.
 
 ## [0.8.120] - 2026-04-10
+
 ### Added
+
 - **Saisonale Sperre für Sommerkühlung**: Integration der Home Assistant Entität `binary_sensor.sommerbetrieb`. Die Sommerkühlung (Bypass) aktiviert sich nun nur noch, wenn HA die warme Jahreszeit bestätigt UND die Außentemperatur über 18°C liegt. Dies verhindert zuverlässig das Einblasen von Kaltluft im Winter.
 - **Wissenschaftlich korrekte Entfeuchtung (Absolute Feuchte)**: Implementierung der Magnus-Formel zur Berechnung der absoluten Luftfeuchtigkeit (g/m³). Der Feuchte-PID berücksichtigt nun, ob die Außenluft absolut trockener ist als die Innenluft, anstatt nur die relativen Werte zu vergleichen.
 - **Konfigurierbare Kühlschwelle**: Die Innentemperatur-Schwelle für die Sommerkühlung (zuvor hartkodiert 22°C) ist nun über die neue HA-Entität "Automatik: Sommerkühlung Schwelle" (18-30°C) einstellbar.
 - **Sensorbewertung-Timeout (Staleness)**: Der `effective_co2` Sensor veröffentlicht nun nach 5 Minuten ohne gültige Rohdaten (SCD41/BME680 beide NaN) einen `NaN` Wert, um den PID-Regler sicher zu deaktivieren und den letzten Zustand zu halten.
 
 ### Changed
+
 - **PID-Regler Wartung**: Automatischer Reset der Integral-Speicher (I-Anteil) beim Umschalten zwischen CO2- und Feuchte-Priorität sowie beim Wechsel von Manuell zu Automatik. Dies verhindert "Überschwinger" (Integral Windup) nach langen Standzeiten.
 - **Boot-Modus Glitch-Fix**: Korrektur der Rampen-Initialisierung beim Systemstart. `last_committed_mode` startet nun im Smart-Automatik-Zustand (`MODE_ECO_RECOVERY`), was den ersten Rampen-Schritt sauber auf 1 begrenzt.
 
 ### Removed
+
 - **Legacy Dead-Code**: Vollständige Entfernung der veralteten `get_co2_fan_level()` Funktion (Berechnung der diskreten Stufen) zugunsten der stufenlosen PID-Regelung. Alle Unit-Tests wurden entsprechend migriert.
 
 ## [0.8.115] - 2026-04-09
+
 ### Added
+
 - **Detailliertes Debug-Logging für WRG-Effizienz**: Implementierung von `ESP_LOGD` Statements in `ventilation_logic.cpp` und `climate.h`, um die Berechnung der Wärmerückgewinnung (NaN-Handling, ΔT Schwellenwerte, Stabilisierungsphasen) im Betrieb präzise zu überwachen.
 - **Unit-Test Kompatibilität**: Logging-Erweiterungen in der C++ Logik wurden mit `#ifdef ESPHOME` Makros abgesichert, um die Testbarkeit in Nicht-ESPHome Umgebungen (Unit-Tests) beizubehalten.
 
 ### Changed
+
 - **Dashboard-Abstraktion (Sensor-Fallback)**: Umstellung der internen API und des Web-Dashboards auf generische Identifikatoren (z.B. `room_temperature` statt `scd41_temperature`). Dies sorgt für eine transparente Darstellung, egal ob die Daten vom SCD41 oder dem BME680-Fallback kommen.
 - **Modulare Optimierung der Custom Components**: Umfassendes Refactoring der `__init__.py` Generatoren für `ventilation_group`, `ventilation_logic` und `wrg_dashboard`.
-    - Bereinigung ungenutzter Imports.
-    - Verwendung spezifischer Datentypen (`uint8_t`) für IDs zur Platzeinsparung und Validierung.
-    - Automatisierung der Header-Includes zur Reduzierung von manuellem YAML-Aufwand.
+  - Bereinigung ungenutzter Imports.
+  - Verwendung spezifischer Datentypen (`uint8_t`) für IDs zur Platzeinsparung und Validierung.
+  - Automatisierung der Header-Includes zur Reduzierung von manuellem YAML-Aufwand.
 - **Stabilitäts-Fixes**: Korrektur der `http_request` Konfiguration in der Basis-Firmware zur Sicherstellung der Firmware-Update-Funktionalität.
 - **Dokumentations-Update (README)**: Umfassende Korrektur und Synchronisierung der Projektdokumentation.
-    - Korrektur der Lizenzangaben (GPL v3), Protokollversion (v7) und Entity-Namen.
-    - Präzisierung der Fehler-Blinkcodes (Hysterese-Zeiten und Abhängigkeiten).
-    - Vervollständigung der Projektstruktur und Behebung von Darstellungsfehlern (Emojis/Bilder).
+  - Korrektur der Lizenzangaben (GPL v3), Protokollversion (v7) und Entity-Namen.
+  - Präzisierung der Fehler-Blinkcodes (Hysterese-Zeiten und Abhängigkeiten).
+  - Vervollständigung der Projektstruktur und Behebung von Darstellungsfehlern (Emojis/Bilder).
 
 ### Fixed
+
 - **ESPHome Version-Kompatibilität**: Behebung von Kompilierfehlern durch Rückfall auf die bewährte `cg.add_global(cg.RawStatement(...))` Methode für Header-Includes, da `cg.add_include` in der verwendeten ESPHome-Version nicht zur Verfügung steht.
 
-
 ## [0.8.101] - 2026-04-09
+
 ### Fixed
+
 - **Dashboard Sensor-Fallback**: Implementierung eines transparenten Fallbacks für Raumtemperatur und Luftfeuchtigkeit. Wenn der SCD41 nicht angeschlossen ist, nutzt das Dashboard nun automatisch die Werte des BME680.
 - **UI-Verbesserung**: Umbenennung der Kachel "Luftqualität (SCD41)" in "Luftqualität", da die Daten nun dynamisch von beiden Sensortypen bezogen werden können.
 
 ## [0.8.100] - 2026-04-08
+
 ### Added
+
 - **Synchronisierte Entitäten-Dokumentation**: Vollständiger Audit und Abgleich von `Entities_Documentation.md` mit dem aktuellen YAML-Code (v0.8.x).
   - Hinzufügen von BME680 Umweltsensoren (IAQ, Taupunkt, Luftdruck absolut, Trend, Status).
   - Hinzufügen von Diagnose-Entitäten (ESP-NOW Peers, MAC-Adresse, interne IDs).
@@ -845,38 +972,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Korrektur der Entitätstypen (z.B. Phasen-Konfiguration als Select statt Switch).
 
 ### Changed
+
 - **ESP-NOW Architektur-Dokumentation**: Überarbeitung der `Dynamic-Configuration.md` zur präzisen Beschreibung des Hybrid-Kommunikationsmodells (Broadcast für Discovery, Unicast für Betrieb) und der Master-Rolle von ID 1.
 - **Konfigurations-Parameter**: Aktualisierung der dokumentierten Wertebereiche für Floor/Room/Device IDs passend zu den Firmware-Limits in `packages/device_config.yaml`.
 
 ### Fixed
+
 - **Dokumentations-Konsistenz**: Entfernung redundanter Einträge (z.B. doppelte Lüfterintensität) und Bereinigung veralteter IDs in der technischen Dokumentation.
 
 ## [0.8.95] - 2026-04-08
+
 ### Added
+
 - **Umfassende Doxygen-Dokumentation**: Der gesamte C++ Helper-Code und die kritischen YAML-Lambdas wurden vollständig dokumentiert. Fokus auf die Erklärung der architektonischen Hintergründe ("WARUM") statt nur der Funktion.
 - **Modulare Dokumentations-Architektur**: Erstellung dedizierter `Readme.md` Dateien für alle Kernbereiche (`packages/`, `components/helpers/`, `components/ventilation_group/`, `components/ventilation_logic/`, `components/wrg_dashboard/`) zur Verbesserung der Onboarding-Experience und Wartbarkeit.
 - **Troubleshooting & Guide**: Erweiterung der Haupt-Dokumentation um einen Troubleshooting-Guide für häufige Hardware- und Synchronisationsprobleme.
 - **NAN-Prüfung für Benutzereingaben**: Implementierung von `std::isnan()` Prüfungen in `user_input.h` für alle float-basierten Handler (Timer, Sync-Intervall, Intensität), um undefiniertes Verhalten beim Integer-Casting zu verhindern.
 
 ### Changed
+
 - **Refactoring der Boot-Logik (Phase 1)**: Auslagerung der System-Initialisierung (Watchdog-Erkennung, Komponenten-Sync, PID-Start) von `ventosync.yaml` in eine dedizierte C++ Funktion `run_system_boot_initialization()` in `system_lifecycle.h`. Dies vereinfacht die YAML-Konfiguration erheblich.
 - **Inhaltsverzeichnis & Struktur**: Überarbeitung der Lesbarkeit und Navigation in der Haupt-Dokumentation (`Readme.md` / `Readme_de.md`).
 
 ### Fixed
+
 - **Code-Stabilisierung**: Behebung von Syntaxfehlern und Fragmenten in `network_sync.h`, die durch Refactoring-Versuche entstanden waren.
 
 ## [0.8.91] - 2026-04-08
+
 ### Added
+
 - **Externe Antennen-Unterstützung (Seed Studio XIAO ESP32C6)**: Implementierung einer High-Priority Boot-Frequenz (900), die den hardwareseitigen RF-Switch auf den U.FL-Anschluss umschaltet. Dies löst Empfangsprobleme bei Verbau in tiefen Wänden/Lüftungsrohren.
 - **WiFi-Sendeleistung**: Erhöhung der WiFi-Ausgangsleistung auf **20dB** (physikalisches Limit des C6) für verbesserte Durchdringung von Mauerwerk.
 
 ### Changed
+
 - **Optimierte Button-Logik (Click/Hold Separation)**: Vollständige Trennung von kurzem Klick und langem Halten für den Intensitäts-Button.
   - Implementierung eines **750ms Initial-Delays** im Hold-Handler, um "Geister-Änderungen" bei kurzen Klicks zu vermeiden.
   - Erhöhung der Scroll-Geschwindigkeit beim Halten auf **200ms** pro Stufe für ein flüssigeres Bedienerlebnis.
 
 ## [0.8.88] - 2026-04-07
+
 ### Fixed
+
 - **Master-LED Bug auf Slave-Geräten**: Behebung des Fehlers, bei dem die Master-LED (ID 3) nach dem Booten dauerhaft leuchtete.
   - Initialisierung der `device_id` auf `0` statt `1`, um eine voreilige Master-Erkennung vor dem Laden der NvS-Daten zu verhindern.
   - Einführung eines globalen `led_state` Namespace zur konsistenten Zustandsverfolgung.
@@ -884,52 +1022,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Debug-Logging**: Hinzufügen von `[led]` Diagnose-Ausgaben zur besseren Nachverfolgbarkeit von Zustandsänderungen.
 
 ## [0.8.83] - 2026-04-07
+
 ### Fixed
-- **ESP-NOW Kommunikations-Stabilisierung (Framework Integration)**: 
-  - Umstellung von manuellen ESP-IDF API-Aufrufen (`esp_now_add_peer`, `esp_now_del_peer`, `esp_wifi_get_channel`) auf das native ESPHome-Framework (`global_esp_now`). 
+
+- **ESP-NOW Kommunikations-Stabilisierung (Framework Integration)**:
+  - Umstellung von manuellen ESP-IDF API-Aufrufen (`esp_now_add_peer`, `esp_now_del_peer`, `esp_wifi_get_channel`) auf das native ESPHome-Framework (`global_esp_now`).
   - Dies stellt sicher, dass alle Radio-Operationen (Peer-Registration, Löschen und Kanalabfragen) synchron vom ESPHome-Treiber koordiniert werden – ein entscheidender Faktor für die Funk-Stabilität des ESP32-C6 (Single-Radio STA/ESP-NOW Time-Slicing).
 - **Netzwerk-Resilienz (Timeout-Handling)**: Erhöhung der tolerierten Sende-Fehlversuche (`MAX_PEER_SEND_FAILURES`) von **3 auf 10**. Dies verhindert den voreiligen Verlust von Peers bei kurzzeitigen Funkstörungen oder WiFi-Powersave-Intervallen.
 - **Build-Fix (Variable Scope)**: Behebung eines Kompilierungsfehlers in `network_sync.h`, bei dem eine gelöschte Variable in einem Log-Statement referenziert wurde.
 - **Web-Server Sicherheit**: Vorübergehende Deaktivierung der HTTP-Authentifizierung (Port 80) zur Vereinfachung des Debugging-Zugriffs während der Instabilitäts-Phase.
 
 ## [0.8.81] - 2026-04-06
+
 ### Added
+
 - **Sanftanlauf (Slew-Rate-Limiter)**: Implementierung einer sanften Geschwindigkeitsanpassung (verdoppelt auf ca. **10% pro Sekunde**) für den Lüfter bei Intensitätsänderungen. Dies verhindert abrupte elektrische Lastsprünge und sorgt für eine angenehmere Akustik.
 - **Kontinuierliche Hardware-Synchronisation**: Hardware-Updates werden nun während einer laufenden Geschwindigkeitsanpassung (Slew) forciert, anstatt auf den nächsten Richtungswechsel zu warten.
 
 ### Fixed
+
 - **Nahtlose Intensitätsanpassung (Cycle Phase Continuity)**: Behebung des Fehlers, bei dem der Lüfter bei Änderung der Intensität abrupt stoppte oder den Zyklus zurücksetzte. Die relative Position im Lüftungszyklus wird nun bei Änderung der Zyklusdauer proportional skaliert.
 - **Build-Fix (Forward Declarations)**: Behebung von Kompilierungsfehlern in `ventilation_group.h` durch Hinzufügen notwendiger `extern` Deklarationen für `current_smoothed_speed` und `get_current_target_speed()`.
 
 ## [0.8.77] - 2026-04-06
+
 ### Fixed
+
 - **Build-Fix (Scope Error)**: Behebung eines Kompilierungsfehlers in `ventilation_group.h`, bei dem versucht wurde, auf die globale Variable `fan_pwm_primary` zuzugreifen, bevor diese im Scope bekannt war.
 - **Code-Bereinigung**: Redundante Logik in `update_hardware()` entfernt, da der Motor-Stopp (50% PWM) bereits implizit durch die nachfolgende `update_fan_logic()` korrekt berechnet wird.
 
 ## [0.8.74] - 2026-04-06
+
 ### Fixed
+
 - **Motor-Stopp Logik**: Konsistente Implementierung des Hardware-Stopps bei 50% PWM für bidirektionale VarioPro-Lüfter.
   - Entfernung von `zero_means_zero`, um zu verhindern, dass ESPHome beim Ausschalten fälschlicherweise 0% PWM (Vollgas Rückwärts) ansteuert.
   - Direkte PWM-Ansteuerung auf 0.5f in allen "Aus"-Pfaden unter Umgehung der fehleranfälligen `turn_off()` Vererbung.
-- **UI & System-Crash Protektion**: 
+- **UI & System-Crash Protektion**:
   - Lückenlose Implementierung von Null-Pointer-Checks für `ventilation_ctrl` in allen Button-Handlern und HA-Select-Callbacks.
   - Explizites Error-Handling für unbekannte Modus-Strings in `set_operating_mode_select` zur Vermeidung von Fehlsteuerungen.
 - **Synchronisations-Resilienz**: Neuer **Sync-Watchdog** (30s), der ein Gerät nach dem Aufwachen zur aktiven Meldung zwingt, falls kein Master-Status empfangen wurde (verhindert "Pantomimen-Zustand" im Netzwerk).
 
 ## [0.8.73] - 2026-04-06
+
 ### Fixed
+
 - **Boot-Up LED Flash**: Behebung eines Fehlers, bei dem alle LEDs beim Start kurzzeitig mit voller Helligkeit aufblitzten. Die PCA9685 Output-Enable (OE) Leitung wird nun erst nach der vollständigen Initialisierung der PWM-Register im C++ Boot-Prozess freigeschaltet.
-- **I2C-Bus Stabilität**: 
+- **I2C-Bus Stabilität**:
   - Erhöhung der Frequenz auf **400kHz** für schnellere Transaktionen.
   - Reduzierung des Timeouts auf **10ms**, um Blockaden des Haupt-Loops bei Sensorstörungen zu minimieren.
   - Deaktivierung des I2C-Scans im Normalbetrieb zur Reduzierung von Boot-Latenzen.
 - **Sensor-Diagnose**: Der WLAN-Kanal-Sensor zeigt nun korrekt `NaN` (Nicht verfügbar) an, wenn keine aktive Verbindung besteht, anstatt den letzten (potenziell falschen) Wert anzuzeigen.
 
 ### Added
+
 - **Hardware-Dokumentation**: Zusätzliche Kommentare für GPIO-Zuweisungen (D2/Reset, D3/OE) und deren elektrisches Verhalten (Pull-Ups/Bootregeln) direkt in der YAML zur besseren Wartbarkeit.
 
 ## [0.8.72] - 2026-04-05
+
 ### Fixed
+
 - **ESP-NOW Funkkollisionen (Simultaneous Transmit Clash)**: Behebung drastischer Sendeaussetzer (`err=1 / ESP_NOW_SEND_FAIL`), die durch exakt gleichzeitige Broadcasts von Geräten im selben Raum entstanden sind.
   - Bei deterministischen Richtungsänderungen (Timer-Flip) sendet nun **ausschließlich der Master (Device ID 1)** ein Status-Paket, um ungleiche Latenzen und RF-Kollisionen der Slaves zu verhindern.
   - Der 60-Sekunden Dashboard-Heartbeat erhielt einen Geräte-ID basierten Zeitversatz (Jitter: `device_id * 1500 ms`), wodurch synchrone Dauer-Kollisionen nach einem gleichzeitigen Boot der Module ausgemerzt wurden.
@@ -937,11 +1089,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Variablen-Referenzierung**: Tippfehler im Diagnose-Sensor "Watchdog Restarts" behoben (`watchdog_restart_count` -> `watchdog_restarts_count`).
 
 ### Added
+
 - **Unabhängige Zeitsynchronisation**: Integration nativer SNTP-Zeitserver (`pool.ntp.org`) als ausfallsicherer Fallback, falls die Home Assistant API beim Start vorübergehend nicht als Zeitquelle zur Verfügung steht. Dies ist kritisch für die Filterwechsel-Logik.
 - **Netzwerk-Resilienz**: Erhöhung des `reboot_timeout` bei WLAN-Verlust auf 5 bis 15 Minuten, um das System bei kurzen Router-Wartungen vom ungewollten Reboot abzuhalten.
 
 ## [0.8.37] - 2026-04-04
+
 ### Fixed
+
 - **ESP-NOW Discovery Handshake**: Behebung eines Fehlers, bei dem Geräte nach dem Booten keine Peers registrierten. Durch die Implementierung einer bilateralen Registrierung in den `MSG_STATUS_REQUEST` und `MSG_STATUS_RESPONSE` Handlern finden sich Master und Slaves nun zuverlässig und dauerhaft.
 - **Wi-Fi Stabilität (Channel 9)**: Fixierung des WLAN-Kanals auf **Kanal 9** zur Vermeidung von "Deafness"-Effekten durch Hintergrund-Scans auf dem ESP32-C6. Korrektur der YAML-Struktur (Umstellung auf `networks`-Liste) für eine valide ESPHome-Konfiguration.
 - **Log-Remediation (HTTP Error)**: Deaktivierung des periodischen Firmware-Update-Checks (`update_interval: never`), um die Fehlermeldung "Failed to fetch manifest" bei Nichterreichbarkeit des Home Assistant Servers zu eliminieren. Manuelle Updates bleiben weiterhin möglich.
@@ -949,80 +1104,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Code-Qualität**: Korrektur eines Syntaxfehlers (fehlendes `ESP_LOGI`) in `network_sync.h`, der durch einen Refactoring-Fehler entstanden war.
 - **Noise Reduction**: Entfernung redundanter "Registered via ESPHome API" Log-Einträge zur besseren Übersichtlichkeit der Konsole.
 
-
 ## [0.8.32] - 2026-04-04
+
 ### Fixed
+
 - **Sync-Echo-Unterdrückung**: Einführung von `notify`-Flags in `VentilationController`, um zirkuläre ESP-NOW-Sync-Schleifen zu verhindern. Statusänderungen, die von Peers empfangen werden, lösen nun keine automatische Gegen-Synchronisation mehr aus.
 - **Auto-Modus-Stabilität**: Im "Smart-Automatik"-Modus übernimmt der Master (Device ID 1) nun die finale Entscheidungsgewalt über die diskrete Lüfterstufe (1-10) basierend auf dem aggregierten CO2/Feuchte-Bedarf aller Peers. Dies verhindert "Jumping"-Effekte bei Grenzwertüberschreitungen auf einzelnen Geräten.
 - **Phasen-Jitter**: Erhöhung des Synchronisations-Schwellenwerts in der State Machine auf 500ms, um häufige Richtungswechsel (Phase-Flips) durch minimalen Takt-Drift zu vermeiden.
 
 ## [0.8.30] - 2026-04-03
+
 ### Changed
+
 - **v0.8.31**: Stabilisierung der Synchronisation & Smart-Automatik. Fix von Sync-Schleifen.
 - **v0.8.30**: Progressive quadratische RPM-Kennlinie für Lüfterstufen 1-10.
 - **RPM-Kennlinie**: Optimierte quadratische Verteilung der Lüfterstufen (v0.8.30) zur feineren Steuerung in niedrigen Bereichen (1-4) bei gleichbleibender Maximallast.
 - **Dokumentation**: Aktualisierung der RPM-Tabellen in Readme.md und Readme_de.md.
 
 ## [0.8.27] - 2026-04-03
+
 ### Optimized
+
 - **NTC Stabilization Filter**: Refactoring des `filter_ntc_stable` in `climate.h`. Umstellung auf `constexpr` Konstanten und Optimierung der Sliding-Window-Logik für präzisere Wertermittlung während der thermischen Einschwingphase.
 - **Code Modernization**: Nutzung von `std::minmax_element` zur effizienten Abweichungsberechnung innerhalb des Filter-Fensters.
 
 ## [0.8.26] - 2026-04-03
+
 ### Added
+
 - **Optimized ESP-NOW Sync Strategy**: Bei aktiven Peers im Cache erfolgt die Statusabfrage (`request_peer_status`) nun via Unicast. Dies nutzt die Hardware-Bestätigungen (ACKs) des ESP32 für eine robustere Erkennung und reduziert die Broadcast-Last im WLAN.
 - **Unicast-Discovery-Antworten**: Die Bestätigung von Discovery-Anfragen (`send_discovery_confirmation`) wurde auf Unicast umgestellt, um Kollisionen zu vermeiden und die Zuverlässigkeit beim Pairing zu erhöhen.
 
 ### Changed
+
 - **Logging-Efficiency**: Das Log-Level für `request_peer_status` wurde von DEBUG auf INFO angehoben, um die Synchronisationsphasen nach dem Boot besser zu dokumentieren. Umgekehrt wurde das redundante Loop-Prevention-Logging in `sync_settings_to_peers` auf DEBUG gesenkt, um das Haupt-Log übersichtlicher zu halten.
 - **Protocol-Robustness**: Erweiterung des `handle_espnow_receive` Handlers zur direkten Verarbeitung der Absender-MAC-Adresse (`src_mac`) für zukünftige bidirektionale Diagnose-Features.
 
 ### Fixed
+
 - **ESP-NOW Reliability**: Behebung eines Fehlers, bei dem Statusabfragen unter bestimmten Bedingungen nicht an alle bekannten Peers verteilt wurden.
 
 ## [0.8.22] - 2026-04-03
+
 ### Added
+
 - **Master Device Architecture**: Device ID=1 ist ab sofort der authoritative Master innerhalb einer Raumgruppe. Nur der Master gibt Zyklus-Timing und Richtungs-Synchronisation vor. Einstellungsänderungen (Button / Home Assistant) werden weiterhin von allen Geräten akzeptiert (`MSG_STATE`).
 - **Master LED Indicator**: Die Master-LED (PCA9685 Channel 7) leuchtet dauerhaft gedimmt auf dem Master-Gerät (ID=1), sofern kein Fehlerzustand aktiv ist. Non-Master-Geräte behalten das bisherige Verhalten (LED nur bei Fehler).
 - **Zentrale Helper-Funktionen**: `is_master()` und `is_from_master()` ersetzen alle hardcodierten `device_id == 1` Prüfungen für bessere Wartbarkeit.
 
 ### Fixed
+
 - **Boot Button Glitch**: MCP23017 I/O Expander konnte während der Boot-Initialisierung den Level-Button als gedrückt interpretieren (GPIOs floaten LOW → `inverted: true` = ON). Ein 10-Sekunden Boot-Guard in `handle_intensity_bounce()` und `handle_button_level_click()` verhindert dies jetzt.
 - **Zyklus-Timing Drift**: `sync_time()` wird nun ausschließlich vom Master (ID=1) übernommen. Zuvor konnte jeder `MSG_SYNC` Heartbeat die Zyklusposition überschreiben, was bei mehreren Non-Master-Geräten zu kurzzeitigem Timing-Jitter führen konnte.
 - **Reboot-Sync Logging**: `MSG_STATUS_RESPONSE` protokolliert jetzt, ob der Sync vom Master oder als Fallback von einem anderen Peer erfolgte.
 
 ## [0.8.21] - 2026-04-03
+
 ### Added
+
 - **ESP-NOW Hardware-ACK Recovery**: Implementierung eines Fehler-Trackings für Unicast-Übertragungen.
 - **Peer-Management**: Automatisches Entfernen von "Stale Peers" nach 3 aufeinanderfolgenden Übertragungsfehlern (`MAX_PEER_SEND_FAILURES`).
 - **Selbstheilung**: Intelligente Re-Discovery mit 30s Throttle bei Peer-Verlust zur Wiederherstellung der Gruppen-Integrität.
 - **Diagnose-Logging**: Neue Log-Kategorien `espnow_ack` und `espnow_recovery` zur Überwachung der Hardware-Bestätigungen und Recovery-Aktionen.
 
 ### Optimized
+
 - **Binary Peer Storage**: Komplette Umstellung des Peer-Managements von rechenintensivem String-Parsing auf einen binären `peer_cache` (`std::vector<PeerEntry>`). Dies ermöglicht O(1) MAC-Lookups bei jedem Sendevorgang und reduziert die CPU-Last im Main-Loop erheblich. Die NVS-basierte Persistenz des `espnow_peers` Strings bleibt für Reboots erhalten und wird im Hintergrund synchronisiert.
 - **Performance**: Reduzierung der Latenz bei Unicast-Kommunikation durch Wegfall der String-Interpreten während des Sende-Loops.
 
 ## [0.8.15] - 2026-04-03
+
 ### Refactored
+
 - **Architektur-Bereinigung**: Vollständige Entfernung des Umbrella-Headers `automation_helpers.h`. Alle Komponenten inkludieren nun nur noch die spezifisch benötigten Header (`globals.h`, `fan_control.h`, etc.), was die Abhängigkeiten minimiert und die Kompilierungszeiten optimiert.
 - **Relative Inkludierung**: Normalisierung der Inklusionspfade innerhalb der Helper-Bibliothek, um Redefinitionen durch unterschiedliche Pfad-Mappings im ESPHome-Buildsystem zu verhindern.
 
 ### Changed
+
 - **Logging-Optimierung (Noise Reduction)**:
-    - Die Sensoren für "Lüfter Richtung" und "BME680 IAQ Bewertung" nutzen nun einen Filter, der nur bei tatsächlicher Statusänderung ein Log-Ereignis auslöst. Dies eliminiert das periodische Log-Spamming alle 2 bzw. 30 Sekunden im Leerlauf.
-    - Erhöhung des Update-Intervalls für Zustands-Textsensoren von 2s auf 10s zur Entlastung der CPU.
+  - Die Sensoren für "Lüfter Richtung" und "BME680 IAQ Bewertung" nutzen nun einen Filter, der nur bei tatsächlicher Statusänderung ein Log-Ereignis auslöst. Dies eliminiert das periodische Log-Spamming alle 2 bzw. 30 Sekunden im Leerlauf.
+  - Erhöhung des Update-Intervalls für Zustands-Textsensoren von 2s auf 10s zur Entlastung der CPU.
 - **Visuelles Feedback**: Hinzufügen eines "Ramping complete" Logs, um dem Nutzer eine Bestätigung zu geben, wenn der Lüfter nach einer Richtungsänderung oder Modus-Anpassung seinen stabilen Zielzustand erreicht hat.
 
 ## [0.8.10] - 2026-04-03
+
 ### Changed
+
 - **Fan-Control Refactoring**: `calculate_automatic_pid_demand()` entfernt (Toter Code), da die Demand-Berechnung nun zentral in `auto_mode.h` erfolgt.
 - **Tacho-Konsistenz**: `calculate_virtual_fan_rpm()` liefert nun auch bei physischen Tacho-Werten ein korrektes Vorzeichen (negativ für Abluft) für eine konsistente Anzeige im Dashboard.
-- **Optimierung der Fan-Logik**: Race-Condition im Logging behoben durch Caching der Basisgeschwindigkeit. 
+- **Optimierung der Fan-Logik**: Race-Condition im Logging behoben durch Caching der Basisgeschwindigkeit.
 - **Robustheit**: Manueller Demand wird nun direkt in `calculate_manual_demand()` geclampt (1.0 - 10.0), um Überlauf durch Präsenzerkennung zu verhindern.
 - **Wärmerückgewinnung**: Refactoring der Effizienzberechnung in `climate.h` für bessere Stabilität und sauberere Sensorhandhabung.
 
 ## [0.8.5] - 2026-04-03
+
 ### Changed
+
 - **Auto-Modus Optimierung (Akustik)**: Einführung von Soft-Ramping (max. ±1 Stufe pro 10s) für einen akustisch unauffälligen Betrieb bei Demand-Schwankungen.
 - **Hysterese-Verfeinerung**: Implementierung eines 25% Hysterese-Bandes an den Stufengrenzen zur Vermeidung von schnellem Hin- und Herschalten ("Ping-Pong-Effekt").
 - **Race Condition Protection**: Ein 2-Sekunden Rate-Limiter in `evaluate_auto_mode()` verhindert Mehrfachausführungen durch konkurrierende Trigger (Timer vs. Netzwerk).
@@ -1030,30 +1207,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ramping-Boost**: Erlaubt einen einmaligen Sprung von ±2 Stufen direkt nach einem Moduswechsel (z.B. Sommerkühlung), für eine schnellere Reaktion bei stabilen Zielzuständen.
 
 ## [0.8.3] - 2026-04-03
+
 ### Changed
+
 - **Status-LED Helligkeit**: Der minimale Dimmbereich der Status-LEDs wurde von 10% auf 5% gesenkt, um eine noch dezentere Anzeige in sehr dunklen Räumen zu ermöglichen.
 
 ## [0.8.2] - 2026-04-02
+
 ### Changed
+
 - **ESP-NOW Unicast-Refactoring**: Umstellung der Zustandssynchronisation von BROADCAST auf gezielten UNICAST. Dies reduziert die Netzwerklast und verhindert, dass Steuerungsbefehle (Modus, Intensität) fälschlicherweise von Geräten in benachbarten Räumen auf demselben Kanal verarbeitet werden.
 - **Zielgerichtete Status-Antworten**: `handle_status_request()` antwortet nun direkt per UNICAST an den anfragenden Peer, anstatt eine Antwort an das gesamte Netzwerk zu senden.
 - **Bereinigung der Sync-Logik**: Entfernung redundanter BROADCAST-Pakete für das periodische Heartbeat-Interval (`MSG_SYNC`) in der `logic_automation.yaml`.
 
 ## [0.8.1] - 2026-04-02
+
 ### Changed
+
 - **Internationalization (Documentation)**: Full translation and normalization of the project's documentation into English.
 - **Filename Normalization**: Renamed English documentation files to descriptive English filenames (e.g., `Fan-Interface-Guide_en.md`, `VentoMaxx-Comparison_en.md`) for better clarity.
 - **Link Updating**: Comprehensive update of the main `Readme_en.md` and internal documentation to ensure all links point correctly to the new English versions.
 
 ## [0.8.0] - 2026-04-02
+
 ### Changed
+
 - **Prio-Steuerung (CO2 vor Feuchte)**: Grundlegende Umstellung der Automatik-Logik. CO2-Werte haben nun immer Priorität vor der Luftfeuchtigkeit. Nur wenn der CO2-Bedarf gedeckt ist, greift die Feuchtigkeits-Regelung.
 - **Hysterese-Härtung**: Implementierung einer intelligenten Hysterese beim Wechsel zwischen CO2- und Feuchtigkeits-PID, um "Ping-Pong"-Effekte und unnötige Drehzahländerungen zu vermeiden.
 - **Vereinfachung**: Entfernung des separaten "Automatik CO2" Schalters. Die adaptive Regelung ist nun integraler und permanenter Bestandteil des Automatik-Modus.
 - **Protokoll-Update**: Bereinigung des ESP-NOW Datenpakets (`VentilationPacket`). Dies ist ein Breaking Change, der ein Update aller Geräte in der Gruppe erfordert.
 
 ## [0.7.42] - 2026-04-02
+
 ### Fixed
+
 - **NaN-Härtung**: Absicherung aller PID-Anforderungsberechnungen in `auto_mode.h` und `fan_control.h` gegen `NaN`-Werte. Bei Sensorausfällen (z.B. SCD41/BME680 Glitches) hält das System nun den letzten gültigen Zustand ("Hold-Last-State"), anstatt auf die minimalste Stufe abzufallen. Dies eliminiert das "Yo-Yo"-Verhalten des Lüfters.
 - **Steuerungs-Autorität**: Konsolidierung der Intensitätsberechnung auf `evaluate_auto_mode()` als einzige "Source of Truth". Das unabhängige 10s-Intervall `fan_speed_update` nutzt nun den bereits berechneten Level, was Oszillationen durch konkurrierende Berechnungswege verhindert.
 - **ESP-NOW Synchronisation**: Übertragung des `auto_mode_active` Status an Peers via `current_mode_index`. Peers im selben Raum synchronisieren nun zuverlässig den Automatik-Modus und ignorieren externe Intensitäts-Overrides, wenn sie selbst im PID-Modus sind.
@@ -1061,7 +1248,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Konfigurations-Sicherheit**: Implementierung eines Swap-Guards für die `Min/Max Lüfterstufe`. Bei Fehlkonfiguration (Min > Max) korrigiert das System die Werte intern, um eine invertierte Kennlinie zu vermeiden.
 
 ## [0.7.39] - 2026-04-01
+
 ### Changed
+
 - **UI & Entitäten-Bereinigung**: Umfassende Umbenennung von Entitäten für bessere Klarheit in Home Assistant (z.B. "Lüfter Richtung", "WRG Effizienz").
 - **Kategorisierung**: Umzug von Wartungs-Buttons (BME680 Reset) in die Kategorie "Konfiguration".
 - **Präfix-Entfernung**: Entfernung des Gerätenamens aus allen Diagnose-Entitäten für eine sauberere Ansicht.
@@ -1069,41 +1258,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Bereinigung**: Entfernung des redundanten "System Reboot" Buttons.
 
 ## [0.7.37] - 2026-04-01
+
 ### Fixed
+
 - **Boot-Log Optimierung**: Hinzufügen einer `on_boot` Synchronisierung für die PID-Regler. Dies verhindert, dass der CO2-Regler beim Systemstart unnötig im Modus `COOL` initialisiert wird und Log-Einträge erzeugt, wenn die Automatik deaktiviert ist.
 
 ## [0.7.36] - 2026-04-01
+
 ### Fixed
-- **Peer-Diagnose Härtung**: Der Peer-Synchronisationsfehler (2x Blinken) respektiert nun den "Peerprüfung" Schalter im Dashboard. 
+
+- **Peer-Diagnose Härtung**: Der Peer-Synchronisationsfehler (2x Blinken) respektiert nun den "Peerprüfung" Schalter im Dashboard.
 - **Timeout-Optimierung**: Reduzierung des Peer-Timeouts von 5 auf 3 Minuten für eine schnellere Fehlererkennung bei gleichzeitig minimierten Fehlalarmen durch eine 3-minütige Einschalt-Hysterese.
 
 ## [0.7.31] - 2026-04-01
+
 ### Added
+
 - **ESP-NOW Protokoll v7**: Erweiterung des Kommunikations-Pakets um Echtzeit-Daten für Lüfter-Drehzahl (RPM), Board-Temperatur (BMP390), Raum-Temperatur (SCD41/BME680) und PID-Anforderung.
 - **Dashboard-Modernisierung**: Komplette Überarbeitung der Peer-Ansicht ("Verbundene Geräte") mit neuem Diagnose-Layout.
 - **Intelligente Temperatur-Logik**: Implementierung eines automatischen Fallbacks für die Raumtemperatur (SCD41 bevorzugt, BME680 als Ersatz).
 
 ### Changed
+
 - **UI-Standardisierung**: Umbenennung des Modus "Wärmerückgewinnung" in das kompaktere "WRG" in der gesamten Weboberfläche.
 - **Peer-Visualisierung**: Ersetzung der NTC-Werte ("In/Out") durch ein hochauflösendes Diagnose-Gitter (RPM, PID, Board- & Raum-Temp) für alle vernetzten Geräte.
 
 ### Fixed
+
 - **System-Stabilität**: Härtung der Sensor-Abfragen gegen fehlende Hardware (Nullpointer-Schutz und NaN-Handling) in der `ventilation_group`.
 - **JS-Robustheit**: Absicherung der Dashboard-Anzeige gegen fehlerhafte oder fehlende Sensor-Daten durch verbesserte Validierung.
 
 ## [0.7.30] - 2026-04-01
+
 ### Fixed
+
 - **Log-Bereinigung**: Deaktivierung des sekündlichen Debug-Spams ("0.00 pulses/min") der `pulse_counter`-Komponente für Lüfter ohne physischen Tacho-Anschluss.
 - **RPM-Diagnose**: Der Sensor für die **virtuelle Drehzahl** (berechnet aus PWM & Richtung) loggt nun ohne Delta-Filter, um in der Konsole eine konsistente Echtzeit-Rückmeldung der Lüfteraktivität zu geben.
 
 ## [0.7.28] - 2026-04-01
+
 ### Fixed
+
 - **Log-Spam & I2C-Optimierung**: Die LED-Ansteuerung (`update_leds_logic`) wurde komplett auf eine **statusbewusste (stateful) Logik** umgestellt. Hardware-Befehle werden nun nur noch gesendet, wenn sich der Zustand (Modus, Helligkeit, UI-Aktivität) tatsächlich ändert. Dies stoppt das wiederholte Auftreten von "Setting"-Logs bei Sensor-Updates.
 - **C++ Struktur**: Behebung eines Kompilierfehlers durch korrekte Anordnung der Funktions-Deklarationen in `led_feedback.h`.
 - **UI-Priorität**: Sicherstellung, dass die Fehleranzeige der Master-LED (`check_master_led_error`) immer ausgeführt wird, unabhängig vom Status der restlichen Lüftungs-Logik.
 
 ## [0.7.27] - 2026-04-01
+
 ### Added
+
 - **System-Härtung (Watchdog)**: Implementierung eines gestuften Sicherheits-Konzepts gegen "Zombie-Zustände" (ESP ist online, aber interne Tasks hängen).
   - ESP-IDF Task Watchdog (TWDT) auf **15s** verkürzt mit Idle-Task Monitoring auf beiden Cores.
   - Aktivierung der Kernel-Flags `CONFIG_ESP_TASK_WDT_INIT` und `CONFIG_FREERTOS_WDT_EN` für maximale Ausfallsicherheit.
@@ -1111,45 +1314,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automatisierte Selbstheilung (Health Check)**: Einführung eines 10-Minuten-Timers, der die Aktivität des Haupt-Loops überwacht und bei einem "Brain Freeze" (Logik-Hängern) einen automatischen Neustart erzwingt.
 
 ### Fixed
+
 - **Blockierender Code**: Entfernung eines `delay()`-Aufrufs in der `network_sync.h`, der den Systemstart verzögern konnte.
 - **Endlosschleife (Rekursion)**: Behebung einer zirkulären Abhängigkeit zwischen Fan-Logik und Hardware-Aktualisierung in `fan_control.h`, die zu System-Hängern führen konnte.
 - **Framework-Kompatibilität**: Umstellung des Reset-Befehls auf `esp_restart()` für volle Kompatibilität mit dem ESP-IDF Framework.
 
 ## [0.7.21] - 2026-03-31
+
 ### Fixed
+
 - **System-Stabilität**: Einführung einer "Stateful"-Logik in der `led_feedback.h`, um I2C-Bus-Flutungen durch redundante LED-Befehle zu verhindern.
-- **WLAN & Erreichbarkeit**: 
+- **WLAN & Erreichbarkeit**:
   - Reduzierung des I2C-Timeouts auf **20ms** zur Vermeidung von Loop-Blocking.
   - Verkürzung des `reboot_timeout` auf **1min** für schnellere Selbstheilung bei Verbindungsverlust.
   - Umstellung auf `power_save_mode: LIGHT` zur Verbesserung der Stabilität auf dem ESP32-C6.
 - **Sicherheit**: Mathematische Absicherung (`NaN`-Check) der Effizienzberechnung in der `sensors_climate.yaml`.
 
 ### Changed
+
 - **I2C-Bus Optimierung**: Anpassung der Frequenz auf 100kHz und Timeout auf 100ms für eine noch robustere Kommunikation mit den Sensoren.
 - **Dokumentation**: Übersetzung technischer Kommentare in der `hardware_io.yaml` ins Englische.
 
 ### Fixed
-- **Wärmerückgewinnung (WRG) Effizienz**: 
+
+- **Wärmerückgewinnung (WRG) Effizienz**:
   - Entfernung des ungenauen **BMP390** (Gehäuse-Sensor) als Referenzquelle zur Vermeidung von Verfälschungen durch Elektronik-Abwärme.
   - Senkung der Berechnungsschwelle von **1,0 K auf 0,3 K** zur Verbesserung der Messgenauigkeit bei geringen Temperaturunterschieden (Übergangszeit).
 
 ### Added
+
 - **Diagnose-Sensor**: Neuer Text-Sensor `WRG Referenz-Messpunkt` zur transparenten Anzeige der verwendeten Temperaturquelle (SCD41 vs. BME680).
 
 ### Added
+
 - **Priorisierte Diagnose-Blinkcodes**: Die Master-LED signalisiert nun verschiedene Fehlerzustände über ein mehrstufiges Blink-System (Prioritäts-Ladder):
   1. **2 Pulse (Höchste Prio)**: ESP-NOW Peer-Synchronisierungsfehler.
   2. **3 Pulse (Mittlere Prio)**: WLAN-Verbindungsverlust.
   3. **4 Pulse (Niedrige Prio)**: Thermische Warnung (Traco PSU Schutz, aktiv zwischen 50°C und 60°C).
-- **Netzwerk-Härtung (ESP32-C6)**: 
+- **Netzwerk-Härtung (ESP32-C6)**:
   - `power_save_mode: NONE` erzwingt permanent aktives WLAN zur Vermeidung von Stack-Lockups.
   - `reboot_timeout: 15min` als Watchdog für nicht-reaktive Netzwerkzustände.
 
 ### Changed
+
 - **Codestyle-Bereinigung**: Alle verbleibenden Kommentare in den YAML-Konfigurationsdateien wurden zur besseren internationalen Wartbarkeit auf Englisch umgestellt.
 - **C++ Refactoring**: Optimierung der `check_master_led_error` Logik in `led_feedback.h` zur sauberen Abbildung der neuen Fehler-Prioritäten.
 
 ### Added
+
 - **Hardware-Sicherheitssystem**: Implementierung einer mehrstufigen Temperaturüberwachung (BMP390) zum Schutz des Traco-Netzteils.
   - Warnstufe (50°C): Warn-Log und HA-Benachrichtigung.
   - Kritische Stufe (60°C): Error-Log, kritische Benachrichtigung, automatischer Lüfterstopp (50% PWM) und 60-minütiger Deep Sleep zur Abkühlung.
@@ -1158,6 +1370,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Geräte-Identifikation**: Home Assistant Benachrichtigungen enthalten nun automatisch den `${friendly_name}` für eine einfachere Zuordnung bei mehreren Geräten.
 
 ### Changed
+
 - **I2C-Bus Härtung**: Optimierung der I2C-Parameter zur Vermeidung von "Zombie-Zuständen" (Bus-Lockups). Frequenz auf 50kHz (Standard) und Timeout auf 13ms gesetzt für schnellere Recovery.
 - **Architektur-Refactoring (Modularisierung)**: Die Sensorkonfiguration wurde für bessere Wartbarkeit in dedizierte Pakete aufgeteilt:
   - `sensor_BMP390.yaml`: BMP390 Druck & Temperatur + Sicherheitslogik.
@@ -1166,14 +1379,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `hardware_fan.yaml`: Konsolidierung von PWM-Output, RPM-Tacho und Lüfter-Komponente.
 
 ## [0.7.6] - 2026-03-30
+
 ### Fixed
+
 - Fixed Slave synchronization when Master ID is 2 (e.g., during device transition).
 - Heartbeats (`MSG_SYNC`) are now accepted from ID 1 and ID 2 to ensure state consensus.
 - Forced UI sync for manual state changes (`MSG_STATE`) even if internal state matches.
 - Added detailed debug logging for why packets are ignored in the room group.
 
 ## [0.7.0] - 2026-03-30
+
 ### Fixed
+
 - **Manueller State-Override (HA/UI)**: Es wurde ein Fehler behoben, bei dem manuelle Änderungen in Home Assistant (Modus-Wechsel, Intensitäts-Slider) nicht sofort an alle Peers übertragen wurden. Dies passierte, da das neue 60-Sekunden-Heartbeat-System (`MSG_SYNC`) fälschlicherweise als "ausreichend" für die Synchronisation angesehen wurde. Wir haben nun explizite `sync_settings_to_peers()`-Aufrufe in jeden UI-Interaktionspfad implementiert. Jede manuelle Änderung triggert nun sofort ein `MSG_STATE`-Paket, das alle Peers zur sofortigen Übernahme zwingt.
 
 ## [0.6.97] - 2026-03-30
@@ -1186,9 +1403,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Kompletter Auto-Recovery nach Router-Ausfall**: Bleibt der Router / das WLAN für mehr als 5 Minuten verschwunden, macht das Gerät nun automatisch einen sauberen Neustart (`reboot_timeout: 5min`). Das entfernt zuverlässig gestrandete Zombie-Sockets und startet den System-Bus fehlerfrei neu durch, um sich nahtlos zurück ins Netzwerk zu integrieren.
 
 ## [0.6.96] - 2026-03-30
+
 - (Interne Anpassungen)
 
 ## [0.6.95] - 2026-03-30
+
 - (Interne Anpassungen)
 
 ## [0.6.94] - 2026-03-30
