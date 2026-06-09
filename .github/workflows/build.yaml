@@ -184,7 +184,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-${{ runner.os }}-esphome-2026.5.0
+          key: pip-${{ runner.os }}-esphome-2026.5.3
           restore-keys: |
             pip-${{ runner.os }}-esphome-
 
@@ -202,7 +202,7 @@ jobs:
       - name: Install ESPHome and compile firmware
         run: |
           set -euo pipefail
-          pip install wheel esphome==2026.5.0
+          pip install wheel esphome==2026.5.3
           esphome compile ${{ matrix.yaml }}
 
       # ----------------------------------------------------------------
