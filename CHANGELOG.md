@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.22] - 2026-06-09
+
+### Changed
+
+- **Dashboard Design Reverted**: Reverted the custom styling, premium slate-blue color palette, Inter font, custom badges, and chart styles back to the original dark-gray and cyan theme, while keeping all structural layout improvements (stacked air quality/maintenance cards and split settings groups).
+
 ## [0.9.21] - 2026-06-09
 
 ### Changed
