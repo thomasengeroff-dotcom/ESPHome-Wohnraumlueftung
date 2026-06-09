@@ -32,9 +32,6 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wohnraumlüftung Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
@@ -42,271 +39,103 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-          },
           colors: {
-            bg: '#0f172a',
-            card: '#1e293b',
-            cardHover: '#253347',
-            surface: '#334155',
-            accent: '#22d3ee',
-            accentHover: '#06b6d4',
-            accentDim: 'rgba(34, 211, 238, 0.12)',
-            danger: '#f87171',
-            dangerDim: 'rgba(248, 113, 113, 0.12)',
-            warning: '#fbbf24',
-            warningDim: 'rgba(251, 191, 36, 0.12)',
-            success: '#34d399',
-            successDim: 'rgba(52, 211, 153, 0.12)',
-            muted: '#64748b',
-            subtle: '#475569',
+            bg: '#121212',
+            card: '#1e1e1e',
+            accent: '#03dac6',
+            accentHover: '#01b4a0',
+            danger: '#cf6679',
           }
         }
       }
     }
   </script>
   <style>
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-    /* Slider styling */
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 6px;
-      background: linear-gradient(90deg, #334155 0%, #334155 100%);
-      border-radius: 3px;
-      outline: none;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      height: 20px;
-      width: 20px;
+      height: 16px;
+      width: 16px;
       border-radius: 50%;
-      background: #22d3ee;
+      background: #03dac6;
       cursor: pointer;
-      box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
-      transition: box-shadow 0.2s ease;
+      margin-top: -6px;
     }
-    input[type=range]::-webkit-slider-thumb:hover {
-      box-shadow: 0 0 14px rgba(34, 211, 238, 0.6);
-    }
-    input[type=range]::-moz-range-thumb {
-      height: 20px;
-      width: 20px;
-      border-radius: 50%;
-      background: #22d3ee;
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
       cursor: pointer;
-      border: none;
-      box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
-    }
-    input[type=range]::-moz-range-track {
-      height: 6px;
-      background: #334155;
-      border-radius: 3px;
-    }
-
-    /* Number input spinner styling */
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button {
-      opacity: 1;
-      height: 28px;
-    }
-
-    /* Card hover effect */
-    .dash-card {
-      transition: border-color 0.25s ease, box-shadow 0.25s ease;
-    }
-    .dash-card:hover {
-      border-color: #334155;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
-    }
-
-    /* Sensor row hover */
-    .sensor-row {
-      padding: 6px 8px;
-      border-radius: 6px;
-      transition: background-color 0.15s ease;
-    }
-    .sensor-row:hover {
-      background-color: rgba(51, 65, 85, 0.3);
-    }
-
-    /* Pulsing indicator */
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.5); }
-      50% { opacity: 0.85; box-shadow: 0 0 0 4px rgba(34, 211, 238, 0); }
-    }
-    .pulse-online {
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-
-    /* Focus ring for inputs */
-    input:focus, select:focus {
-      outline: none;
-      border-color: #22d3ee !important;
-      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2) !important;
-    }
-
-    /* Value emphasis */
-    .val-text {
-      color: #f1f5f9;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-    .val-unit {
-      color: #64748b;
-      font-weight: 400;
-      font-size: 0.75em;
-      margin-left: 2px;
-    }
-
-    /* Section header */
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #1e293b;
-    }
-    .section-header h2 {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: #f1f5f9;
-      letter-spacing: -0.01em;
-    }
-    .section-header .icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-
-    /* Badge pill */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 10px;
-      border-radius: 9999px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    /* Setting group */
-    .setting-group-title {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      background: #555;
+      border-radius: 2px;
     }
   </style>
 </head>
-<body class="bg-bg text-gray-300 min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col items-center">
-  <div class="w-full max-w-5xl space-y-5">
+<body class="bg-bg text-gray-200 min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+  <div class="w-full max-w-5xl space-y-6">
     
-    <header class="text-center mb-6">
-      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-        WRG Lüftung Dashboard
+    <header class="text-center space-y-2">
+      <h1 class="text-3xl font-bold tracking-tight text-white mb-8">
+        WRG Lüftung Dashboard 
+        <span class="text-sm font-normal text-gray-500 ml-2">(v2.0)</span>
       </h1>
-      <span class="text-xs font-medium text-muted mt-1 inline-block">(v2.0)</span>
     </header>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       
       <!-- General Settings / Device Info -->
-      <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col">
-        <div class="section-header">
-          <div class="icon bg-blue-500/15 text-blue-400">⚙</div>
-          <h2>Grundeinstellungen</h2>
-        </div>
-        <div class="space-y-1 flex-1">
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Geräte-ID:</span> <span class="val-text text-lg" id="val_device_id">--</span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Aktuelle Floor ID:</span> <span class="val-text text-lg" id="val_floor_id">--</span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Raum (Room ID):</span> <span class="val-text text-lg" id="val_room_id">--</span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Geräte-Phase (A/B):</span> <span class="val-text text-lg" id="val_phase">--</span></div>
-        </div>
+      <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col space-y-4">
+        <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2">Grundeinstellungen</h2>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Geräte-ID:</span> <span class="font-medium text-lg" id="val_device_id">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Aktuelle Floor ID:</span> <span class="font-medium text-lg" id="val_floor_id">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Raum (Room ID):</span> <span class="font-medium text-lg" id="val_room_id">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Geräte-Phase (A/B):</span> <span class="font-medium text-lg" id="val_phase">--</span></div>
       </div>
 
       <!-- Status & Sensors -->
-      <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col">
-        <div class="section-header">
-          <div class="icon bg-cyan-500/15 text-cyan-400">📡</div>
-          <h2>Aktuelle Sensordaten</h2>
-        </div>
-        <div class="space-y-1 flex-1">
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Board-Temperatur:</span> <span class="val-text text-lg" id="val_temperature">--<span class="val-unit">°C</span></span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Luftdruck:</span> <span class="val-text text-lg" id="val_pressure">--<span class="val-unit">hPa</span></span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Feuchtigkeit (Außen):</span> <span class="val-text text-lg" id="val_outdoor_humidity">--<span class="val-unit">%</span></span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Temperatur Zuluft:</span> <span class="val-text text-lg" id="val_temp_zuluft">--<span class="val-unit">°C</span></span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Temperatur Abluft:</span> <span class="val-text text-lg" id="val_temp_abluft">--<span class="val-unit">°C</span></span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Effizienz WRG:</span> <span class="val-text text-accent text-lg" id="val_heat_recovery_efficiency">--<span class="val-unit">%</span></span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Lüfter RPM:</span> <span class="val-text text-lg" id="val_fan_rpm">--</span></div>
-          <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Luftrichtung:</span> <span class="val-text text-lg" id="val_direction_display">--</span></div>
-        </div>
+      <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col space-y-4">
+        <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2">Aktuelle Sensordaten</h2>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Board-Temperatur:</span> <span class="font-medium text-lg"><span id="val_temperature">--</span> °C</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Luftdruck:</span> <span class="font-medium text-lg"><span id="val_pressure">--</span> hPa</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Feuchtigkeit (Außen):</span> <span class="font-medium text-lg"><span id="val_outdoor_humidity">--</span> %</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Temperatur Zuluft:</span> <span class="font-medium text-lg"><span id="val_temp_zuluft">--</span> °C</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Temperatur Abluft:</span> <span class="font-medium text-lg"><span id="val_temp_abluft">--</span> °C</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Effizienz WRG:</span> <span class="font-medium text-accent text-lg"><span id="val_heat_recovery_efficiency">--</span> %</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Lüfter RPM:</span> <span class="font-medium text-lg" id="val_fan_rpm">--</span></div>
+        <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Luftrichtung:</span> <span class="font-medium text-accent text-lg" id="val_direction_display">--</span></div>
       </div>
 
       <!-- Air Quality & Maintenance combined column -->
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-6">
         <!-- Air Quality -->
-        <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col flex-1">
-          <div class="section-header">
-            <div class="icon bg-emerald-500/15 text-emerald-400">🌿</div>
-            <h2>Luftqualität</h2>
-          </div>
-          <div class="space-y-1 flex-1">
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">CO2:</span> <span class="val-text text-lg" id="val_room_co2">--<span class="val-unit">ppm</span></span></div>
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Bewertung:</span> <span class="val-text text-lg" id="val_room_co2_bewertung">--</span></div>
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Temperatur:</span> <span class="val-text text-lg" id="val_room_temperature">--<span class="val-unit">°C</span></span></div>
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Luftfeuchtigkeit:</span> <span class="val-text text-lg" id="val_room_humidity">--<span class="val-unit">%</span></span></div>
-          </div>
+        <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col space-y-4 flex-1">
+          <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2">Luftqualität</h2>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">CO2:</span> <span class="font-medium text-lg"><span id="val_room_co2">--</span> ppm</span></div>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Bewertung:</span> <span class="font-medium text-lg" id="val_room_co2_bewertung">--</span></div>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Temperatur:</span> <span class="font-medium text-lg"><span id="val_room_temperature">--</span> °C</span></div>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Luftfeuchtigkeit:</span> <span class="font-medium text-lg"><span id="val_room_humidity">--</span> %</span></div>
         </div>
 
         <!-- Maintenance -->
-        <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col">
-          <div class="section-header">
-            <div class="icon bg-amber-500/15 text-amber-400">🔧</div>
-            <h2>Wartung</h2>
-          </div>
-          <div class="space-y-1">
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Filter Betriebstage:</span> <span class="val-text text-lg" id="val_filter_operating_days">--</span></div>
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Filterwechsel Alarm:</span> <span class="val-text text-lg" id="val_filter_change_alarm">--</span></div>
-            <div class="sensor-row flex justify-between items-center"><span class="text-muted text-sm">Radar Präsenz:</span> <span class="val-text text-lg" id="val_radar_presence">--</span></div>
-          </div>
+        <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col space-y-4">
+          <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2">Wartung</h2>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Filter Betriebstage:</span> <span class="font-medium text-lg" id="val_filter_operating_days">--</span></div>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Filterwechsel Alarm:</span> <span class="font-medium text-lg" id="val_filter_change_alarm">--</span></div>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">Radar Präsenz:</span> <span class="font-medium text-lg" id="val_radar_presence">--</span></div>
         </div>
       </div>
 
       <!-- Controls -->
-      <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col space-y-5 md:col-span-2 lg:col-span-3">
-        <div class="section-header">
-          <div class="icon bg-violet-500/15 text-violet-400">🎛</div>
-          <h2>Einstellungen</h2>
-        </div>
+      <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col space-y-4 md:col-span-2 lg:col-span-3">
+        <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2">Einstellungen</h2>
         
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
           <!-- Left group: Main controls -->
           <div>
-            <div class="setting-group-title">Steuerung</div>
+            <span class="text-sm text-gray-400 font-medium block mb-2 border-b border-gray-700 pb-1">Steuerung</span>
             <div class="space-y-4">
               <div class="flex flex-col space-y-2">
-                <span class="text-sm text-muted font-medium">Lüfter Modus</span>
-                <select id="luefter_modus" onchange="sendSet('luefter_modus', this.value)" class="bg-surface/50 border border-subtle/50 text-white text-sm rounded-lg block w-full p-2.5 transition-all duration-200 cursor-pointer">
+                <span class="text-sm text-gray-400 font-medium">Lüfter Modus</span>
+                <select id="luefter_modus" onchange="sendSet('luefter_modus', this.value)" class="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-accent focus:border-accent block w-full p-2.5 transition-colors cursor-pointer">
                   <option value="Smart-Automatik">Smart-Automatik</option>
                   <option value="Wärmerückgewinnung">Wärmerückgewinnung</option>
                   <option value="Durchlüften">Durchlüften</option>
@@ -316,18 +145,18 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
               </div>
 
               <div class="flex flex-col space-y-2">
-                <div class="flex justify-between items-center"><span class="text-sm text-muted font-medium">Lüfter Intensität</span><span id="label_fan_intensity" class="font-bold text-accent text-lg tabular-nums">--</span></div>
-                <input type="range" id="fan_intensity_display" min="1" max="10" step="1" onchange="sendSet('fan_intensity_display', this.value)" oninput="document.getElementById('label_fan_intensity').innerText = this.value" class="w-full cursor-pointer mt-1">
+                <div class="flex justify-between"><span class="text-sm text-gray-400 font-medium">Lüfter Intensität</span><span id="label_fan_intensity" class="font-bold text-accent">--</span></div>
+                <input type="range" id="fan_intensity_display" min="1" max="10" step="1" onchange="sendSet('fan_intensity_display', this.value)" oninput="document.getElementById('label_fan_intensity').innerText = this.value" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2">
               </div>
 
-              <div class="grid grid-cols-2 gap-3">
-                <div class="flex justify-between items-center bg-surface/30 p-3 rounded-lg border border-subtle/30 transition-colors duration-200 hover:border-subtle/60">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
                   <span class="text-sm text-gray-300">Autom. Min Stufe</span>
-                  <input type="number" id="automatik_min_luefterstufe" onchange="sendSet('automatik_min_luefterstufe', this.value)" class="bg-surface/60 border border-subtle/50 text-white text-sm rounded-lg w-20 p-1.5 text-center transition-all duration-200">
+                  <input type="number" id="automatik_min_luefterstufe" onchange="sendSet('automatik_min_luefterstufe', this.value)" class="bg-gray-700 border border-gray-600 text-white text-sm rounded focus:ring-accent focus:border-accent block w-20 p-1.5 text-center">
                 </div>
-                <div class="flex justify-between items-center bg-surface/30 p-3 rounded-lg border border-subtle/30 transition-colors duration-200 hover:border-subtle/60">
+                <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
                   <span class="text-sm text-gray-300">Autom. Max Stufe</span>
-                  <input type="number" id="automatik_max_luefterstufe" onchange="sendSet('automatik_max_luefterstufe', this.value)" class="bg-surface/60 border border-subtle/50 text-white text-sm rounded-lg w-20 p-1.5 text-center transition-all duration-200">
+                  <input type="number" id="automatik_max_luefterstufe" onchange="sendSet('automatik_max_luefterstufe', this.value)" class="bg-gray-700 border border-gray-600 text-white text-sm rounded focus:ring-accent focus:border-accent block w-20 p-1.5 text-center">
                 </div>
               </div>
             </div>
@@ -335,27 +164,27 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
 
           <!-- Right group: Thresholds -->
           <div>
-            <div class="setting-group-title">Schwellwerte & Automatik</div>
-            <div class="space-y-3">
-              <div class="flex justify-between items-center bg-surface/30 p-3 rounded-lg border border-subtle/30 transition-colors duration-200 hover:border-subtle/60">
+            <span class="text-sm text-gray-400 font-medium block mb-2 border-b border-gray-700 pb-1">Schwellwerte & Automatik</span>
+            <div class="space-y-4">
+              <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
                 <span class="text-sm text-gray-300">CO2 Schwellwert</span>
                 <div class="flex items-center gap-2">
-                  <input type="number" id="auto_co2_threshold" onchange="sendSet('auto_co2_threshold', this.value)" class="bg-surface/60 border border-subtle/50 text-white text-sm rounded-lg w-20 p-1.5 text-center transition-all duration-200">
-                  <span class="text-xs text-muted">ppm</span>
+                  <input type="number" id="auto_co2_threshold" onchange="sendSet('auto_co2_threshold', this.value)" class="bg-gray-700 border border-gray-600 text-white text-sm rounded focus:ring-accent focus:border-accent block w-20 p-1.5 text-center">
+                  <span class="text-xs text-gray-500">ppm</span>
                 </div>
               </div>
               
-              <div class="flex justify-between items-center bg-surface/30 p-3 rounded-lg border border-subtle/30 transition-colors duration-200 hover:border-subtle/60">
+              <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
                 <span class="text-sm text-gray-300">Feuchte Schwellwert</span>
                 <div class="flex items-center gap-2">
-                  <input type="number" id="auto_humidity_threshold" onchange="sendSet('auto_humidity_threshold', this.value)" class="bg-surface/60 border border-subtle/50 text-white text-sm rounded-lg w-20 p-1.5 text-center transition-all duration-200">
-                  <span class="text-xs text-muted">%</span>
+                  <input type="number" id="auto_humidity_threshold" onchange="sendSet('auto_humidity_threshold', this.value)" class="bg-gray-700 border border-gray-600 text-white text-sm rounded focus:ring-accent focus:border-accent block w-20 p-1.5 text-center">
+                  <span class="text-xs text-gray-500">%</span>
                 </div>
               </div>
 
-              <div class="flex justify-between items-center bg-surface/30 p-3 rounded-lg border border-subtle/30 transition-colors duration-200 hover:border-subtle/60">
+              <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
                 <span class="text-sm text-gray-300">Anwesenheit Anpassung</span>
-                <input type="number" id="auto_presence_slider" onchange="sendSet('auto_presence_slider', this.value)" class="bg-surface/60 border border-subtle/50 text-white text-sm rounded-lg w-20 p-1.5 text-center transition-all duration-200">
+                <input type="number" id="auto_presence_slider" onchange="sendSet('auto_presence_slider', this.value)" class="bg-gray-700 border border-gray-600 text-white text-sm rounded focus:ring-accent focus:border-accent block w-20 p-1.5 text-center">
               </div>
             </div>
           </div>
@@ -363,20 +192,14 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
       </div>
 
       <!-- Verbundene Geräte (ESP-NOW) -->
-      <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col space-y-4 md:col-span-2 lg:col-span-3 hidden" id="peers_card">
-        <div class="section-header">
-          <div class="icon bg-sky-500/15 text-sky-400">📶</div>
-          <h2>Verbundene Geräte (ESP-NOW)</h2>
-        </div>
-        <div id="peers_container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col space-y-4 md:col-span-2 lg:col-span-3 hidden" id="peers_card">
+        <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-2">Verbundene Geräte (ESP-NOW)</h2>
+        <div id="peers_container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2"></div>
       </div>
 
       <!-- Chart -->
-      <div class="dash-card bg-card rounded-xl p-5 shadow-lg border border-gray-800/60 flex flex-col md:col-span-2 lg:col-span-3">
-        <div class="section-header">
-          <div class="icon bg-pink-500/15 text-pink-400">📈</div>
-          <h2>Graphen & Verlauf</h2>
-        </div>
+      <div class="bg-card rounded-xl p-5 shadow-lg border border-gray-800 flex flex-col md:col-span-2 lg:col-span-3">
+        <h2 class="text-xl font-semibold text-white border-b border-gray-700 pb-2 mb-4">Graphen & Verlauf</h2>
         <div class="relative w-full h-[400px]">
           <canvas id="historyChart"></canvas>
         </div>
@@ -400,47 +223,43 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
       datasets: [
         {
           label: 'Lüfter RPM',
-          borderColor: '#22d3ee',
-          backgroundColor: 'rgba(34, 211, 238, 0.08)',
+          borderColor: '#03dac6',
+          backgroundColor: '#03dac6',
           data: [null, null, null, null, null],
           yAxisID: 'y',
-          tension: 0.4,
+          tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
-          fill: true
+          pointRadius: 0
         },
         {
           label: 'Raumtemp °C',
-          borderColor: '#f87171',
-          backgroundColor: 'rgba(248, 113, 113, 0.06)',
+          borderColor: '#cf6679',
+          backgroundColor: '#cf6679',
           data: [null, null, null, null, null],
           yAxisID: 'y1',
-          tension: 0.4,
+          tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
-          fill: false
+          pointRadius: 0
         },
         {
           label: 'CO2 ppm',
-          borderColor: '#a78bfa',
-          backgroundColor: 'rgba(167, 139, 250, 0.06)',
+          borderColor: '#bb86fc',
+          backgroundColor: '#bb86fc',
           data: [null, null, null, null, null],
           yAxisID: 'y2',
-          tension: 0.4,
+          tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
-          fill: false
+          pointRadius: 0
         },
         {
           label: 'Luftfeuchte %',
-          borderColor: '#38bdf8',
-          backgroundColor: 'rgba(56, 189, 248, 0.06)',
+          borderColor: '#03a9f4',
+          backgroundColor: '#03a9f4',
           data: [null, null, null, null, null],
           yAxisID: 'y1',
-          tension: 0.4,
+          tension: 0.3,
           borderWidth: 2,
-          pointRadius: 0,
-          fill: false
+          pointRadius: 0
         }
       ]
     };
@@ -456,79 +275,50 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
         interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { 
-            labels: { 
-              color: '#e2e8f0', 
-              usePointStyle: true, 
-              boxWidth: 8,
-              padding: 16,
-              font: { family: 'Inter', size: 12, weight: '500' }
-            },
+            labels: { color: '#e5e7eb', usePointStyle: true, boxWidth: 8 },
             position: 'top'
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-            titleColor: '#f1f5f9',
-            bodyColor: '#cbd5e1',
-            borderColor: '#334155',
+            backgroundColor: 'rgba(30, 30, 30, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#e5e7eb',
+            borderColor: '#374151',
             borderWidth: 1,
-            padding: 12,
-            cornerRadius: 8,
-            titleFont: { family: 'Inter', weight: '600' },
-            bodyFont: { family: 'Inter' }
+            padding: 10
           }
         },
         scales: {
           x: { 
-            ticks: { color: '#64748b', maxRotation: 0, autoSkipPadding: 20, font: { size: 11 } },
-            grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false }
+            ticks: { color: '#9ca3af', maxRotation: 0, autoSkipPadding: 15 },
+            grid: { color: '#374151', drawBorder: false }
           },
           y: {
             type: 'linear',
             display: true,
             position: 'left',
-            title: { display: true, text: 'RPM', color: '#22d3ee', font: { family: 'Inter', size: 11, weight: '600' } },
-            ticks: { color: '#64748b', font: { size: 11 } },
-            grid: { color: 'rgba(51, 65, 85, 0.15)', drawBorder: false }
+            title: { display: true, text: 'RPM', color: '#03dac6', font: {size: 11} },
+            ticks: { color: '#9ca3af' },
+            grid: { color: '#374151', drawBorder: false }
           },
           y1: {
             type: 'linear',
             display: true,
             position: 'right',
-            title: { display: true, text: '°C / %', color: '#f87171', font: { family: 'Inter', size: 11, weight: '600' } },
-            ticks: { color: '#64748b', font: { size: 11 } },
+            title: { display: true, text: '°C / %', color: '#cf6679', font: {size: 11} },
+            ticks: { color: '#9ca3af' },
             grid: { drawOnChartArea: false }
           },
           y2: {
             type: 'linear',
             display: true,
             position: 'right',
-            title: { display: true, text: 'CO2 ppm', color: '#a78bfa', font: { family: 'Inter', size: 11, weight: '600' } },
-            ticks: { color: '#64748b', font: { size: 11 } },
+            title: { display: true, text: 'CO2 ppm', color: '#bb86fc', font: {size: 11} },
+            ticks: { color: '#9ca3af' },
             grid: { drawOnChartArea: false }
           }
         }
       }
     });
-
-    // Direction display helper – uses semantic colors
-    function formatDirection(val) {
-      if (!val || val === '--') return '<span class="val-text">--</span>';
-      const s = String(val);
-      if (s.includes('Zuluft')) return `<span class="badge" style="background:rgba(34,211,238,0.12);color:#22d3ee;">${sanitizeHTML(s)}</span>`;
-      if (s.includes('Abluft')) return `<span class="badge" style="background:rgba(248,113,113,0.12);color:#f87171;">${sanitizeHTML(s)}</span>`;
-      if (s.includes('Stillstand')) return `<span class="badge" style="background:rgba(100,116,139,0.2);color:#94a3b8;">${sanitizeHTML(s)}</span>`;
-      return `<span class="val-text">${sanitizeHTML(s)}</span>`;
-    }
-
-    // CO2 rating with color
-    function formatCO2Rating(val) {
-      if (!val || val === '--') return '<span class="val-text">--</span>';
-      const s = String(val);
-      if (s === 'Gut' || s === 'Sehr gut') return `<span class="badge" style="background:rgba(52,211,153,0.12);color:#34d399;">${sanitizeHTML(s)}</span>`;
-      if (s === 'Mäßig' || s === 'Mittel') return `<span class="badge" style="background:rgba(251,191,36,0.12);color:#fbbf24;">${sanitizeHTML(s)}</span>`;
-      if (s === 'Schlecht' || s === 'Sehr schlecht') return `<span class="badge" style="background:rgba(248,113,113,0.12);color:#f87171;">${sanitizeHTML(s)}</span>`;
-      return `<span class="val-text">${sanitizeHTML(s)}</span>`;
-    }
 
     async function updateData() {
       try {
@@ -547,39 +337,33 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
           if (el && data[id] !== null) {
             let num = parseFloat(data[id]);
             let strVal = typeof data[id] === 'string' ? data[id] : String(data[id]);
-            el.childNodes[0].textContent = isNaN(num) ? sanitizeHTML(strVal) : (Number.isInteger(num) ? num : num.toFixed(1));
+            el.textContent = isNaN(num) ? sanitizeHTML(strVal) : (Number.isInteger(num) ? num : num.toFixed(1));
           }
         });
 
-        // Direction display – uses semantic badges
+        // Direction display
         const dirEl = document.getElementById("val_direction_display");
         if (dirEl && data.direction_display !== null) {
-          dirEl.innerHTML = formatDirection(data.direction_display);
+          dirEl.textContent = sanitizeHTML(String(data.direction_display));
         }
 
-        // CO2 Bewertung – colored badge
+        // CO2 Bewertung
         const co2BewEl = document.getElementById("val_room_co2_bewertung");
         if (co2BewEl && data.room_co2_bewertung !== null) {
-          co2BewEl.innerHTML = formatCO2Rating(data.room_co2_bewertung);
+          co2BewEl.textContent = sanitizeHTML(String(data.room_co2_bewertung));
         }
 
         // Binary sensors
         const alarmEl = document.getElementById("val_filter_change_alarm");
         if (alarmEl) {
-          if (data.filter_change_alarm) {
-            alarmEl.innerHTML = '<span class="badge" style="background:rgba(248,113,113,0.15);color:#f87171;">ALARM</span>';
-          } else {
-            alarmEl.innerHTML = '<span class="badge" style="background:rgba(52,211,153,0.12);color:#34d399;">OK</span>';
-          }
+          alarmEl.innerText = data.filter_change_alarm ? "ALARM" : "OK";
+          alarmEl.className = data.filter_change_alarm ? "font-bold text-danger text-lg" : "font-medium text-accent text-lg";
         }
         
         const radarEl = document.getElementById("val_radar_presence");
         if (radarEl) {
-          if (data.radar_presence) {
-            radarEl.innerHTML = '<span class="badge" style="background:rgba(34,211,238,0.12);color:#22d3ee;">Ja</span>';
-          } else {
-            radarEl.innerHTML = '<span class="badge" style="background:rgba(100,116,139,0.15);color:#94a3b8;">Nein</span>';
-          }
+          radarEl.innerText = data.radar_presence ? "Ja" : "Nein";
+          radarEl.className = data.radar_presence ? "font-medium text-accent text-lg" : "font-medium text-gray-400 text-lg";
         }
 
         // Inputs / Selects (only update if not currently focused)
@@ -600,11 +384,11 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
         document.getElementById('peers_card').classList.remove('hidden');
         const container = document.getElementById('peers_container');
         
-        let localPhaseBadge = "<span class='badge' style='background:rgba(100,116,139,0.2);color:#94a3b8;'>--</span>";
+        let localPhaseBadge = "<span class='text-gray-400 font-bold px-2 py-0.5 bg-gray-700/50 rounded-full text-xs'>--</span>";
         if (data.direction_display && data.direction_display.includes("Zuluft")) {
-            localPhaseBadge = "<span class='badge' style='background:rgba(34,211,238,0.12);color:#22d3ee;'>IN</span>";
+            localPhaseBadge = "<span class='text-accent font-bold px-2 py-0.5 bg-accent/10 rounded-full text-xs'>IN</span>";
         } else if (data.direction_display && data.direction_display.includes("Abluft")) {
-            localPhaseBadge = "<span class='badge' style='background:rgba(248,113,113,0.12);color:#f87171;'>OUT</span>";
+            localPhaseBadge = "<span class='text-danger font-bold px-2 py-0.5 bg-danger/10 rounded-full text-xs'>OUT</span>";
         }
         
         const localRPM = (data.fan_rpm !== null && data.fan_rpm !== undefined && !isNaN(data.fan_rpm)) ? Number(data.fan_rpm).toFixed(0) : "--";
@@ -613,20 +397,20 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
         const localPID = (data.pid_demand !== null && data.pid_demand !== undefined && !isNaN(data.pid_demand)) ? (Math.round(data.pid_demand * 100) + "%") : "--";
         const localMode = data.luefter_modus === 'Wärmerückgewinnung' ? 'WRG' : (data.luefter_modus || '--');
 
-        let html = `<div class="bg-surface/30 rounded-xl p-4 border border-subtle/40 transition-all duration-200 hover:border-subtle/70 hover:shadow-lg">
-            <div class="font-semibold text-gray-300 mb-3 pb-2 border-b border-subtle/40 flex justify-between items-center">
-              <span>Gerät ${sanitizeHTML(String(data.device_id || "--"))} <span class="text-xs font-normal text-muted">(lokal)</span></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-muted"></span>
+        let html = `<div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+            <div class="font-bold text-gray-300 mb-3 pb-2 border-b border-gray-600 flex justify-between items-center">
+              <span>Gerät ${sanitizeHTML(String(data.device_id || "--"))} (lokales Gerät)</span>
+              <span class="w-2 h-2 rounded-full bg-gray-400"></span>
             </div>
-            <div class="flex justify-between text-sm mb-3">
-                <span class="text-muted">Modus: <strong class="text-gray-200">${sanitizeHTML(localMode)}</strong></span>
+            <div class="flex justify-between text-sm mb-2">
+                <span class="text-gray-400">Modus: <strong class="text-gray-200">${sanitizeHTML(localMode)}</strong></span>
                 <span class="flex items-center gap-2">Stufe: <strong class="text-gray-200">${sanitizeHTML(String(data.fan_intensity_display || "--"))}</strong> ${localPhaseBadge}</span>
             </div>
-            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs bg-bg/40 p-3 rounded-lg">
-                <div class="flex justify-between"><span class="text-muted">Lüfter RPM</span> <strong class="val-text text-sm">${localRPM}</strong></div>
-                <div class="flex justify-between"><span class="text-muted">Board-temp</span> <strong class="val-text text-sm">${localBoardT}</strong></div>
-                <div class="flex justify-between"><span class="text-muted">Raum-temp</span> <strong class="val-text text-sm">${localRoomT}</strong></div>
-                <div class="flex justify-between"><span class="text-muted">PID</span> <strong class="text-accent text-sm font-semibold">${localPID}</strong></div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 bg-black/20 p-2 rounded mt-3">
+                <div class="flex justify-between"><span>Lüfter RPM:</span> <strong class="text-gray-400">${localRPM}</strong></div>
+                <div class="flex justify-between"><span>Board-temp:</span> <strong class="text-gray-400">${localBoardT}</strong></div>
+                <div class="flex justify-between"><span>Raum-temp:</span> <strong class="text-gray-400">${localRoomT}</strong></div>
+                <div class="flex justify-between"><span>PID:</span> <strong class="text-gray-400">${localPID}</strong></div>
             </div>
         </div>`;
 
@@ -634,27 +418,27 @@ const char DASHBOARD_HTML[] PROGMEM = R"=====(
           data.peers.forEach(peer => {
             const modeNames = ["Aus", "WRG", "Durchlüften", "Stoßlüftung"];
             const mode = peer.mode >= 0 && peer.mode <= 3 ? modeNames[peer.mode] : "Unbekannt";
-            const phase = peer.phase ? "<span class='badge' style='background:rgba(34,211,238,0.12);color:#22d3ee;'>IN</span>" : "<span class='badge' style='background:rgba(248,113,113,0.12);color:#f87171;'>OUT</span>";
+            const phase = peer.phase ? "<span class='text-accent font-bold px-2 py-0.5 bg-accent/10 rounded-full text-xs'>IN</span>" : "<span class='text-danger font-bold px-2 py-0.5 bg-danger/10 rounded-full text-xs'>OUT</span>";
             
             const rpm = (peer.rpm !== undefined && peer.rpm !== null && !isNaN(peer.rpm)) ? Number(peer.rpm).toFixed(0) : "--";
             const boardT = (peer.board_t !== undefined && peer.board_t !== null && !isNaN(peer.board_t)) ? Number(peer.board_t).toFixed(1) + " °C" : "--";
             const roomT = (peer.room_t !== undefined && peer.room_t !== null && !isNaN(peer.room_t)) ? Number(peer.room_t).toFixed(1) + " °C" : "--";
             const pid = (peer.pid_demand !== undefined && peer.pid_demand !== null && !isNaN(peer.pid_demand)) ? (Math.round(peer.pid_demand * 100) + "%") : "--";
             
-            html += `<div class="bg-card rounded-xl p-4 border border-gray-800/60 transition-all duration-200 hover:border-subtle hover:shadow-lg">
-                <div class="font-semibold text-white mb-3 pb-2 border-b border-subtle/40 flex justify-between items-center">
+            html += `<div class="bg-gray-800/80 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+                <div class="font-bold text-white mb-3 pb-2 border-b border-gray-700 flex justify-between items-center">
                   <span>Gerät ${sanitizeHTML(String(peer.device_id))}</span>
-                  <span class="w-2.5 h-2.5 rounded-full bg-accent pulse-online"></span>
+                  <span class="w-2 h-2 rounded-full bg-accent"></span>
                 </div>
-                <div class="flex justify-between text-sm mb-3">
-                    <span class="text-muted">Modus: <strong class="text-gray-200">${sanitizeHTML(mode)}</strong></span>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-gray-400">Modus: <strong class="text-gray-200">${sanitizeHTML(mode)}</strong></span>
                     <span class="flex items-center gap-2">Stufe: <strong class="text-gray-200">${sanitizeHTML(String(peer.speed))}</strong> ${phase}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs bg-bg/40 p-3 rounded-lg">
-                    <div class="flex justify-between"><span class="text-muted">Lüfter RPM</span> <strong class="val-text text-sm">${rpm}</strong></div>
-                    <div class="flex justify-between"><span class="text-muted">Board-temp</span> <strong class="val-text text-sm">${boardT}</strong></div>
-                    <div class="flex justify-between"><span class="text-muted">Raum-temp</span> <strong class="val-text text-sm">${roomT}</strong></div>
-                    <div class="flex justify-between"><span class="text-muted">PID</span> <strong class="text-accent text-sm font-semibold">${pid}</strong></div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 bg-black/20 p-2 rounded mt-3">
+                    <div class="flex justify-between"><span>Lüfter RPM:</span> <strong class="text-gray-400">${rpm}</strong></div>
+                    <div class="flex justify-between"><span>Board-temp:</span> <strong class="text-gray-400">${boardT}</strong></div>
+                    <div class="flex justify-between"><span>Raum-temp:</span> <strong class="text-gray-400">${roomT}</strong></div>
+                    <div class="flex justify-between"><span>PID:</span> <strong class="text-accent/80">${pid}</strong></div>
                 </div>
             </div>`;
           });
