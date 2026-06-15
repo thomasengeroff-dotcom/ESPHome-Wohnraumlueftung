@@ -1,4 +1,4 @@
-# 🌬️ VentoSync — ESPHome Smart HRV Control for VentoMaxx V-WRG (ESP32-C6)
+# 🌬️ VentoSync — ESPHome Smart HRV Control for VentoMaxx V-WRG
 
 [![Sprache: DE](https://img.shields.io/badge/Sprache-DE-red.svg)](Readme_de.md)
 
@@ -8,10 +8,10 @@
 
 ## 🚀 Summary & Overview
 
-This open-source project offers a professional, decentralized heat recovery ventilation (HRV) control system based on ESPHome. It replaces the control system of the VentoMaxx V-WRG series using a custom developed printed circuit board (PCB), controlling the reversible 12V fan for heat recovery.
+This open-source project offers a professional, decentralized heat recovery ventilation (HRV) control system based on ESPHome. It replaces the control system of the VentoMaxx V-WRG series using a custom developed printed circuit board (PCB) based on an ESP32-C6 microcontroller, controlling the reversible 12V fan for heat recovery.
 It optionally monitors air quality (CO2, humidity, and temperature) using a high-quality Sensirion SCD41 sensor, calculates effective heat recovery and uses the **original VentoMaxx control panel** for seamless integration and intuitive operation.
-Furthermore, a mmWave radar sensor for presence detection can be optionally integrated, which can be mounted invisibly behind the cover of the ventilation unit.
-Communication between individual ventilation units takes place via the stable ESP-NOW protocol, so no Wi-Fi or central control unit is required (the power line communication used by VentoMaxx is not used).
+Furthermore, a mmWave radar sensor for presence detection can be optionally integrated and mounted invisibly behind the front cover of the ventilation unit.
+Communication between individual ventilation units takes place via the stable ESP-NOW protocol, so no Wi-Fi or power line communication is required.
 
 > 💡 **Compatibility:** The control system works in principle for any decentralized residential ventilation which works with a reversible 12V fan (3-PIN or 4-PIN PWM). However, it was **specifically developed as a replacement for the VentoMaxx V-WRG series**. The hardware (PCB layout/size and control panel) is therefore explicitly optimized for the VentoMaxx V-WRG series and needs to be adapted for other manufacturers. The PCB is designed to fit exactly into the housing of the VentoMaxx V-WRG series and uses the existing mounting points.
 Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as it uses a central control unit! Adaption to the ZR-WRG series is possible, but currently not implemented.
@@ -87,9 +87,10 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 ## Motivation
 
 Many years ago, as part of a house renovation, I installed the V-WRG decentralized residential ventilation from Ventomaxx (10 units) and was very satisfied with it. However, the proprietary control and the lack of integration into my smart home system always bothered me. Therefore, I decided to develop my own circuit board (PCB) including control software based on ESPHome, as there was no ready-made solution. This solution is open source and is intended to help other users who are in the same situation as I was.
-For ventilation control based on CO2, I use an extremely high-quality and precise CO2 sensor (Sensirion SCD41), which is integrated directly into the board (via a small additional PCB; Note: Currently the Bosch BME680 serves as a fallback, as the SCD41 PCB is still in production). This sensor measures the real CO2 concentration in the air and controls the ventilation intensity according to the presets (using modern PID control). All code comments and internal documentation have been switched to English for better international maintainability, while the user interface remains in German.
-Since the ventilation units in the various rooms are usually in a very central position, I also use them directly for presence detection via a radar sensor, which can be mounted invisibly hidden behind the cover of the ventilation unit. The presence sensor is used for controlling the ventilation intensity in Smart automatic mode and can also be used in Home Assistant for any other automations.
-According to my research, the range of functions of this custom development goes beyond everything currently found on the ventilation unit market!
+For ventilation control based on CO2, I use an extremely high-quality and precise CO2 sensor (Sensirion SCD41), which is integrated directly into the board (via a small additional PCB; Note: Currently the Bosch BME680 serves as a fallback, as the SCD41 PCB is still in production). This sensor measures the real CO2 concentration in the air and controls the ventilation intensity according to the presets (using modern PID control). All code comments and internal documentation have been switched to English for better international maintainability, while the user interface remains in German (at least for now).
+Since the ventilation units in the various rooms are usually in a very central position, I also use them directly for presence detection via a radar sensor, which can be mounted invisibly hidden behind the cover of the ventilation unit. The presence sensor is used for controlling the ventilation intensity in Smart automatic mode and can also be used in Home Assistant for any other automation.
+According to my research, the range of functionality of this project goes beyond everything currently found on the ventilation unit market!
+If you own a VentoMaxx V-WRG system, you are in luck: you can easily upgrade your system and boost it with advanced, 21st-century smart features!
 
 ---
 
@@ -217,9 +218,9 @@ To ensure an optimal user experience, the original control panel of the VentoMax
 - 🚥 **Original VentoMaxx Panel**: Use of the original control panel with 9 LEDs and 3 buttons with mostly identical functionality or operation as the original.
 - 🔘 **Intuitive Control**:
   - **ON / OFF**: System On/Off/Reset.
-    Short press --> turns the device on.
-    Hold for 5sec --> turns the device off.
-    Hold for 10sec --> turns the device off and restarts the system (reboot).
+    Short press --> Toggles ventilation ON/OFF (OFF: stops the fan via 50% PWM but remains online in Monitoring Mode with Wi-Fi/sensors active; ON: restores the last active mode and wakes from Light Sleep).
+    Hold for 5sec --> Enters Light Sleep Mode (turns off the fan, turns off status LEDs, and disables the Wi-Fi radio to save power).
+    Hold for 10sec --> Enters Light Sleep Mode and restarts the ESP32 (reboot).
   - **Mode**: Short press cycles through programs: **Auto → Heat Recovery → Ventilation → Boost Ventilation → Off**.
   - **Level +**: 10 speed levels (cyclic, indicated by 5 LEDs with half/full brightness). The original Ventomaxx control only offers 5 levels. Holding the button cycles through the ventilation levels.
 - 🔆 **LED Feedback & Diagnostic Codes**: Indication of mode, current fan level (1-10), and status.
@@ -546,9 +547,11 @@ esphome upload ventosync_nosensor.yaml --device <IP-Address> --no-logs
 
 1. **Prepare Firmware**: Compile the firmware with your own Wi-Fi settings (using `secrets.yaml`).
 2. **Initial Flash**: Flash the ESP32-C6 (XIAO) initially via USB with the VentoSync firmware using the ESPHome dashboard or ESPHome CLI command:
+
    ```bash
    esphome run ventosync.yaml --device /dev/ttyACM0
    ```
+
 3. **Hardware Installation**:
    > [!CAUTION]
    > **DANGER TO LIFE:** The installation of the PCB and ESP into the VentoMaxx ventilation unit involves working with **230V mains voltage**. This step **MUST only be performed by a qualified electrician**.

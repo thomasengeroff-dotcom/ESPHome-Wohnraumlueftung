@@ -234,6 +234,11 @@ inline void handle_button_power_short_click() {
   }
 
   if (!ventilation_enabled->value()) {
+    if (system_on != nullptr && !system_on->value()) {
+      if (system_wakeup != nullptr) {
+        system_wakeup->execute();
+      }
+    }
     ventilation_enabled->value() = true;
     ESP_LOGI("power", "System turned ON by short press - restoring mode %d locally, awaiting network sync",
              current_mode_index->value());

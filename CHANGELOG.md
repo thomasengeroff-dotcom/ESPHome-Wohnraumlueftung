@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.24] - 2026-06-15
+
+### Added
+
+- **System Sleep/Wakeup Scripts**: Added references to `system_sleep` and `system_wakeup` scripts in `globals.h` to support low-power transitions.
+
+### Changed
+
+- **Power Button Wakeup Integration** (`user_input.h`): Integrated `system_wakeup` script execution into `handle_button_power_short_click()`. When the system is off, a short click will now execute `system_wakeup` to restore the last active mode and wake the device from Light Sleep before enabling ventilation.
+- **Documentation for Power Button States**: Updated `Readme.md` and `Readme_de.md` to document the distinct Power button states:
+  - **Short Press**: Toggles ventilation ON/OFF. OFF stops the fan via 50% PWM while remaining online in Monitoring Mode (Wi-Fi/sensors active), whereas ON restores the last active mode and wakes from Light Sleep.
+  - **Long Press (5s)**: Enters Light Sleep Mode (stops fan, turns off status LEDs, and disables the Wi-Fi radio to save power).
+  - **Very Long Press (10s)**: Enters Light Sleep Mode and restarts the ESP32 (reboot).
+
 ## [0.9.23] - 2026-06-09
 
 ### Changed

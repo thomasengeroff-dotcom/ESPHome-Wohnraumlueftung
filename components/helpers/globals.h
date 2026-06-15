@@ -256,6 +256,8 @@ extern esphome::script::RestartScript<>
     *const flash_leds_child_lock_3x; ///< 3x LED flash for child lock reject.
 extern esphome::script::RestartScript<>
     *const flash_leds_child_lock_2x; ///< 2x LED flash for child lock toggle ack.
+extern esphome::script::RestartScript<> *const system_sleep;
+extern esphome::script::RestartScript<> *const system_wakeup;
 /// @}
 
 /// @name Fan hardware

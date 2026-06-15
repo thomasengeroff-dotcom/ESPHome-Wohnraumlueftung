@@ -1,5 +1,5 @@
 {
-    "project_version": "0.9.23",
-    "project_date": "2026-06-09",
-    "project_description": "Dashboard UI overhaul: premium dark mode, Inter font, semantic badges, improved layout and micro-animations."
+    "project_version": "0.9.24",
+    "project_date": "2026-06-15",
+    "project_description": "Integrate sleep/wakeup script actions and document Power button states."
 }

@@ -211,9 +211,9 @@ Um ein optimales Bedienerlebnis zu gewährleisten, wird das originale Bedienpane
 - 🚥 **Original VentoMaxx Panel**: Nutzung des originalen Bedienfelds mit 9 LEDs und 3 Tastern mit überwiegend identischer Funktionalität bzw. Bedienung wie beim Original.
 - 🔘 **Intuitive Steuerung**:
   - **ON / OFF**: System Ein/Aus/Reset.
-    Kurzes Drücken --> schaltet das Gerät ein.
-    5sec gedrückt halten --> schaltet das Gerät aus.
-    10sec gedrückt halten --> schaltet das Gerät aus und startet das System neu (Reboot).
+    Kurzes Drücken --> Schaltet die Lüftung EIN/AUS (AUS: stoppt den Lüfter per 50% PWM, bleibt aber online im Monitoring-Modus mit aktivem WLAN/Sensoren; EIN: stellt den letzten Modus wieder her und beendet den Light-Sleep-Zustand).
+    5sec gedrückt halten --> Versetzt das Gerät in den Light-Sleep-Modus (schaltet den Lüfter aus, deaktiviert die LEDs und schaltet das WLAN aus, um Strom zu sparen).
+    10sec gedrückt halten --> Versetzt das Gerät in den Light-Sleep-Modus und startet den ESP32 neu (Reboot).
   - **Modus**: Kurzes Drücken zykliert durch die Programme: **Automatik → WRG → Durchlüften → Stoßlüftung → Aus**.
   - **Stufe +**: 10 Geschwindigkeitsstufen (zyklisch, angezeigt über 5 LEDs mit halber/voller Helligkeit). Die originale Ventomaxx Steuerung bietet hier nur 5 Stufen. Taste gedrückt halten zykliert durch die Lüftungsstufen.
 - 🔆 **LED-Feedback & Diagnose-Codes**: Anzeige von Modus, aktueller Lüfterstufe (1-10) und Status.
