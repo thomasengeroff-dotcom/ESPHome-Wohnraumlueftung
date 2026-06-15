@@ -596,7 +596,7 @@ The panel has 3 buttons and 9 status LEDs.
 
 | Button | Function | Operation |
 | :--- | :--- | :--- |
-| **Power (I/O)** | System On/Off | • Short press: On / Off (Toggle)<br>• Long (>5s): Off (Safety Off)<br>• Very long (>10s): Device restart (Reboot) |
+| **Power (I/O)** | System On/Off | • Short press: Toggles ventilation ON/OFF (OFF: stops fan, online in Monitoring Mode; ON: restores mode & wakes from Light Sleep)<br>• Long (>5s): Enters Light Sleep Mode (stops fan, turns off LEDs & Wi-Fi)<br>• Very long (>10s): Enters Light Sleep Mode and restarts the ESP32 (Reboot) |
 | **Mode (M)** | Operating Mode | • Short press: Cycles through Auto → Heat Recovery → Ventilation → Boost Ventilation → Off |
 | **Level (+)** | Fan Intensity | • Short press: Cycles through 10 speed levels (indicated via 5 LEDs).<br>• **Hold**: Automatic cycling up and down through levels (1 level per second) until released. |
 

@@ -587,7 +587,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 
 | Taste | Funktion | Bedienung |
 | :--- | :--- | :--- |
-| **Power (I/O)** | System Ein/Aus | • Kurz drücken: Ein / Aus (Toggle)<br>• Lang (>5s): Aus (Sicherheits-Aus)<br>• Sehr lang (>10s): Geräte-Neustart (Reboot) |
+| **Power (I/O)** | System Ein/Aus | • Kurz drücken: Schaltet Lüftung EIN/AUS (AUS: stoppt Lüfter, bleibt online im Monitoring-Modus; EIN: stellt Modus wieder her & beendet Light-Sleep)<br>• Lang (>5s): Versetzt das Gerät in den Light-Sleep-Modus (Lüfter/LEDs/WLAN aus)<br>• Sehr lang (>10s): Versetzt das Gerät in den Light-Sleep-Modus und startet den ESP32 neu (Reboot) |
 | **Modus (M)** | Betriebsmodus | • Kurz drücken: Zykliert durch Automatik → WRG → Durchlüften → Stoßlüftung → Aus |
 | **Stufe (+)** | Lüfterstärke | • Kurz drücken: Zykliert durch 10 Geschwindigkeitsstufen (angezeigt über 5 LEDs).<br>• **Gedrückt halten**: Automatisches Auf- und Ab-Durchlaufen der Stufen (1 Stufe pro Sekunde) bis zum Loslassen. |
 
