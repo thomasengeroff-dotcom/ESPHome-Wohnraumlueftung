@@ -1,5 +1,5 @@
 {
-    "project_version": "0.9.24",
-    "project_date": "2026-06-15",
-    "project_description": "Integrate sleep/wakeup script actions and document Power button states."
+    "project_version": "0.9.26",
+    "project_date": "2026-07-13",
+    "project_description": "Fix critical peer recovery, NaN casts, and validate wire inputs in network sync."
 }

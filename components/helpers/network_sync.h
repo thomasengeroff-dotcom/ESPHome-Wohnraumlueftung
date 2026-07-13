@@ -26,12 +26,46 @@
 #pragma once
 #include "globals.h"
 
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <mutex>
+#include <optional>
+#include <queue>
+#include <string_view>
+
 // =========================================================
 // SECTION: MAC & Peer Helpers
 // =========================================================
 
 constexpr uint8_t BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 constexpr size_t MAX_PAYLOAD_LEN = 100;
+
+/// Maximum number of peers in peer_cache. Matches the LRU cap in
+/// VentilationController (H-5). Enforced in register_peer_dynamic()
+/// so the discovery path cannot bypass the limit.
+constexpr size_t MAX_PEERS_LIMIT = 10;
+
+/// Maximum depth for the peer_event_queue. Prevents unbounded growth
+/// when a peer is offline and SEND_FAIL events accumulate.
+constexpr size_t PEER_EVENT_QUEUE_MAX_DEPTH = 64;
+
+/**
+ * @brief   Safely reads the local floor and room IDs with NaN protection.
+ *
+ * @details Centralises the NaN→int cast guard so every call site that
+ *          needs floor/room IDs goes through a single checked path.
+ *          Returns std::nullopt if either config pointer is null or
+ *          the underlying float state is NaN.
+ *
+ * @return  std::optional<std::pair<int,int>>  {floor_id, room_id} or nullopt.
+ */
+inline std::optional<std::pair<int,int>> get_local_room_ids() {
+  if (config_floor_id == nullptr || config_room_id == nullptr) return std::nullopt;
+  if (std::isnan(config_floor_id->state) || std::isnan(config_room_id->state)) return std::nullopt;
+  return std::make_pair(static_cast<int>(config_floor_id->state),
+                        static_cast<int>(config_room_id->state));
+}
 
 /**
  * @brief   Checks if a given MAC address matches the local device.
@@ -148,7 +182,7 @@ inline void remove_stale_peer(const uint8_t *mac) {
   // Rebuild the NVS string from the authoritative cache
   rebuild_peers_string();
 
-  ESP_LOGW("espnow_recovery", "Stale peer %s removed (cache: %d peers remaining)",
+  ESP_LOGW("espnow_recovery", "Stale peer %s removed (cache: %zu peers remaining)",
            mac_str.c_str(), peer_cache.size());
 }
 
@@ -226,6 +260,14 @@ inline void register_peer_dynamic(const uint8_t *mac) {
 
   // 1. Add to binary peer cache (if not already present)
   if (find_peer_in_cache(mac) == nullptr) {
+    // Enforce peer-count cap to stay within NVS string limits (~254 chars)
+    // and match the LRU cap in VentilationController (H-5).
+    if (peer_cache.size() >= MAX_PEERS_LIMIT) {
+      ESP_LOGW("espnow_disc", "Peer cache full (%zu/%zu), rejecting %s",
+               peer_cache.size(), MAX_PEERS_LIMIT, mac_str.c_str());
+      return;
+    }
+
     PeerEntry entry{};
     std::copy(mac, mac + 6, entry.mac.begin());
     entry.last_seen = millis();
@@ -286,7 +328,7 @@ inline void load_peers_from_runtime_cache() {
     start = end + 1;
     end = current_list.find(",", start);
   }
-  ESP_LOGI("espnow_disc", "Peer cache loaded: %d peers from NVS", peer_cache.size());
+  ESP_LOGI("espnow_disc", "Peer cache loaded: %zu peers from NVS", peer_cache.size());
   
   // Ensure the Home Assistant dashboard sensor is freshly populated with what we loaded
   rebuild_peers_string();
@@ -306,9 +348,9 @@ inline void load_peers_from_runtime_cache() {
 inline void sync_settings_to_peers() {
   if (ventilation_ctrl == nullptr || !esphome::espnow::global_esp_now) return;
   
-  // Rate-limit beibehalten (max 1 per 500ms)
+  // Rate-limit: max 1 sync per 500ms
   static uint32_t last_settings_sync = 0;
-  if (millis() - last_settings_sync < 500) {
+  if (last_settings_sync != 0 && millis() - last_settings_sync < 500) {
     ESP_LOGD("vent_sync", "Settings sync suppressed (rate-limit active)");
     return;
   }
@@ -316,7 +358,7 @@ inline void sync_settings_to_peers() {
 
   auto data = build_and_populate_packet(esphome::MSG_STATE);
   send_sync_to_all_peers(data);
-  ESP_LOGI("vent_sync", "Sent state change via UNICAST to %d peer(s)", peer_cache.size());
+  ESP_LOGI("vent_sync", "Sent state change via UNICAST to %zu peer(s)", peer_cache.size());
 }
 
 /** @brief Sends a discovery broadcast to identify peers in the same room. */
@@ -324,15 +366,15 @@ inline void send_discovery_broadcast() {
   if (!esphome::espnow::global_esp_now || 
       !config_floor_id || !config_room_id) return;
 
-  // ✅ NaN-Check VOR dem Cast (UB-Prevention)
-  if (std::isnan(config_floor_id->state) || 
-      std::isnan(config_room_id->state)) {
+  // NaN-Check before cast (UB-Prevention)
+  auto ids = get_local_room_ids();
+  if (!ids) {
     ESP_LOGD("espnow_disc", "IDs are NaN — deferring broadcast");
     return;
   }
 
-  uint8_t floor = (uint8_t)config_floor_id->state;
-  uint8_t room = (uint8_t)config_room_id->state;
+  uint8_t floor = static_cast<uint8_t>(ids->first);
+  uint8_t room = static_cast<uint8_t>(ids->second);
 
   if (floor == 0 || room == 0) {
     ESP_LOGD("espnow_disc", 
@@ -340,13 +382,13 @@ inline void send_discovery_broadcast() {
     return;
   }
 
-  // LOG CHANNEL for coexistence diagnostics (Essential for ESP32-C6)
+  // Log channel for coexistence diagnostics (Essential for ESP32-C6)
   uint8_t primary_chan = esphome::espnow::global_esp_now->get_wifi_channel();
 
   char buffer[64];
   int written =
       snprintf(buffer, sizeof(buffer), "ROOM_DISC:%d:%d", floor, room);
-  if (written < 0 || written >= sizeof(buffer)) {
+  if (written < 0 || written >= static_cast<int>(sizeof(buffer))) {
     ESP_LOGE("espnow_disc", "Buffer overflow prevented in discovery message");
     return;
   }
@@ -377,7 +419,7 @@ inline void request_peer_status() {
                                           [](esp_err_t err) {});
   } else {
     // Known peers — unicast (more reliable due to HW-ACK)
-    ESP_LOGI("vent_sync", "Requesting status via UNICAST from %d peer(s)...",
+    ESP_LOGI("vent_sync", "Requesting status via UNICAST from %zu peer(s)...",
              peer_cache.size());
     send_sync_to_all_peers(data);
   }
@@ -385,14 +427,19 @@ inline void request_peer_status() {
 
 /** @brief Sends a unicast confirmation to a discovered peer. */
 inline void send_discovery_confirmation(const uint8_t *target_mac) {
-  if (!esphome::espnow::global_esp_now || !config_floor_id || !config_room_id)
+  if (!esphome::espnow::global_esp_now) return;
+
+  auto ids = get_local_room_ids();
+  if (!ids) {
+    ESP_LOGD("espnow_disc", "IDs not ready (null or NaN), deferring confirmation");
     return;
+  }
 
   char buffer[64];
   int written =
       snprintf(buffer, sizeof(buffer), "ROOM_CONF:%d:%d",
-               (int)config_floor_id->state, (int)config_room_id->state);
-  if (written < 0 || written >= sizeof(buffer)) {
+               ids->first, ids->second);
+  if (written < 0 || written >= static_cast<int>(sizeof(buffer))) {
     ESP_LOGE("espnow_disc",
              "Buffer overflow prevented in confirmation message");
     return;
@@ -477,7 +524,10 @@ inline void send_sync_to_all_peers(const std::vector<uint8_t> &data) {
           ev.type = (err == ESP_OK) ? PeerEvent::Type::SEND_OK
                                     : PeerEvent::Type::SEND_FAIL;
           std::lock_guard<std::mutex> lock(peer_event_mutex);
-          peer_event_queue.push(ev);
+          // Cap event queue to prevent unbounded growth when peers are offline
+          if (peer_event_queue.size() < PEER_EVENT_QUEUE_MAX_DEPTH) {
+            peer_event_queue.push(ev);
+          }
         });
   }
 }
@@ -522,15 +572,14 @@ inline bool handle_discovery_payload(const std::string &payload,
 
   int floor, room;
   if (sscanf(payload.c_str() + prefix_len, "%d:%d", &floor, &room) == 2) {
-    if (config_floor_id == nullptr || config_room_id == nullptr ||
-        std::isnan(config_floor_id->state) ||
-        std::isnan(config_room_id->state)) {
+    auto local_ids = get_local_room_ids();
+    if (!local_ids) {
       ESP_LOGW("espnow_disc", "Config IDs not ready (null or NaN), ignoring discovery (Payload: %s)", payload.c_str());
       return false;
     }
 
-    int local_floor = (int)config_floor_id->state;
-    int local_room  = (int)config_room_id->state;
+    int local_floor = local_ids->first;
+    int local_room  = local_ids->second;
 
     ESP_LOGI("espnow_disc", "Discovery match check: [Payload %d:%d vs Local %d:%d]",
              floor, room, local_floor, local_room);
@@ -631,6 +680,14 @@ namespace espnow_handler {
       ESP_LOGW("vent_sync", "sync_interval_min out of range: %d", pkt.sync_interval_min);
       return std::nullopt;
     }
+    if (pkt.current_mode_index > 4) {
+      ESP_LOGW("vent_sync", "current_mode_index out of range: %d", pkt.current_mode_index);
+      return std::nullopt;
+    }
+    if (pkt.vent_timer_min > 1440) {
+      ESP_LOGW("vent_sync", "vent_timer_min out of range: %d", pkt.vent_timer_min);
+      return std::nullopt;
+    }
 
     return pkt; // Value copy — trivially-copyable, zero-cost at -O2 (NRVO)
   }
@@ -643,9 +700,10 @@ namespace espnow_handler {
    * @param[in] src_mac   MAC address of the requester.
    */
 inline void handle_status_request(const esphome::VentilationPacket *pkt, const uint8_t *src_mac) {
-  if (config_floor_id != nullptr && config_room_id != nullptr &&
-      pkt->floor_id == (int)config_floor_id->state &&
-      pkt->room_id == (int)config_room_id->state) {
+  auto ids = get_local_room_ids();
+  if (ids &&
+      pkt->floor_id == ids->first &&
+      pkt->room_id == ids->second) {
     // FIX: Register the requester as a peer immediately
     register_peer_dynamic(src_mac);
 
@@ -669,7 +727,7 @@ inline void handle_config_sync(const esphome::VentilationPacket *pkt) {
   bool dirty = false;
   auto *v = ventilation_ctrl;
 
-  // 1. Automatik Min/Max Levels (Sliders)
+  // 1. Automatik Min/Max levels (Sliders)
   if (automatik_min_fan_level != nullptr &&
       automatik_min_luefterstufe != nullptr &&
       pkt->automatik_min_fan_level >= 1 && pkt->automatik_min_fan_level <= 10 &&
@@ -688,7 +746,7 @@ inline void handle_config_sync(const esphome::VentilationPacket *pkt) {
     dirty = true;
   }
 
-  // 3. Thresholds
+  // 2. Thresholds
   if (auto_co2_threshold_val != nullptr && auto_co2_threshold != nullptr &&
       pkt->auto_co2_threshold_val >= 400 &&
       pkt->auto_co2_threshold_val <= 5000 &&
@@ -727,23 +785,25 @@ inline void handle_config_sync(const esphome::VentilationPacket *pkt) {
     dirty = true;
   }
 
-  // 5. System Timers
+  // 3. System Timers
   if (sync_interval_config != nullptr && pkt->sync_interval_min >= 1 &&
       pkt->sync_interval_min <= 1440 &&
-      v->sync_interval_ms != (uint32_t)(pkt->sync_interval_min * 60 * 1000)) {
-    v->sync_interval_ms = (uint32_t)(pkt->sync_interval_min * 60 * 1000);
+      v->sync_interval_ms != static_cast<uint32_t>(pkt->sync_interval_min * 60 * 1000)) {
+    v->sync_interval_ms = static_cast<uint32_t>(pkt->sync_interval_min * 60 * 1000);
     sync_interval_config->publish_state(pkt->sync_interval_min);
     dirty = true;
   }
 
+  // Note: vent_timer intentionally does not set dirty because it does not
+  // affect auto-mode evaluation (only the ventilation duration timer).
   if (vent_timer != nullptr && pkt->vent_timer_min <= 1440 &&
-      (uint32_t)(pkt->vent_timer_min * 60 * 1000) !=
+      static_cast<uint32_t>(pkt->vent_timer_min * 60 * 1000) !=
           v->state_machine.ventilation_duration_ms) {
     v->state_machine.ventilation_duration_ms = pkt->vent_timer_min * 60 * 1000;
     vent_timer->publish_state(pkt->vent_timer_min);
   }
 
-  // 6. UI Settings (LED Brightness)
+  // 4. UI Settings (LED Brightness)
   if (max_led_brightness != nullptr && led_max_brightness_config != nullptr &&
       update_leds != nullptr && pkt->max_led_brightness >= 0.05f &&
       pkt->max_led_brightness <= 1.0f &&
@@ -770,23 +830,13 @@ inline void handle_state_sync(const esphome::VentilationPacket *pkt, bool force 
   if (v == nullptr)
     return;
 
-  // Issue #3 FIX: Propagate auto_mode_active from the sender's mode index.
-  // Devices in the same room must always share the same operating mode.
-  // current_mode_index == 0 means "Automatik" on the sender.
-  bool sender_in_auto = (pkt->current_mode_index == 0);
-  if (auto_mode_active != nullptr && auto_mode_active->value() != sender_in_auto) {
-    auto_mode_active->value() = sender_in_auto;
-    ESP_LOGI("vent_sync", "Synced auto_mode_active to %s (from peer mode_index %d)",
-             sender_in_auto ? "ON" : "OFF", pkt->current_mode_index);
-  }
-
   // Issue #4 FIX: Only override fan intensity from peer in manual modes.
   // In Automatik mode, the local PID controller is the authority for intensity.
   bool is_auto = (auto_mode_active != nullptr && auto_mode_active->value());
   if (!is_auto && fan_intensity_level != nullptr && 
       fan_intensity_display != nullptr &&
       (v->current_fan_intensity != pkt->fan_intensity || force)) {
-    v->set_fan_intensity(pkt->fan_intensity, false);  // ← Aktualisiert PWM
+    v->set_fan_intensity(pkt->fan_intensity, false);  // Updates PWM output
     fan_intensity_level->value() = pkt->fan_intensity;
     fan_intensity_display->publish_state(pkt->fan_intensity);
   }
@@ -794,7 +844,11 @@ inline void handle_state_sync(const esphome::VentilationPacket *pkt, bool force 
   int new_mode_idx = pkt->current_mode_index; // Trust the master's explicit UI index
   std::string mode_str = "Wärmerückgewinnung";
 
-  // 1. Sync global power switches based on the transmitted core state
+  // 1. Sync global power switches based on the transmitted core state.
+  //    NOTE: Reads v->state_machine.current_mode (local state) which was
+  //    already mutated by on_packet_received() before this function is called.
+  //    This ordering dependency is by design — the caller must invoke
+  //    on_packet_received() first.
   if (v->state_machine.current_mode == esphome::MODE_OFF) {
     if (ventilation_enabled) ventilation_enabled->value() = false;
     if (system_on) system_on->value() = false;
@@ -803,9 +857,11 @@ inline void handle_state_sync(const esphome::VentilationPacket *pkt, bool force 
     if (system_on) system_on->value() = true;
   }
 
-  // 2. Map the peer's UI mode back to local text state and adjust auto_mode
+  // 2. Map the peer's UI mode index to a local text state and set auto_mode.
+  //    Issue #3 FIX: auto_mode_active is derived solely from the mode index
+  //    in this single location (consolidated from a previous double-write).
   if (new_mode_idx == 0) {
-    mode_str = "Smart-Automatik"; // FIXED: Explicit string match
+    mode_str = "Smart-Automatik";
     if (auto_mode_active) auto_mode_active->value() = true;
   } else if (new_mode_idx == 1) {
     mode_str = "Wärmerückgewinnung";
@@ -866,8 +922,8 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data, const uint8_
   static uint32_t last_rx_hash = 0;
   uint32_t now = millis();
 
-  uint32_t hash = (uint32_t)data.size();
-  for (size_t i = 0; i < std::min(data.size(), (size_t)8); i++)
+  uint32_t hash = static_cast<uint32_t>(data.size());
+  for (size_t i = 0; i < std::min(data.size(), static_cast<size_t>(8)); i++)
     hash = hash * 31 + data[i];
   for (size_t i = 0; i < 6; i++)
     hash = hash * 31 + src_mac[i];
@@ -909,17 +965,17 @@ inline void handle_espnow_receive(const std::vector<uint8_t> &data, const uint8_
 inline void process_espnow_packet_local(const std::vector<uint8_t> &data, const uint8_t *src_mac) {
   // --- DEBUG LOGGING ---
   if (!data.empty()) {
-    ESP_LOGD("espnow_raw", "RX from %s | Len: %d | First: 0x%02X",
+    ESP_LOGD("espnow_raw", "RX from %s | Len: %zu | First: 0x%02X",
              format_mac(src_mac).c_str(), data.size(), data[0]);
   }
 
-  // ✅ Discovery-Strings VOR validate_packet() abfangen
-  // Discovery-Pakete sind Plaintext, keine VentilationPacket-Strukturen
+  // Intercept discovery strings before validate_packet().
+  // Discovery packets are plaintext, not VentilationPacket structs.
   if (!data.empty()) {
     std::string payload(data.begin(), data.end());
     if (payload.find("ROOM_DISC:") == 0 || payload.find("ROOM_CONF:") == 0) {
       handle_discovery_payload(payload, src_mac);
-      return; // Nicht weiter als VentilationPacket verarbeiten
+      return; // Not a VentilationPacket — skip structured processing
     }
   }
 
@@ -960,9 +1016,10 @@ inline void process_espnow_packet_local(const std::vector<uint8_t> &data, const 
   if (static_cast<esphome::MessageType>(pkt->msg_type) ==
           esphome::MSG_STATUS_RESPONSE &&
       !v->is_state_synced) {
-    if (config_floor_id != nullptr && config_room_id != nullptr &&
-        pkt->floor_id == (int)config_floor_id->state &&
-        pkt->room_id == (int)config_room_id->state) {
+    auto ids = get_local_room_ids();
+    if (ids &&
+        pkt->floor_id == ids->first &&
+        pkt->room_id == ids->second) {
       // Prefer Master's response; accept non-Master only as fallback
       if (!is_from_master(pkt)) {
         ESP_LOGI("vent_sync", "Non-master peer %d responded. Accepting as fallback (master may be offline).",
@@ -1019,6 +1076,12 @@ inline void process_espnow_packet_local(const std::vector<uint8_t> &data, const 
  *          This minimizes contention with the WiFi task producer.
  */
 inline void process_queued_packets() {
+  // (K-1 Fix) Always drain send-ACK events, even when no RX packets are
+  // pending. Without this, SEND_FAIL events from offline peers accumulate
+  // in peer_event_queue but are never processed — blocking stale-peer
+  // removal, re-discovery, and causing unbounded queue growth.
+  process_peer_events();
+
   // (H-4 Fix) Guard check without acquiring the mutex.
   // On the single-core ESP32-C6 (RISC-V) preemption between tasks is the
   // only concurrency mechanism. A stale empty() check here causes at most
@@ -1029,16 +1092,13 @@ inline void process_queued_packets() {
   // We keep this fast-path to avoid mutex overhead on the hot main loop.
   if (rx_queue.empty()) return;
 
-  // Drain both the RX packet queue and the peer-event queue under their
-  // respective locks into local buffers, then release before processing.
+  // Drain the RX packet queue under its lock into a local buffer,
+  // then release before processing.
   std::queue<IncomingPacket> local_queue;
   {
     std::lock_guard<std::mutex> lock(rx_queue_mutex);
     std::swap(local_queue, rx_queue);
   }
-
-  // (K-1) Process deferred send-ACK events first (safe: main-loop context)
-  process_peer_events();
 
   // Process all RX packets in main-loop context (safe for flash, UI, peers)
   while (!local_queue.empty()) {

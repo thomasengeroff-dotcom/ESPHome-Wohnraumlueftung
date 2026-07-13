@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.25] - 2026-07-13
+
+### Fixed
+
+- **Critical Peer Recovery Loop** (`network_sync.h`): Moved `process_peer_events()` execution above the empty-queue guard in `process_queued_packets()` to ensure offline peer removal and discovery triggers run consistently every loop iteration.
+- **NaN-to-int Undefined Behavior** (`network_sync.h`): Extracted a centralized, NaN-guarded helper `get_local_room_ids()` to replace direct float-to-int C-style casts across confirmation, status request, and reboot sync paths.
+- **Malformed Input Validation** (`network_sync.h`): Added strict boundary validations for `current_mode_index` and `vent_timer_min` in `validate_and_parse_packet()` to drop invalid/out-of-range payloads from the wire.
+- **Peer Cache Overflows** (`network_sync.h`): Implemented a `MAX_PEER_CACHE_SIZE = 10` capacity cap in `register_peer_dynamic()` to align with the LRU logic in VentilationController and avoid NVS overflow.
+- **Queue Memory Growth**: Capped `peer_event_queue` length at `64` elements in `send_sync_to_all_peers()` to protect against heap exhaustion during disconnected states.
+- **Compiler Warnings & Cast Safety**: Resolved C-style cast violations using `static_cast` and updated printf specifiers from `%d` to `%zu` for all `size_t` metrics to eliminate CI format warnings.
+
+### Changed
+
+- **State Sync Redundancies**: Consolidated duplicate writes to `auto_mode_active` into a single mode-mapping block and documented the ordering dependency on `on_packet_received()` in `handle_state_sync()`.
+
 ## [0.9.24] - 2026-06-15
 
 ### Added

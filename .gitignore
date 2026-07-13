@@ -22,3 +22,9 @@ wsl_info.md
 EasyEDA-Pro/PCB Prototype Images/*.jpg:Zone.Identifier
 antigravity.yaml
 readme_structural_review.md
+build.log
+print_size
+#print_size.cpp
+test_runner
+.code-workspace
+CLAUDE.mdZone.Identifier
