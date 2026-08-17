@@ -1,17 +1,31 @@
 # 🏠 Home Assistant Konfiguration: Fenstersperre (Window Guard)
 
-Für die Einbindung deiner Fenstersensoren in den VentoSync Window Guard für einen bestimmten Raum (z.B. **Raum 1**) musst du in Home Assistant eine **Binärer Sensor-Gruppe** anlegen. Diese Gruppe bündelt die Sensoren zu einer einzigen Entität, auf die die Firmware (ab v0.8.128) automatisch zugreift.
+Die **Fenstersperre (Window Guard)** pausiert automatisch alle Lüftungsgeräte in einem Raum, sobald ein Fenster geöffnet wird, um Energieverschwendung und Wärmeverluste zu vermeiden.
+
+---
+
+## ✨ Leistungsmerkmale & Verhalten
+
+- ⏱️ **Smart Pause (5s Verzögerung)**: Die Sperre greift erst nach 5 Sekunden durchgehender Fenster-Öffnung, um kurzes Lüften oder Nachschauen abzufedern. Alle VentoSync-Geräte im Raum stoppen sofort ihre Lüfter.
+- 🔄 **Automatisches Fortsetzen**: Das System behält seinen aktuellen Betriebsmodus (z. B. Automatik oder Manuell) bei und nimmt den Betrieb nahtlos wieder auf, sobald alle Fenster geschlossen sind.
+- 🔆 **Visuelles Feedback (35s Limit)**: Ein markantes Pulsieren der Master-LED (1s An, 2s Aus) signalisiert den Zustand "Pause durch Fenster". Zur Vermeidung von Lichtstörungen nachts stoppt das Pulsieren nach 35 Sekunden, während der Lüfter weiterhin sicher gestoppt bleibt.
+- 📊 **HA Status-Entität**: Eine dedizierte Binär-Sensor-Entität (`binary_sensor.fenstersperre_aktiv`) bietet direkte Sichtbarkeit des Sperrstatus in Home Assistant.
+- 🎛️ **Individueller Bypass-Schalter**: Über den Schalter **"Fenstersperre ignorieren"** (`switch.ignore_window_guard` / `switch.fenstersperre_ignorieren`) können einzelne Geräte bei Bedarf von der Raumsperre ausgenommen werden.
+
+---
+
+## 🛠️ Einrichtung in Home Assistant
+
+Für die Einbindung deiner Fenstersensoren in den VentoSync Window Guard für einen bestimmten Raum (z. B. **Raum 1**) erstellst du in Home Assistant eine **Binärer Sensor-Gruppe**. Diese Gruppe bündelt die Sensoren zu einer einzigen Entität, auf die die Firmware automatisch zugreift.
 
 **Standard-Entity-ID für Raum 1:** `binary_sensor.ventosync_window_lock_room_1`
-
-## So legst du die Gruppe an
 
 ### Option A: Über die Benutzeroberfläche (Empfohlen)
 1. Gehe zu **Einstellungen** > **Geräte & Dienste** > **Helfer**.
 2. Klicke auf **Helfer erstellen** > **Gruppe** > **Binärer Sensor-Gruppe**.
 3. **Name**: `VentoSync Window Lock Room 1`
-4. **Mitglieder**: Füge alle deine Fensterkontakte hinzu (z.B. `binary_sensor.fenster_dg_wohnraum_contact`).
-5. **Status aller Entitäten**: Aktiviere **"Status einer Entität"** (Standard – d.h. wenn *irgendein* Fenster offen ist, ist die Gruppe `on`).
+4. **Mitglieder**: Füge alle deine Fensterkontakte hinzu (z. B. `binary_sensor.fenster_dg_wohnraum_contact`).
+5. **Status aller Entitäten**: Aktiviere **"Status einer Entität"** (Standard – d. h. wenn *irgendein* Fenster offen ist, ist die Gruppe `on`).
 6. **Entitäts-ID**: Ändere diese manuell auf `ventosync_window_lock_room_1`.
 
 ### Option B: Über die `configuration.yaml`
@@ -28,11 +42,3 @@ binary_sensor:
       - binary_sensor.fenster_dg_flur_contact
       - binary_sensor.fenster_dg_gaube_contact
 ```
-
-## Wie es funktioniert
-- **Logik:** Sobald einer der Sensoren den Status `offen` (on) meldet, schaltet die Gruppe auf `on`.
-- **VentoSync Reaktion:** Alle Lüfter in Raum 1 empfangen diesen Status, stoppen den Motor und lassen die Master-LED im "Window Lock Pulse" (1s an, 2s aus) leuchten.
-- **Resume:** Sobald alle Fenster geschlossen sind, geht die Gruppe auf `off` und die Lüftung setzt automatisch dort fort, wo sie pausiert wurde.
-
-> [!TIP]
-> Du kannst die Gruppe in Home Assistant auch so konfigurieren, dass sie erst mit einer kurzen Verzögerung (z.B. 5 Sekunden) reagiert, um ein kurzes "Auf-und-Zu" beim Lüften abzufedern.

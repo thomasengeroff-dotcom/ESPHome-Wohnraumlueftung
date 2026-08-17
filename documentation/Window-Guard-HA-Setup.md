@@ -1,10 +1,24 @@
 # 🏠 Home Assistant Configuration: Window Guard
 
-To integrate multiple window sensors into the VentoSync Window Guard for a specific room (e.g., **Room 1**), you need to create a **Binary Sensor Group** in Home Assistant. This group bundles the sensors into a single entity that the firmware monitors.
+The **Window Guard** feature automatically pauses all ventilation units in a room when windows are opened to prevent heat loss and energy waste.
+
+---
+
+## ✨ Features & Behavior
+
+- ⏱️ **Smart Pause (5s Delay)**: The guard engages after 5 seconds of continuous "open" state to prevent accidental triggers when briefly checking a window. All VentoSync units in the room immediately stop their fans to prevent energy waste.
+- 🔄 **Automatic Resume**: The system preserves its current operating mode (e.g., Automatic, Heat Recovery, etc.) and resumes operation seamlessly as soon as all windows are closed.
+- 🔆 **Visual Feedback (35s Limit)**: A distinct pulsing pattern on the Master LED (1s ON, 2s OFF) indicates the "Paused by Window" state. To avoid light pollution at night, the pulsing starts after 5 seconds and stops after 35 seconds while the fan remains safely stopped.
+- 📊 **HA Status Entity**: A dedicated binary sensor (`binary_sensor.fenstersperre_aktiv`) provides real-time visibility of the lock status in Home Assistant.
+- 🎛️ **Per-Device Bypass Switch**: Includes an **"Ignore Window Guard" switch** (`switch.ignore_window_guard` / `switch.fenstersperre_ignorieren`) to bypass the lock for specific individual units if needed.
+
+---
+
+## 🛠️ Home Assistant Setup
+
+To integrate multiple window sensors into the VentoSync Window Guard for a specific room (e.g., **Room 1**), create a **Binary Sensor Group** in Home Assistant. This group bundles the sensors into a single entity that the firmware monitors.
 
 **Default Entity ID for Room 1:** `binary_sensor.ventosync_window_lock_room_1`
-
-## How to set it up
 
 ### Option A: Via the User Interface (Recommended)
 1. Go to **Settings** > **Devices & Services** > **Helpers**.
@@ -27,11 +41,3 @@ binary_sensor:
       - binary_sensor.window_office_contact_1
       - binary_sensor.window_office_contact_2
 ```
-
-## How it works
-- **Logic:** As soon as one sensor reports `open` (on), the group switches to `on`.
-- **VentoSync Reaction:** All fans in Room 1 receive this status, stop the motor, and pulse the Master LED (1s ON, 2s OFF).
-- **Resume:** Once all windows are closed, the group switches to `off`, and ventilation resumes automatically.
-
-> [!TIP]
-> You can configure the group with a short delay (e.g., 5 seconds) in Home Assistant to prevent short flickers from triggering the guard.
