@@ -93,11 +93,11 @@ interval:
               id(hrv_efficiency_cycle).publish_state(result.efficiency_pct);
               id(hrv_energy_cycle).publish_state(result.energy_recovered_wh);
               
-              ESP_LOGI("hrv", "Cycle efficiency: %.1f%% | Duration: %.0fs | Samples: %d",
+              ESP_LOGI("hrv", "Cycle efficiency: %.1f%% | Duration: %.0fs | Samples: %u",
                        result.efficiency_pct, result.cycle_duration_s,
                        ventosync::hrv::get_calculator().get_sample_count());
             } else {
-              ESP_LOGD("hrv", "Cycle result invalid (samples=%d, duration=%.0fs)",
+              ESP_LOGD("hrv", "Cycle result invalid (samples=%u, duration=%.0fs)",
                        ventosync::hrv::get_calculator().get_sample_count(), result.cycle_duration_s);
             }
           } else if (!last_was_supply && is_supply) {

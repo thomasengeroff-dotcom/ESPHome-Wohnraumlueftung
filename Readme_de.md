@@ -137,9 +137,10 @@ Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PL
 Alle Geräte in einem Raum finden sich beim Start oder Raumwechsel vollautomatisch über eine **dynamische ESP-NOW Discovery** und kommunizieren anschließend effizient via Unicast.
 
 - 🤖 **Smart-Automatik**: Vollautomatische Steuerung für maximalen Komfort und Effizienz. Standardbetrieb in Wärmerückgewinnung (Push-Pull) mit dynamischer PID-Regelung für CO2 und Luftfeuchtigkeit unter Einbezug aktueller Außenluftbedingungen. Im Sommer wird Querlüftung zur passiven nächtlichen Kühlung automatisch aktiviert, wenn es außen kühler ist als innen. *→ [Vollständige Details und Zeitbeispiele ↓](#1--smart-automatik-standard--empfohlen----led_wrg--pulsiert-langsam)*
-- 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Dieser Modus lässt die CO2, Feuchte und Radar Anwesenheits Sensorik unberücksichtigt.
-- 💨 **Querlüftung (Sommerbetrieb)**: Modus für permanenten Abluftstrom, ideal zur passiven Kühlung in Sommernächten. Flexibel konfigurierbar via Timer oder als Dauerbetrieb. Dieser Modus lässt die CO2, Feuchte und Radar Anwesenheits Sensorik unberücksichtigt.
+- 🔄 **Effiziente Wärmerückgewinnung**: Zyklischer, bidirektionaler Betrieb (Push-Pull) zur Maximierung der Energieeffizienz. Während die automatische CO2- und Feuchteregelung inaktiv ist, kann die Anwesenheitserkennung die Lüfterstufe bei Bedarf dynamisch anpassen.
+- 💨 **Querlüftung (Sommerbetrieb)**: Konstanter Luftstrom ohne Richtungswechsel (Phase-A-Geräte saugen an, Phase-B-Geräte blasen gleichzeitig ab für einen spürbaren Durchzug zur passiven Nachtkühlung). Flexibel konfigurierbar via Timer oder als Dauerbetrieb.
 - 🚀 **Stoßlüftung**: Intensivlüftung für schnellen Luftaustausch. Das Gerät lüftet für 15 Minuten mit der **manuell gewählten Intensität** und pausiert anschließend für 105 Minuten, um Feuchtigkeit effektiv abzuführen und den Keramikspeicher zu regenerieren. Danach wiederholt sich der Zyklus.
+- 🌡️ **Aus (Monitoring-Modus)**: Der Lüfter wird gestoppt (0 RPM), aber alle Sensoren (CO2, Temp, Radar) und das Web-Dashboard bleiben für lückenlose Messdaten in Home Assistant aktiv. *(Hinweis: Der extrem stromsparende Light-Sleep mit deaktiviertem WLAN wird per langem Tastendruck >5s auf den Power-Button aktiviert).*
 
 ### 🛡️ Präzisions-Sensorik & Monitoring
 
@@ -578,7 +579,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 
 - **Anwesenheit (Manuelle Modi):** In den Modi WRG, Durchlüften und Stoßlüftung wird die Lüfterstärke bei erkannter Präsenz dynamisch angepasst (Slider `-5` bis `+5`). Dies erlaubt einen bedarfsgerechten „Präsenz-Boost" ohne die Automatik-Regelung zu beeinflussen.
 
-- **🌱 Energiespar-Modus (Light Sleep):** Wenn das System ausgeschaltet wird (Modus `Aus`), wechselt der ESP32-C6 in einen stromsparenden Light Sleep. Dabei wird das WLAN deaktiviert und der LED-Treiber (PCA9685) via Hardware-Pin komplett abgeschaltet. Das Gerät bleibt über den physischen Power-Button jederzeit weckbar. Beim Aufwecken synchronisiert es sich automatisch direkt mit dem aktuellen Status der restlichen Lüftungsgruppe.
+- **🌱 Energiespar-Modus (Light Sleep):** Aktivierbar durch langen Druck auf den Power-Button (>5s). Im Light Sleep werden Lüfter und WLAN deaktiviert und der LED-Treiber (PCA9685) komplett stromlos geschaltet. Ein einfacher Druck auf den Power-Button weckt das Gerät sofort wieder auf und synchronisiert es mit der Gruppe.
 
 - **Gruppenlogik:** PID-Demand und Temperaturen werden sekündlich via ESP-NOW Unicast geteilt — alle entdeckten Geräte im Raum laufen synchron (die Lüfter skalieren identisch auf den höchsten Bedarf im Raum).
 
@@ -617,10 +618,10 @@ Details siehe [Feuchte-Management-HA-Sensor.md](documentation/Feuchte-Management
 
 ---
 
-#### 5. ⭕ Aus — beide LEDs ⚫
+#### 5. ⭕ Aus (Monitoring-Modus) — beide LEDs ⚫
 
 - **HA Entität:** `select.modus_lueftungsanlage` → `Off`
-- **Funktion:** Lüfter und PWM-Ausgänge werden gestoppt. Anlagen-LED erlischt.
+- **Funktion:** Lüfter und PWM-Ausgänge werden gestoppt (0 RPM). Alle Umweltsensoren (CO2, Temp, Radar) und das Web-Dashboard bleiben für unterbrechungsfreies Logging in Home Assistant aktiv. *(Hinweis: Für den stromsparenden Light-Sleep mit abgeschaltetem WLAN die Power-Taste >5s gedrückt halten).*
 
 ---
 

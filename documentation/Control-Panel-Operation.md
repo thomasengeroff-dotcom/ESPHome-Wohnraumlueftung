@@ -79,4 +79,6 @@ When a malfunction or special operational state occurs, the center **Master LED*
 ## ✨ Group Synchronization & Auto-Dimming
 
 * **Real-time Peer Wake-Up**: When a user changes the mode or speed level on any unit in the room, all partner units in the group wake up their displays immediately and show the updated status for 30 seconds.
-* **60s Auto-Dimming**: To prevent light pollution in living spaces and bedrooms, all status LEDs smoothly fade out 60 seconds after the last interaction. The **Power LED** stays dimmed at 20% to indicate operational readiness.
+* **60s Auto-Dimming**: To prevent light pollution in living spaces and bedrooms, all status LEDs (Mode, Intensity, Master) smoothly fade out 60 seconds (configurable via `ui_active_timeout`) after the last interaction. The **Power LED** stays dimmed at 20% to indicate operational readiness.
+* **Instant Reactivation**: Pressing any button immediately reactivates all status LEDs.
+* **Persistent Diagnostic Feedback**: The **Master LED continues to signal error states and diagnostic blink codes** (e.g. Wi-Fi loss, peer sync lost, overheat warning), even while other LEDs are in the dimmed/timeout state.

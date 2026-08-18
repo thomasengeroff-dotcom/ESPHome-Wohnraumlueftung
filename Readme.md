@@ -63,7 +63,7 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
   - [Calibration of NTCs](#calibration-of-ntcs)
 - [🎮 Operation & Control](#🎮-operation--control)
   - [🖥️ Control Panel (VentoMaxx Style)](#🖥️-control-panel-ventomaxx-style)
-  - [🔄 Detailed Operating Modes (Programs)](#🔄-detailed-operating-modes-programs)
+  - [🔄 Operating Modes (Programs)](#🔄-operating-modes-programs)
   - [📱 Control via Home Assistant](#📱-control-via-home-assistant)
 - [🧠 Heat Recovery - How it works](#🧠-heat-recovery---how-it-works)
   - [Fundamental Principle](#fundamental-principle)
@@ -140,11 +140,11 @@ This solution is a **drop-in replacement** for the [VentoMaxx V-WRG / WRG PLUS](
 
 All devices in a room find each other automatically upon startup or room change via **dynamic ESP-NOW discovery** and subsequently communicate efficiently via unicast.
 
-- 🤖 **Smart automatic**: Fully automatic control for maximum comfort and efficiency. Standard operation in heat recovery (push-pull) with dynamic PID-based adjustment to CO2 and humidity, taking outdoor air conditions into account. In summer, cross-ventilation for passive nightly cooling is automatically activated when it is cooler outside than inside. *→ [Full details and timing examples ↓](#1--smart-automatic-standard--recommended----led_wrg--pulses-slowly)*
-- 🔄 **Efficient Heat Recovery**: Cyclic, bidirectional operation (push-pull) to maximize energy efficiency. This mode ignores CO2, humidity, and radar presence sensors.
-- 💨 **Cross-Ventilation (Summer Mode)**: Mode for permanent exhaust air flow, ideal for passive cooling on summer nights. Flexibly configurable via timer or as continuous operation. This mode ignores CO2, humidity, and radar presence sensors.
+- 🤖 **Smart automatic**: Fully automatic control for maximum comfort and efficiency. Standard operation in heat recovery (push-pull) with dynamic PID-based adjustment to CO2 and humidity, taking outdoor air conditions into account. In summer, cross-ventilation for passive nightly cooling is automatically activated when it is cooler outside than inside. *→ [Full details and timing examples in 📄 Operating-Modes.md](documentation/Operating-Modes.md)*
+- 🔄 **Efficient Heat Recovery**: Cyclic, bidirectional operation (push-pull) to maximize energy efficiency. While automatic CO2 and humidity control are inactive in manual mode, presence detection can dynamically adjust fan intensity if enabled.
+- 💨 **Cross-Ventilation (Summer Mode)**: Constant airflow without changing direction (Phase-A units blow in, Phase-B units blow out simultaneously to create an effective cross-draft for passive night cooling). Flexibly configurable via timer or as continuous operation.
 - 🚀 **Boost Ventilation**: Intensive ventilation for quick air exchange. The device ventilates for 15 minutes with the **manually selected intensity** and then pauses for 105 minutes to effectively remove moisture and regenerate the ceramic heat exchanger. The cycle then repeats.
-- 🌡️ **Off**: The fan is switched off but all sensors (CO2, Temp, Radar) and the web dashboard remain fully active to ensure gap-less measurement data in Home Assistant. The device acts in a **Monitoring Mode (Sensors-only)**.
+- 🌡️ **Off (Monitoring Mode)**: The fan is switched off (0 RPM) but all sensors (CO2, Temp, Radar) and the web dashboard remain fully active to ensure gap-less measurement data in Home Assistant. *(Note: Ultra-low-power Light Sleep with Wi-Fi turned off is available via long-press on the Power button >5s).*
 
 ### 🛡️ Precision Sensors & Monitoring
 
@@ -304,7 +304,7 @@ The complete Bill of Materials (BOM) is located in the [EasyEDA-Pro](EasyEDA-Pro
 | :--- | :--- | :--- |
 | **VentoMaxx Panel** | Original panel (14-Pin FFC). 3 buttons, 9 LEDs (dimmable via PCA9685). | The pinout of the original panel was completely measured and documented by me to enable exact control via the custom PCB and the port expanders (MCP23017/PCA9685). |
 
-![Control-Panel Adapter](images/Ventomax%20V-WRG-1/Control-Panel%20Adapter.jpg)
+<img src="images/Connection14-PinFFC.png" alt="Connection 14-Pin FFC" width="50%" />
 
 ---
 
@@ -485,160 +485,36 @@ The configuration is optimized for the **[ENTC-10K9777-02](https://www.reichelt.
 
 The system is controlled intuitively via the integrated control panel or fully automatically via Home Assistant.
 
-### 🖥️ Control Panel (VentoMaxx Style)
+### 🖥️ On-Device Control Panel (VentoMaxx Style)
 
-The panel has 3 buttons and 9 status LEDs.
+The unit features an intuitive 3-button control panel with 9 status LEDs (dimmable, with auto-dimming after 60 seconds of inactivity and diagnostic blink codes).
 
-#### Button Assignment
+* **Power (I/O)**: Short press toggles ventilation ON/OFF; long press (>5s) enters Light Sleep; very long press (>10s) triggers reboot.
+* **Mode (M)**: Cycles through `Auto` → `Heat Recovery` → `Ventilation` → `Boost Ventilation` → `Off`.
+* **Level (+)**: Cycles through 10 fan speed levels (press) or continuous level cycling (hold).
+* **Feedback**: Visualized via 5 Intensity LEDs (fill-bar with 50%/100% brightness steps), 2 Mode LEDs (`LED_WRG` / `LED_VEN`), Power LED, and Master diagnostic LED.
 
-| Button | Function | Operation |
-| :--- | :--- | :--- |
-| **Power (I/O)** | System On/Off | • Short press: Toggles ventilation ON/OFF (OFF: stops fan, online in Monitoring Mode; ON: restores mode & wakes from Light Sleep)<br>• Long (>5s): Enters Light Sleep Mode (stops fan, turns off LEDs & Wi-Fi)<br>• Very long (>10s): Enters Light Sleep Mode and restarts the ESP32 (Reboot) |
-| **Mode (M)** | Operating Mode | • Short press: Cycles through Auto → Heat Recovery → Ventilation → Boost Ventilation → Off |
-| **Level (+)** | Fan Intensity | • Short press: Cycles through 10 speed levels (indicated via 5 LEDs).<br>• **Hold**: Automatic cycling up and down through levels (1 level per second) until released. |
-
-#### Status LEDs (Feedback)
-
-| LED | Quantity | Position | Behavior |
-| :--- | :---: | :--- | :--- |
-| **Power** | 🟢 1x | LED Panel | Lights up bright during operation. Dims to 20% brightness after 60s @ `ui_active_timeout` (default: 60s) (instead of turning off completely). |
-| **Master** | 🟢 1x | LED Panel | Lights up solid (dimmed) on Master Device (Device-ID=1). Signals malfunctions via blink pattern: **2x**: Peer sync lost >3min *(requires Peer monitoring switch)*  / **3x**: Wi-Fi loss >30s /  **4x**: Heat warning (50-60°C). Device switches off automatically at over 60°C. |
-| **Mode L** (`LED_WRG`) | 🟢 1x | Left | **Pulses** in Smart automatic mode. Permanently on for Heat Recovery or Ventilation. |
-| **Mode R** (`LED_VEN`) | 🟢 1x | Right | Permanently on for Boost Ventilation or Ventilation. |
-| **Intensity** | 🟢 5x | LED Panel | Shows current fan level 1–10 (half/full brightness for 10 levels via 5 LEDs). Only visible when UI is active. |
-
-**Mode LED Assignment (when UI is active):**
-
-| Mode | `LED_WRG` (left) | `LED_VEN` (right) |
-| :--- | :---: | :---: |
-| **Auto (Default)** | 🟢 (pulses slowly) | ⚫ |
-| Heat Recovery (Eco) | 🟢 | ⚫ |
-| Boost Ventilation | ⚫ | 🟢 |
-| Ventilation (Summer) | 🟢 | 🟢 |
-| Off / System OFF | ⚫ | ⚫ |
-
-**Intensity LED Assignment (Standard "Fill Bar"):**
-
-It is highly intuitive that each of the 5 LEDs represents exactly 2 intensity levels. The LED fills halfway (50%) first, then completely (100%), before the next LED is activated:
-
-- **Level 1**:  ◖ ◯ ◯ ◯ ◯  *(LED 1 @ 50%)*
-- **Level 2**:  ⬤ ◯ ◯ ◯ ◯  *(LED 1 @ 100%)*
-- **Level 3**:  ⬤ ◖ ◯ ◯ ◯  *(LED 2 starts @ 50%)*
-- **Level 4**:  ⬤ ⬤ ◯ ◯ ◯  *(LED 2 @ 100%)*
-- **...**
-- **Level 9**:  ⬤ ⬤ ⬤ ⬤ ◖  *(LED 5 @ 50%)*
-- **Level 10**: ⬤ ⬤ ⬤ ⬤ ⬤  *(LED 5 @ 100%)*
-
-This allows the "tip" of the indicator to move fluidly and logically from left to right, similar to a standard volume indicator on a smartphone.
-
-> **60 Seconds Auto-Dimming:** All status LEDs (Mode, Intensity, Master) fade out gently 60 seconds (configurable) after the last button press. The **Power LED** remains on dimmed at 20%. With each button press, all LEDs are reactivated. Exception: The **Master LED continues to signal error states**, even after the timeout.
+> 📖 **Complete Control Panel Guide:**  
+> For full details on button operations, the 10-level LED fill-bar logic, diagnostic blink patterns (Master LED), and group wake-up behavior, see the **[📄 Control Panel Operation Guide](documentation/Control-Panel-Operation.md)**.
 
 ---
 
-### 🔄 Detailed Operating Modes (Programs)
+### 🔄 Operating Modes (Programs)
 
-The device cycles through the programs via the **Mode button (M)**. Upon initial **power-on**, **Mode 1 (Smart automatic)** is active.
+The ventilation system supports 5 operating modes, which can be selected via the physical **Mode button (M)** on the unit, the local web interface, or Home Assistant.
 
-> **Hint:** The sequence when pressing the button is: **Auto → Heat Recovery → Ventilation → Boost Ventilation → Off → Auto...**
+> **Button Sequence:** **Auto → Heat Recovery → Ventilation → Boost Ventilation → Off → Auto...** *(Upon initial power-on, **Mode 1 (Smart Automatic)** is active).*
 
----
+| # | Mode | Panel LEDs (`WRG` / `VEN`) | Operation & Core Function | HA Entity / Selection |
+| :-: | :--- | :---: | :--- | :--- |
+| **1** | **🤖 Smart Automatic** *(Default)* | 🟢 *(pulses)* / ⚫ | Fully autonomous PID control based on CO2, humidity, and outdoor air conditions | `select.modus_lueftungsanlage` → `Smart automatic` |
+| **2** | **❄️ Heat Recovery** *(Eco)* | 🟢 / ⚫ | Manual push-pull heat recovery (50s–70s cycle) with up to 85% heat preservation | `select.modus_lueftungsanlage` → `Eco Recovery` |
+| **3** | **💨 Boost Ventilation** | ⚫ / 🟢 | Intensive 15 min rapid air renewal followed by a 105 min core regeneration pause | `button.stosslueftung_starten` / `Boost Ventilation` |
+| **4** | **🌬️ Cross-Ventilation** *(Summer)* | 🟢 / 🟢 | Continuous unidirectional draft (Phase A in, Phase B out) for passive night cooling | `select.modus_lueftungsanlage` → `Ventilation` |
+| **5** | **⭕ Off** *(Monitoring)* | ⚫ / ⚫ | Fan stopped (0 RPM); all climate sensors & web UI remain online for data logging | `select.modus_lueftungsanlage` → `Off` |
 
-#### 1. 🤖 Smart Automatic *(Standard / Recommended)* — `LED_WRG` 🟢 (pulses slowly)
-
-**This mode is the standard upon powering on** and handles all control tasks fully automatically. The ventilation system regulates itself independently based on environmental data and requires no manual intervention after initial HA configuration ("Set and forget").
-
-**Active Smart Features:**
-
-| Feature | Sensor(s) | Threshold |
-| :--- | :--- | :--- |
-| ✅ **CO2 Control (PID)** | SCD41 (`sensor.scd41_CO2`) | `number.auto_CO2_threshold` |
-| ✅ **Humidity Management (PID)** | SCD41 (`sensor.scd41_humidity`) + HA `outdoor_humidity` | Via outdoor humidity |
-| ✅ **Summer Cooling Function** | NTC sensors + ESP-NOW group temperature | 22°C indoor temperature |
-
-**Logic in Detail:**
-
-- **Basic Operation:** Heat recovery (`MODE_ECO_RECOVERY`) at minimum fan level (`CO2_min_fan_level`, default: 2). The change intervals (cycle duration) adapt dynamically to the current fan level (gentle 70 seconds at level 1 to fast 50 seconds at level 10) including a synchronized NTC time window.
-
-- **🎛️ Intelligent PID Control — CO2 & Humidity:** Instead of simply switching the fan on at full power when limits are exceeded, VentoSync uses a **PID controller** to regulate fan speed precisely, gradually, and above all quietly.
-
-  > **What is a PID controller?**
-  > Think of it like a careful driver: if you're barely over the speed limit, you ease off just a little. Only if you're far above the limit do you brake harder. And if you've been slightly over for a long time, you press a bit more to reach the target. VentoSync works exactly the same way with CO2 and humidity — no jerky switching, just smooth, continuously adjusting ventilation.
-
-  The controller has **two active components**:
-
-  - **P (Proportional)**: Reacts *immediately* to how far the CO2 value is above the threshold. At 100 ppm above: moderate demand. At 500 ppm above: noticeably higher demand.
-  - **I (Integral)**: The "memory" of the controller. If a deviation *persists over time* (e.g. people continuously breathing in the room), this component slowly and steadily increases the demand — until air quality improves. When CO2 drops, the integral gradually decreases and the fan returns gently to minimum.
-
-  > [!NOTE]
-  > The controller is deliberately tuned very slowly (I-gain: `0.0000005`). This prevents aggressive reactions to brief peaks. Only sustained elevated CO2 over many minutes leads to a higher fan level.
-
-  **Real-world example** — CO2 threshold `800 ppm`, fan range Levels 2–7:
-
-  | Time | CO2 value | What happens |
-  | --- | --- | --- |
-  | 0 min | 820 ppm | 20 ppm above → small proportional demand → **Fan stays at Level 2** (minimum) |
-  | 15 min | 870 ppm | 70 ppm above, integral building → **Fan stays at Level 2** |
-  | 30 min | 920 ppm | 120 ppm above, integral accumulated → **Fan switches to Level 3** |
-  | 50 min | 960 ppm | CO2 still rising, integral keeps rising → **Fan switches to Level 4** |
-  | 70 min | 900 ppm | CO2 falling, integral decreasing → **Fan returns to Level 3** |
-  | 90 min | 790 ppm | Below threshold, demand → zero → **Fan returns to Level 2** |
-
-  **Key behavior rules:**
-  - The fan changes by **at most ±1 level per 10-second cycle** — no sudden jumps.
-  - The fan never drops below the configured **minimum level** (default: Level 2) and never exceeds the **maximum level** (default: Level 7).
-  - CO2 is the **primary control signal**, but the system always uses the **higher** of CO2 and humidity demand — so neither air quality concern is ever neglected.
-  - If a device has no own sensors, it automatically adopts the highest demand from any sensor-equipped device in the room group (via ESP-NOW).
-  - When switching *into* Smart Automatic mode, all demand values reset to zero — the fan **always starts gently from the minimum level**, never jumps to a high level immediately.
-
-- **💧 Humidity Management:** The humidity PID controller (`PID_humidity`) runs continuously in parallel with CO2. Dehumidification is activated if the humidity limit is exceeded (default: 60%) **and** the outdoor air is actually drier than the indoor air (absolute humidity check via Magnus formula — not just relative humidity). If outdoor air is more humid (e.g. rainy day), the humidity demand is set to zero. See the [Enthalpy-Balance section ↑](#precision-sensors--monitoring) for worked examples with the comparison table.
-
-- **Summer Cooling:** If indoor temperature > 22°C and the outdoor area is cooler (by at least 1.5°C), the system automatically switches to `Ventilation` (cross-ventilation). Phase-A and Phase-B devices in the room blow in opposite directions simultaneously, creating real cross-ventilation. As soon as it gets warmer outside again (hysteresis), it returns to Heat Recovery.
-
-- **Presence (Manual Modes):** In Heat Recovery, Ventilation, and Boost Ventilation modes, the fan strength is dynamically adjusted when presence is detected (slider `-5` to `+5`). This allows for demand-based "presence boost" without affecting the automatic control.
-
-- **🌱 Energy Saving Mode (Light Sleep):** When the system is switched off (Mode `Off`), the ESP32-C6 switches to a power-saving Light Sleep. In this state, Wi-Fi is deactivated and the LED driver (PCA9685) is completely switched off via a hardware pin. The device remains wakeable at any time via the physical power button. Upon waking up, it automatically synchronizes directly with the current status of the rest of the ventilation group.
-
-- **Group Logic:** PID demand and temperatures are shared every second via ESP-NOW unicast — all discovered devices in the room run synchronously (the fans scale identically to the highest demand in the room).
-
-> **⚙️ Prerequisite for Humidity Management: `sensor.outdoor_humidity` in Home Assistant**
->
-> The ESPHome code expects the entity ID `sensor.outdoor_humidity` (in `sensors_climate.yaml`). There are two ways:
-> **Option A (Weather Service):** Create a template sensor based on your weather integration (e.g., OpenWeatherMap).
-> **Option B (Local Sensor):** Create a template sensor (alias) or adapt the entity ID in the YAML.
-> *Without this sensor, dehumidification still works, but the outdoor check is simply skipped.*
-For details, see [Feuchte-Management-HA-Sensor.md](documentation/Feuchte-Management-HA-Sensor.md)
-
----
-
-#### 2. ❄️ Heat Recovery (Eco Recovery) — `LED_WRG` 🟢
-
-- **HA Entity:** `select.modus_lueftungsanlage` → `Eco Recovery`
-- **Function:** Manual heat recovery operation without the Smart automatic features. The air direction changes periodically, heat loss is reduced by up to 85%.
-- **Cycle Times:** Adapt to the fan level: Level 1: **70 sec.**, Level 2: **65 sec.**, … Level 5: **50 sec.**
-- **Synchronization:** Phase A blows in, Phase B blows out — devices in push-pull arrangement, house pressure-neutral.
-
----
-
-#### 3. 💨 Boost Ventilation — `LED_VEN` 🟢
-
-- **HA Entity:** `button.stosslueftung_starten`
-- **Function:** Intensive ventilation for rapid air exchange (e.g., after showering or cooking).
-- **Sequence:** 15 minutes of intensive ventilation, 105 minutes pause, then repeat 15-minute cycle (2-hour rhythm). Alternating start direction protects the ceramic heat exchanger.
-
----
-
-#### 4. 🌬️ Cross-Ventilation / Ventilation (Summer) — `LED_WRG` 🟢 + `LED_VEN` 🟢
-
-- **HA Entity:** `select.modus_lueftungsanlage` → `Ventilation` + `number.lueftungsdauer` (Timer, 0 = endless)
-- **Function:** Constant air flow without change of direction. Half of the group sucks in, the other half blows out → cool draft through the living space.
-- **Note:** In Smart automatic mode, cross-ventilation is **automatically** activated at high indoor temperatures.
-
----
-
-#### 5. ⭕ Off — both LEDs ⚫
-
-- **HA Entity:** `select.modus_lueftungsanlage` → `Off`
-- **Function:** Fans and PWM outputs are stopped. System LED turns off.
+> 📖 **Comprehensive Operating Modes Guide:**  
+> For full technical details on the PID control logic, real-world timing examples, enthalpy-based dehumidification, summer cooling hysteresis, and Light Sleep power saving, see the **[📄 Operating Modes & Logic Guide](documentation/Operating-Modes.md)**.
 
 ---
 

@@ -101,22 +101,22 @@ external_components:
 
 esphome:
   includes:
-    - include/globals.h
-    - include/automation_helpers.h
-    - include/ha_fan_helpers.h 
-    - include/config_helpers.h
-    - include/vacation_helpers.h
-    - include/health_helpers.h
-    - include/espnow_helpers.h
-    - include/system_boot_helpers.h
-    - include/network_sync.h
-    - include/climate.h
-    - include/hrv_efficiency.h
-    - include/auto_mode.h
-    - include/system_lifecycle.h
-    - include/led_feedback.h
-    - include/user_input.h
-    - include/bme680_iaq_engine.h
+    - components/helpers/globals.h
+    - components/helpers/automation_helpers.h
+    - components/helpers/ha_fan_helpers.h 
+    - components/helpers/config_helpers.h
+    - components/helpers/vacation_helpers.h
+    - components/helpers/health_helpers.h
+    - components/helpers/espnow_helpers.h
+    - components/helpers/system_boot_helpers.h
+    - components/helpers/network_sync.h
+    - components/helpers/climate.h
+    - components/helpers/hrv_efficiency.h
+    - components/helpers/auto_mode.h
+    - components/helpers/system_lifecycle.h
+    - components/helpers/led_feedback.h
+    - components/helpers/user_input.h
+    - components/helpers/bme680_iaq_engine.h
 
   name_add_mac_suffix: true # Adds MAC address to device name (because same firmware is used for all devices)
 
