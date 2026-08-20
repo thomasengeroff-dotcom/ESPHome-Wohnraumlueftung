@@ -17,7 +17,9 @@ except ImportError:
 
 # In PlatformIO/SCons, __file__ is not defined. 
 # Attempt to find the project root relative to the build context.
-if 'env' in globals():
+if '__file__' in globals():
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+elif 'env' in globals():
     project_dir = env.get("PROJECT_DIR", os.getcwd())
 else:
     project_dir = os.getcwd()

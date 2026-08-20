@@ -31,8 +31,7 @@ substitutions:
   firmware_variant: "ventosync-ntconly"
 
 esphome:
-  platformio_options:
-    build_flags:
+  build_flags:
       - "-DVENTOSYNC_NO_SCD41"
       - "-DVENTOSYNC_NO_BME680"
       - "-DVENTOSYNC_NO_RADAR"

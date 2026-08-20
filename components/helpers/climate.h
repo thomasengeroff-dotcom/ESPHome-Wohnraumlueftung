@@ -223,9 +223,9 @@ inline esphome::optional<float> filter_ntc_combined(int sensor_idx,
 
     if (cycle_ms < NTC_MIN_WAIT_MS) {
         ESP_LOGW("ntc_filter",
-            "Cycle too short (%ums < %ums min) for NTC stabilization. "
+            "Cycle too short (%lums < %lums min) for NTC stabilization. "
             "Filter bypassed — raw values will be used.",
-            cycle_ms, NTC_MIN_WAIT_MS);
+            (unsigned long)cycle_ms, (unsigned long)NTC_MIN_WAIT_MS);
         return new_value;
     }
 

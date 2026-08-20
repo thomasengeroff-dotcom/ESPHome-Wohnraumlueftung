@@ -763,7 +763,6 @@ inline void handle_config_sync(const esphome::VentilationPacket *pkt) {
 
   if (auto_humidity_threshold_val != nullptr &&
       auto_humidity_threshold != nullptr &&
-      pkt->auto_humidity_threshold_val >= 0 &&
       pkt->auto_humidity_threshold_val <= 100 &&
       pkt->auto_humidity_threshold_val !=
           auto_humidity_threshold_val->value()) {

@@ -9,6 +9,9 @@ set -e
 # multiple variant builds within the same session.
 rm -f .version_bump_lock
 
+# 🚀 Version für diese Build-Session hochzählen:
+python3 version_bump.py
+
 echo ""
 echo "=================================================="
 echo "🚀 Checking yaml configs..."

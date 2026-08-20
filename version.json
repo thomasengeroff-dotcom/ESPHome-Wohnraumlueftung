@@ -1,5 +1,5 @@
 {
-    "project_version": "0.9.26",
-    "project_date": "2026-07-13",
-    "project_description": "Fix critical peer recovery, NaN casts, and validate wire inputs in network sync."
+    "project_version": "0.10.2",
+    "project_date": "2026-08-20",
+    "project_description": "Add support for ESPHome version 2026.8.0"
 }

@@ -93,12 +93,12 @@ interval:
               id(hrv_efficiency_cycle).publish_state(result.efficiency_pct);
               id(hrv_energy_cycle).publish_state(result.energy_recovered_wh);
               
-              ESP_LOGI("hrv", "Cycle efficiency: %.1f%% | Duration: %.0fs | Samples: %u",
+              ESP_LOGI("hrv", "Cycle efficiency: %.1f%% | Duration: %.0fs | Samples: %lu",
                        result.efficiency_pct, result.cycle_duration_s,
-                       ventosync::hrv::get_calculator().get_sample_count());
+                       (unsigned long)ventosync::hrv::get_calculator().get_sample_count());
             } else {
-              ESP_LOGD("hrv", "Cycle result invalid (samples=%u, duration=%.0fs)",
-                       ventosync::hrv::get_calculator().get_sample_count(), result.cycle_duration_s);
+              ESP_LOGD("hrv", "Cycle result invalid (samples=%lu, duration=%.0fs)",
+                       (unsigned long)ventosync::hrv::get_calculator().get_sample_count(), result.cycle_duration_s);
             }
           } else if (!last_was_supply && is_supply) {
             // Abluft -> Zuluft (New cycle starting)

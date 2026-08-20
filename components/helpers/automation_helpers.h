@@ -210,7 +210,7 @@ inline void update_fan_logic() {
   
   // Recovery after long pauses (e.g. OTA update)
   if (dt > 5000) {
-      ESP_LOGW("fan", "Long pause detected (%ums) — resetting slew state", dt);
+      ESP_LOGW("fan", "Long pause detected (%lums) — resetting slew state", (unsigned long)dt);
       current_smoothed_speed = (current_smoothed_speed + base_speed) * 0.5f;
       dt = 100;
   }
@@ -265,7 +265,7 @@ inline void notify_fan_direction_changed() {
   // NOTE: NTC history invalidation is handled automatically by
   // filter_ntc_stable() via last_direction_change_time comparison.
   // Do NOT clear ntc_history here to avoid dual-invalidation logic paths.
-  ESP_LOGD("ntc_filter", "Fan direction changed at t=%u", last_direction_change_time);
+  ESP_LOGD("ntc_filter", "Fan direction changed at t=%lu", (unsigned long)last_direction_change_time);
 }
 
 /**

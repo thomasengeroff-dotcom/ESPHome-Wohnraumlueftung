@@ -489,10 +489,10 @@ The system is controlled intuitively via the integrated control panel or fully a
 
 The unit features an intuitive 3-button control panel with 9 status LEDs (dimmable, with auto-dimming after 60 seconds of inactivity and diagnostic blink codes).
 
-* **Power (I/O)**: Short press toggles ventilation ON/OFF; long press (>5s) enters Light Sleep; very long press (>10s) triggers reboot.
-* **Mode (M)**: Cycles through `Auto` → `Heat Recovery` → `Ventilation` → `Boost Ventilation` → `Off`.
-* **Level (+)**: Cycles through 10 fan speed levels (press) or continuous level cycling (hold).
-* **Feedback**: Visualized via 5 Intensity LEDs (fill-bar with 50%/100% brightness steps), 2 Mode LEDs (`LED_WRG` / `LED_VEN`), Power LED, and Master diagnostic LED.
+- **Power (I/O)**: Short press toggles ventilation ON/OFF; long press (>5s) enters Light Sleep; very long press (>10s) triggers reboot.
+- **Mode (M)**: Cycles through `Auto` → `Heat Recovery` → `Ventilation` → `Boost Ventilation` → `Off`.
+- **Level (+)**: Cycles through 10 fan speed levels (press) or continuous level cycling (hold).
+- **Feedback**: Visualized via 5 Intensity LEDs (fill-bar with 50%/100% brightness steps), 2 Mode LEDs (`LED_WRG` / `LED_VEN`), Power LED, and Master diagnostic LED.
 
 > 📖 **Complete Control Panel Guide:**  
 > For full details on button operations, the 10-level LED fill-bar logic, diagnostic blink patterns (Master LED), and group wake-up behavior, see the **[📄 Control Panel Operation Guide](documentation/Control-Panel-Operation.md)**.

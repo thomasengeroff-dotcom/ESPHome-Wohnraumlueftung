@@ -474,7 +474,7 @@ public:
     if (ms == state_machine.cycle_duration_ms)
       return;
     state_machine.set_cycle_duration(millis(), ms);
-    ESP_LOGI("vent", "Cycle duration updated to %d ms", ms);
+    ESP_LOGI("vent", "Cycle duration updated to %lu ms", (unsigned long)ms);
     if (refresh_hw) {
       update_hardware();
     }
@@ -487,7 +487,7 @@ public:
    */
   void set_sync_interval(uint32_t ms) {
     sync_interval_ms = ms;
-    ESP_LOGI("vent", "Sync interval updated to %d ms", sync_interval_ms);
+    ESP_LOGI("vent", "Sync interval updated to %lu ms", (unsigned long)sync_interval_ms);
     trigger_sync();
   }
 
@@ -522,8 +522,8 @@ public:
         duration == state_machine.ventilation_duration_ms)
       return;
  
-    ESP_LOGI("vent", "Mode change: %d -> %d (Duration: %d ms, Notify: %s)",
-             state_machine.current_mode, mode, duration, notify ? "YES" : "NO");
+    ESP_LOGI("vent", "Mode change: %d -> %d (Duration: %lu ms, Notify: %s)",
+             (int)state_machine.current_mode, (int)mode, (unsigned long)duration, notify ? "YES" : "NO");
     state_machine.set_mode(mode, millis(), duration);
  
     update_hardware();
