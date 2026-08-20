@@ -37,23 +37,16 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
   - [⚙️ Intelligente Betriebsmodi](#⚙️-intelligente-betriebsmodi)
   - [🛡️ Präzisions-Sensorik & Monitoring](#🛡️-präzisions-sensorik--monitoring)
   - [⚡ Extrem niedriger Stromverbrauch](#⚡-extrem-niedriger-stromverbrauch)
-  - [🖥️ Bedienung am Lüftungsgerät](#🖥️-bedienung-am-lüftungsgerät)
+  - [🖥️ Native Bedienung am Gerät](#️-native-bedienung-am-gerät)
   - [🏠 Home Assistant Integration](#🏠-home-assistant-integration)
   - [📊 VentoSync Dashboard - Lokales Web-Dashboard](#📊-ventosync-dashboard---lokales-web-dashboard)
 - [📡 ESP-NOW: Kabellose Autonomie](#📡-esp-now-kabellose-autonomie)
-  - [Vorteile im Überblick](#vorteile-im-überblick)
-  - [Discovery-Ablauf](#discovery-ablauf)
 - [🗺️ Roadmap & Zukünftige Erweiterungen](#🗺️-roadmap--zukünftige-erweiterungen)
 - [🎛️ Eigene Platine - PCB](#️-eigene-platine---pcb)
   - [Passgenaues SCD41 Sensor Board](#specialized-scd41-sensor-board)
-- [🛠️ Hardware & Bill of Materials (BOM)](#🛠️-hardware--bill-of-materials-bom)
-  - [Zentrale Einheit](#zentrale-einheit)
-  - [Aktoren & Sensoren](#aktoren--sensoren)
-  - [🖱️ Bedienpanel am Gerät](#🖱️-bedienpanel-am-gerät)
-- [🔌 Pinbelegung & Verkabelung](#🔌-pinbelegung--verkabelung)
-  - [📊 Schematische Darstellung (Konzept)](#📊-schematische-darstellung-konzept)
 - [🛠️ Einrichtung & Installation](#🛠️-einrichtung--installation)
-  - [1. Entwicklungsumgebung (Linux venv & ESPHome-CLI)](#1-entwicklungsumgebung-linux-venv--esphome-cli)
+  - [🧰 PCB-Montage im VentoMaxx-Gehäuse & Lüfter-Verdrahtung](#-pcb-montage-im-ventomaxx-gehäuse--lüfter-verdrahtung)
+  - [1. Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)](#1-entwicklungsumgebung-linux-venv--esphome-cli)
   - [2. Konfiguration & Kompilierung](#2-konfiguration--kompilierung)
   - [3. Erstmaliges Flashen & Inbetriebnahme](#3-erstmaliges-flashen--inbetriebnahme)
   - [4. OTA-Updates & Home Assistant Integration](#4-ota-updates--home-assistant-integration)
@@ -61,23 +54,13 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 - [🎮 Bedienung & Steuerung](#🎮-bedienung--steuerung)
   - [🖐️ Bedienpanel (VentoMaxx Style)](#🖐️-bedienpanel-ventomaxx-style)
   - [🔄 Detaillierte Betriebsmodi (Programme)](#🔄-detaillierte-betriebsmodi-programme)
-  - [📱 Steuerung über Home Assistant](#📱-steuerung über-home-assistant)
+  - [📱 Steuerung über Home Assistant](#📱-steuerung-über-home-assistant)
 - [🧠 Wärmerückgewinnung - So funktioniert's](#🧠-wärmerückgewinnung---so-funktionierts)
-  - [Grundprinzip](#grundprinzip)
-  - [Betriebszyklus (50s bis 70s pro Phase)](#betriebszyklus-50s-bis-70s-pro-phase)
-  - [Phase 1: Abluft (Rausblasen) - 70 Sekunden](#phase-1-abluft-rausblasen---70-sekunden)
-  - [Phase 2: Zuluft (Reinblasen) - 70 Sekunden](#phase-2-zuluft-reinblasen---70-sekunden)
-  - [NTC Sensoren (Temperatur-Stabilisierung)](#ntc-sensoren-temperatur-stabilisierung)
-  - [Luftqualität & Gassensorik (BME680)](#luftqualität--gassensorik-bme680)
-  - [Effizienzberechnung (Energiebasiert)](#effizienzberechnung-energiebasiert)
-  - [Optimierung der Effizienz](#optimierung-der-effizienz)
-  - [Synchronisation mehrerer Geräte](#synchronisation-mehrerer-geräte)
 - [🔧 Technische Details & Optimierungen](#🔧-technische-details--optimierungen)
 - [📁 Projektstruktur](#📁-projektstruktur)
 - [🏗️ Code-Architektur & Wartbarkeit](#🏗️-code-architektur--wartbarkeit)
 - [🚀 Automatisierte Release & Versionierung](#🚀-automatisierte-release--versionierung)
 - [⚠️ Sicherheitshinweise](#⚠️-sicherheitshinweise)
-- [Suchbegriffe](#suchbegriffe)
 - [⚖️ Rechtlicher Haftungsausschluss](#⚖️-rechtlicher-haftungsausschluss)
 - [📜 Lizenz](#📜-lizenz)
 
@@ -191,13 +174,13 @@ Selbst bei ganzjährigem 24/7-Dauerbetrieb auf der *absoluten Maximalstufe (10)*
 
 *Besonders bemerkenswert: In diese Messwerte ist der durchgängige Betrieb aller verbauten Komponenten eingeflossen – inklusive der ESP32-Steuerung (WLAN/ESP-NOW), der Klima- und CO2-Sensoren sowie dem kontinuierlich messenden mmWave-Radar-Anwesenheitssensor!*
 
-### 🖥️ Bedienung am Lüftungsgerät
+### 🖥️ Native Bedienung am Gerät
 
-Um ein intuitives und optimales Bedienerlebnis zu gewährleisten, wird das originale Bedienpanel des VentoMaxx V-WRG-1 (9 LEDs, 3 Taster) vollständig beibehalten und um 10 Lüftungsstufen, Gruppen-Synchronisation (Wake-up Effekt) sowie intelligente LED-Diagnose-Blinkcodes erweitert.
+Das originale Bedienpanel des VentoMaxx V-WRG-1 (9 LEDs, 3 Taster) bleibt vollständig erhalten und wird um 10 Lüftungsstufen, synchrone Gruppen-Aktivierung in Echtzeit sowie automatisches Dimmen aufgewertet.
 
 ![Bedienung am Lüftungsgerät](images/Ventomax%20V-WRG-1/PXL_20260128_232625674.jpg)
 
-> 👉 *Ausführliche Anleitung zu Tastenkombinationen, 10-Stufen-Balkenanzeige und Diagnose-Blinkcodes siehe [📄 Bedienungsanleitung Lüftungsgerät](documentation/Bedienung-Lueftungsgeraet.md).*
+> 👉 *Für eine schnelle Tastenübersicht siehe [Bedienpanel am Gerät](#🖐️-bedienpanel-ventomaxx-style) weiter unten oder die ausführliche [📄 Bedienungsanleitung Lüftungsgerät](documentation/Bedienung-Lueftungsgeraet.md).*
 
 ### 🏠 Home Assistant Integration
 
@@ -209,7 +192,7 @@ Um ein intuitives und optimales Bedienerlebnis zu gewährleisten, wird das origi
 
 **Hybride Integrations-Philosophie**: Während der **Hauptfokus** von VentoSync auf einer tiefen und nahtlosen Integration in **Home Assistant** liegt, bietet das Projekt auch eine leistungsstarke Alternative. Durch das integrierte **lokale Web-Dashboard** kann das System als **voll funktionsfähige Standalone-Lösung** genutzt werden. Dies ermöglicht es Anwendern, den vollen Funktionsumfang – von der automatisierten Lüftung bis zur Sensordiagnose – zu nutzen, ohne jemals eine Home Assistant-Instanz einrichten oder warten zu müssen.
 
-#### 📊 VentoSync Dashboard - Lokales Web-Dashboard
+### 📊 VentoSync Dashboard - Lokales Web-Dashboard
 
 Für VentoSync ist kein Home Assistant oder Smart-Home-Server zwingend erforderlich: Jedes Lüftungsgerät stellt eine eigene, direkt im Webbrowser (auf Smartphone, Tablet oder PC) aufrufbare Benutzeroberfläche bereit — so kannst du Raumluftwerte live überwachen, Betriebsmodi steuern und Einstellungen vornehmen, ganz ohne App- oder Software-Installation.
 
@@ -266,101 +249,43 @@ Um die höchstmögliche Genauigkeit zu erzielen, wurde eine separate Platine spe
 
 ![SCD41 Prototyp](EasyEDA-Pro/PCB%20SCD41%20Prototype%20Images/SCD41-PCB-3D-top_small.png)
 
----
-
-## 🛠️ Hardware & Bill of Materials (BOM)
-
-### Zentrale Einheit
-
-| Komponente | Beschreibung |
-| :--- | :--- |
-| **MCU** | [Seeed Studio XIAO ESP32C6](https://wiki.seeedstudio.com/xiao_esp32c6_getting_started/) (RISC-V, WiFi 6, Zigbee/Matter ready) |
-| **Power** | TRACO POWER TMPS 10-112 (230V AC zu 12V DC, 10W) <br>– **Premium-Wahl:** Zertifiziert nach **EN 60335-1** (Haushaltsgeräte) und **EN 62368-1** (IT/Industrie). Die Wahl fiel auf dieses High-End-Modul von Traco Power (Schweiz), da es durch seine doppelte Isolierung (**Schutzklasse II**) und hohe Isolationsspannung (4kV) maximale Sicherheit bietet. Im Gegensatz zu günstigen Netzteilen erfüllt es die strengen EMV-Anforderungen der **Klasse B** ohne externe Filter und ist für den wartungsfreien Dauerbetrieb (>10 Jahre) in Wohnräumen ausgelegt. |
-| **DC/DC** | Diodes Inc. AP63205 (12V->5V) & AP63203 (12V->3.3V) <br>– **Eigenentwicklung:** Diese zwei professionellen Abwärtswandler (Buck Converter) wurden für eine hocheffiziente Energiewandlung (bis zu 94% Effizienz) direkt auf dem PCB implementiert. Sie gewährleisten eine extrem stabile Spannungsversorgung für MCU und Sensorik bei minimaler Wärmeentwicklung – ein wesentlicher Faktor für die Langzeitstabilität des Systems im Dauerbetrieb. |
-
-### Aktoren & Sensoren
-
-| Komponente | Beschreibung | Dokumentation |
-| :--- | :--- | :--- |
-| **Lüfter** | Original Ventomaxx V-WRG (EBM-PAPST 4412 F/2 GLL) 3-Pin PWM oder AxiRev (4-Pin PWM) | [Fan Component](https://esphome.io/components/fan/speed.html) |
-| **SCD41** | Sensirion CO2-Sensor (Echtes CO2 400-5000ppm, Temp, Hum) via I²C | [SCD4X Component](https://esphome.io/components/sensor/scd4x.html) |
-| **BMP390** | Bosch Hochpräziser Barometrischer Drucksensor via I²C | [BMP3XX Component](https://esphome.io/components/sensor/bmp3xx.html) |
-| **BME680** | Bosch Gas Sensor (Fallback für IAQ/Luftqualität) via I²C | [BME680 Component](https://esphome.io/components/sensor/bme680.html) |
-| **NTCs** | 2x NTC 10k (Zuluft/Abluft) für Effizienzmessung | [NTC Sensor](https://esphome.io/components/sensor/ntc.html) |
-| **I/O Expander** | **MCP23017** (I2C) für VentoMaxx Panel | [MCP23017](https://esphome.io/components/mcp23017.html) |
-| **LED Driver** | **PCA9685** (I2C) für dimmbare LEDs im VentoMaxx Panel | [PCA9685](https://esphome.io/components/output/pca9685.html) |
-
-![Lüfter Anschluss](EasyEDA-Pro/PCB%20mounting/PCB-Anschluss-FAN2.jpg)
-*Lüfter-Anschlussbelegung mit Originalkabel.*
-
-Die vollständige Stückliste (Bill of Materials) befindet sich im Unterordner [EasyEDA-Pro](EasyEDA-Pro) in der [BOM](EasyEDA-Pro/BOM_ESPHome%20VentoSync%20PWM_PCB_ESPHome-WRG_ESP32_PWM_2026-03-01.csv) .
-
-### 🖱️ Bedienpanel am Gerät
-
-| Komponente | Beschreibung | Dokumentation |
-| :--- | :--- | :--- |
-| **VentoMaxx Panel** | Original Panel (14-Pin FFC). 3 Taster, 9 LEDs (via PCA9685 dimmbar). | Die PIN-Belegung des Original-Panels wurde von mir vollständig durchgemessen und dokumentiert, um die exakte Ansteuerung über das eigene PCB und die Port-Expander (MCP23017/PCA9685) zu ermöglichen. |
-
-![Control-Panel Adapter](images/Ventomax%20V-WRG-1/Control-Panel%20Adapter.jpg)
-
----
-
-## 🔌 Pinbelegung & Verkabelung
-
-Das System basiert auf dem [Seeed XIAO ESP32C6](https://wiki.seeedstudio.com/xiao_esp32c6_getting_started/).
-
-⚠️ **WICHTIG:** Der Lüfter läuft mit 12V, die Logik mit 3.3V oder auch 5V (radar sensor). Entsprechende Spannungsteiler und Schutzbeschaltungen sind vorhanden.
-
-| XIAO Pin | GPIO | Funktion | Bemerkung |
-| :--- | :--- | :--- | :--- |
-| **D0** | GPIO0 | [ADC Input](https://esphome.io/components/sensor/adc.html) | NTC Außen (Abluft) |
-| **D1** | GPIO1 | [ADC Input](https://esphome.io/components/sensor/adc.html) | NTC Innen (Zuluft) |
-| **D2** | GPIO2 | Output | **MCP23017 Reset** |
-| **D3** | GPIO21 | Output | **PCA9685 OE** (Output Enable) |
-| **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | SCD41, BMP390, PCA9685, MCP23017 |
-| **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | SCD41, BMP390, PCA9685, MCP23017 |
-| **D6** | GPIO16 | [UART RX](https://esphome.io/components/uart.html) | **HLK-LD2450 Radar RX** |
-| **D7** | GPIO17 | [UART TX](https://esphome.io/components/uart.html) | **HLK-LD2450 Radar TX** |
-| **D8** | GPIO19 | [PWM Output](https://esphome.io/components/output/ledc.html) | **Fan PWM Primary** |
-| **D9** | GPIO20 | [Pulse Counter](https://esphome.io/components/sensor/pulse_counter.html) | **Fan Tacho** (Pullup via 3V3) |
-| **D10** | GPIO18 | - | Unbelegt (NC) |
-
-### 📊 Schematische Darstellung (Konzept)
-
-```mermaid
-graph TD
-    PSU[12V Netzteil] --> FAN[Lüfter Motor]
-    PSU --> AP5V["AP63205 (12V→5V)"]
-    PSU --> AP3V["AP63203 (12V→3.3V)"]
-    AP5V --> XIAO[ESP32C6 XIAO]
-    AP3V --> XIAO
-
-    subgraph Digital_Bus_I2C ["I2C Bus (D4/D5)"]
-    XIAO -->|D4/D5| MCP[MCP23017 GPIO-Expander]
-    XIAO -->|D4/D5| SCD41[SCD41 CO2-Sensor]
-    XIAO -->|D4/D5| BMP390[BMP390 Drucksensor]
-    XIAO -->|D4/D5| PCA9685[PCA9685 PWM-Expander]
-    MCP -->|14-Pin FFC| PANEL[VentoMaxx Bedienpanel]
-    end
-
-    subgraph Power_Fan ["Lüfter-Steuerung"]
-    XIAO -->|D8 PWM| FAN_CTRL[Universal Fan Interface]
-    FAN_CTRL -->|4-Pin PWM| FAN[Lüfter 12V]
-    FAN -->|Tacho D9| XIAO
-    end
-
-    subgraph Sensors ["Sensoren"]
-    XIAO -->|ADC D0/D1| NTCS[NTC Sensoren]
-    end
-
-    subgraph UART_EXT ["UART Erweiterung"]
-    XIAO -->|TX D6 / RX D7| UART_CON[UART-Anschluss / HLK-LD2450]
-    end
-```
+> 👉 *Detaillierte Komponentenspezifikationen, die vollständige Stückliste (BOM), Lüfter-Verdrahtung, GPIO-Pinbelegung des XIAO ESP32-C6 und schematische Blockschaltbilder siehe [📄 Hardware, BOM & Verdrahtung Guide](documentation/Hardware-und-Verdrahtung.md).*
 
 ---
 
 ## 🛠️ Einrichtung & Installation
+
+### 🧰 PCB-Montage im VentoMaxx-Gehäuse & Lüfter-Verdrahtung
+
+Das maßgefertigte VentoSync-PCB wird als Drop-in-Replacement direkt in das Originalgehäuse der **VentoMaxx V-WRG** Serie eingesetzt und nutzt die vorhandenen Montagepunkte sowie die Originalblende.
+
+> [!CAUTION]
+> **NETZSPANNUNG (230V):** Arbeiten im Lüftungsgerät erfordern den Umgang mit gefährlicher 230V-Netzspannung. Schalte vor dem Öffnen des Gehäuses oder dem Berühren von Kabeln unbedingt den Leitungsschutzschalter am Sicherungskasten aus und prüfe die Spannungsfreiheit. Elektrische Arbeiten dürfen ausschließlich von einer qualifizierten Elektrofachkraft durchgeführt werden.
+
+#### 1. Gehäuse-Einbau & Kabelführung
+
+- **Passform**: Die Platine wird passgenau in die Führungsschienen des Originalgehäuses geschoben.
+- **Antennen-Ausrichtung**: Richte die externe bzw. PCB-Antenne frei in den Raum aus, um maximale Reichweite für WLAN und ESP-NOW zu erzielen.
+- **Sensorkabel verlegen**: Das 14-polige FFC-Flachbandkabel zum Front-Bedienpanel führen und das optionale SCD41-Sensorboard an Header **H2** anstecken (optimal im Zuluftkanal positioniert).
+
+![PCB und Lüfter im Gehäuse montiert](EasyEDA-Pro/PCB%20mounting/PCB-FAN-ANT-in-Gehäuse.jpg)
+*VentoSync PCB im VentoMaxx-Gehäuse montiert mit angeschlossenem Lüfter und verlegter Antenne.*
+
+#### 2. Lüfter-Kabelanschluss (Original 3-Pin / 4-Pin)
+
+Schließe das Lüfterkabel an die dedizierte **FAN**-Buchse auf dem PCB an. Das PCB unterstützt sowohl den originalen 3-Pin EBM-Papst Lüfter (4412 F/2 GLL VarioPro) als auch moderne 4-Pin PWM-Lüfter (z. B. AxiRev mit Tachosignal).
+
+![Lüfter Anschluss](EasyEDA-Pro/PCB%20mounting/PCB-Anschluss-FAN2.jpg)
+*Lüfter-Anschlussbelegung mit Originalkabel.*
+
+| Pin / Ader | Original Kabelfarbe | Funktion | Beschreibung |
+| :--- | :--- | :--- | :--- |
+| **GND** | Grün | Masse (0V) | Lüfter-Masse (GND) |
+| **+12V** | Braun | 12V DC Versorgung | Geschaltete 12V-Spannungsversorgung vom Traco-Netzteil |
+| **PWM** | Weiß | PWM Steuersignal | Geschwindigkeits- & Richtungssignal vom ESP32-C6 (GPIO19) |
+| **TACH** | - | Tacho-Impuls | *(Optional bei 4-Pin-Lüftern)* RPM-Drehzahlrückmeldung (GPIO20) |
+
+---
 
 ### 1. Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)
 
@@ -446,18 +371,14 @@ esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
    esphome run ventosync.yaml --device /dev/ttyACM0
    ```
 
-3. **Hardware-Einbau**:
-   > [!CAUTION]
-   > **LEBENSGEFAHR:** Der Einbau des PCB und ESP in das VentoMaxx Lüftungsgerät erfordert Arbeiten an der **230V Netzspannung**. Dieser Schritt darf **ausnahmslos nur von einer Elektrofachkraft** durchgeführt werden.
-   Baue das PCB und den ESP gemäß Schaltplan in das Gehäuse des Lüftungsgerätes ein.
-4. **Initiale Einrichtung (Captive Portal)**:
+3. **Initiale Einrichtung (Captive Portal)**:
    Die kompilierten Firmware-Binaries auf GitHub sind "secret-free" und enthalten keine fest einkompilierten WLAN-Zugangsdaten. Wenn du ein OTA-Update mit diesen offiziellen Release-Dateien durchführst oder dein Gerät die WLAN-Verbindung verliert, befolge diese Schritte, um die WLAN-Verbindung wiederherzustellen:
    1. Suche mit deinem Smartphone oder PC nach dem WLAN **"VentoSync Hotspot"**.
    2. Verbinde dich mit dem Passwort: `ventosync`
    3. Es sollte sich automatisch ein Fenster (Captive Portal) öffnen. (Falls nicht, rufe im Browser `192.168.4.1` auf).
    4. Wähle dein Heim-WLAN aus der Liste aus und gib dein Passwort ein.
    **Fertig!** ESPHome hat nun deine Zugangsdaten dauerhaft im NVS-Flash gesichert. **Alle zukünftigen OTA-Updates werden diese Zugangsdaten automatisch nutzen und sich sofort verbinden.**
-5. **Netzwerk-Konfiguration**: Hinterlege die IP-Adresse im Router als **feste IP (Static IP)**, um eine dauerhaft stabile Erreichbarkeit zu garantieren.
+4. **Netzwerk-Konfiguration**: Hinterlege die IP-Adresse im Router als **feste IP (Static IP)**, um eine dauerhaft stabile Erreichbarkeit zu garantieren.
 
 ### 4. OTA-Updates & Home Assistant Integration
 
@@ -644,7 +565,7 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 
 Der original VentoMaxx Lüfter (**ebm-papst 4412 F/2 GLL**) wird über ein **einzelnes PWM-Signal** gesteuert. Die Kennlinie folgt einer V-Form (gemessen via Oszilloskop), wobei 50% PWM den Stillstand markiert:
 
-| Stufe | Leistung | PWM Dir A (Abluft) | PWM Dir B (Zuluft) | RPM (ca.) |
+| Stufe | Leistung | PWM Richtung A (Abluft) | PWM Richtung B (Zuluft) | RPM (ca.) |
 | :---: | :---: | :---: | :---: | :---: |
 | **OFF** | 0 % | 50.0 % | 50.0 % | 0 |
 | **1** | 10 % | 30.0 % | 70.0 % | 420 |
@@ -665,179 +586,25 @@ Das Drehzahlband ist so optimiert, dass es in den niedrigen Stufen (Stufe 1-6) e
 #### Automatische Funktionen
 
 - **Unaffälligkeitsmodus**: Die LEDs werden automatisch ausgeschaltet, wenn keine Bedienung am Gerät erfolgt.
-- **Filterwechsel-Alarm**: Prädiktive Wartungsbenachrichtigung (siehe unten).
+- **Filterwechsel-Alarm**: Intelligente vorausschauende Wartung auf Basis aktiver Lüfterlaufzeit (**>365 Betriebstage / 8.760h**) und kalendarischer Alterung (**>3 Jahre**), um Hardware und Lufthygiene zu schützen. Inklusive Ein-Klick-Reset nach dem Filtertausch.
 
-#### 🧹 Filterwechsel-Alarm in Home Assistant einrichten
-
-Das System trackt automatisch die Betriebsstunden des Lüfters und löst einen Alarm aus, wenn:
-
-- **Betriebsstunden > 365 Tage** (8760h Laufzeit), oder
-- **Kalenderzeit > 3 Jahre** seit dem letzten Filterwechsel.
-
-**Verfügbare Entitäten:**
-
-| Entität | Typ | Beschreibung |
-| --- | --- | --- |
-| `binary_sensor.filterwechsel_alarm` | Binary Sensor | `ON` = Filterwechsel empfohlen |
-| `sensor.filter_betriebstage` | Sensor | Lüfter-Laufzeit in Tagen seit letztem Wechsel |
-| `button.filter_gewechselt_reset` | Button | Nach Filterwechsel drücken → setzt Zähler zurück |
-
-**Beispiel: Push-Benachrichtigung via HA Automation**
-
-Füge folgende Automation in deine Home Assistant `automations.yaml` ein:
-
-```yaml
-automation:
-  - alias: "Filterwechsel Benachrichtigung"
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.ventosync_filterwechsel_alarm
-        to: "on"
-    action:
-      - service: notify.mobile_app_<dein_geraet>
-        data:
-          title: "🧹 Filterwechsel empfohlen"
-          message: >-
-            Die Lüftungsanlage hat {{ states('sensor.esptest_filter_betriebstage') }} Betriebstage
-            seit dem letzten Filterwechsel erreicht. Bitte Filter prüfen und wechseln.
-          data:
-            tag: "filterwechsel"
-            importance: high
-```
-
-> 💡 **Nach dem Filterwechsel:** Drücke den Button `Filter gewechselt (Reset)` in Home Assistant, um die Betriebsstunden und den Kalender-Timer zurückzusetzen.
+> 👉 *Ausführliche Entitäten-Übersicht, Automations-Beispiele und Push-Benachrichtigungen in Home Assistant siehe [📄 Filterwechsel-Alarm Setup Guide](documentation/Filter-Change-Alarm-HA-Setup-DE.md).*
 
 ---
 
 ## 🧠 Wärmerückgewinnung - So funktioniert's
 
-### Grundprinzip
+### Grundprinzip & Übersicht
 
-Das System nutzt einen **Keramikspeicher** zur Wärmerückgewinnung. Dieser speichert Wärme aus der Abluft und gibt sie an die Zuluft ab. Die Zykluszeit (Phase) variiert je nach Luftstufe zwischen **50s und 70s**, um die Energieeffizienz zu optimieren.
+VentoSync nutzt einen hocheffizienten **Keramik-Wärmespeicher** (regenerativer Rekuperator), um wertvolle Heizenergie beim Lüften im Raum zu halten:
 
-### Betriebszyklus (50s bis 70s pro Phase)
+- **Zyklischer Push-Pull-Betrieb**: Der Lüfter wechselt zyklisch in adaptiven **50s bis 70s Phasen** zwischen Abluft (Wärmespeicherung im Keramikkern) und Zuluft (Erwärmung der frischen Außenluft).
+- **Synchronisierter Paarbetrieb**: Geräte im selben Raum synchronisieren sich über **ESP-NOW Unicast**. Während ein Gerät frische Luft zuführt, führt das Partnergerät verbrauchte Luft ab – für einen kontinuierlichen, zugfreien Luftaustausch ohne Druckschwankungen.
+- **Phasen-synchrone NTC-Temperaturstabilisierung**: Innen- und Außen-NTC-Thermistoren nutzen eine optimierte C++ Filter-Pipeline (`filter_ntc_combined`) mit thermischer Einschwingzeit und saisonaler Min/Max-Selektion für verlässliche Temperaturwerte.
+- **Energiebasierte Effizienzberechnung (DIN EN 13141-8)**: Anstelle ungenauer Momentanwerte berechnet das System den thermodynamischen Wirkungsgrad ($\eta_{WRG}$ bis zu ~85%) über eine **numerische Trapez-Integration** über den gesamten Zyklus und ermittelt die tatsächlich **rückgewonnene Wärmeenergie in Wattstunden (Wh)** anhand kalibrierter Volumenstrom-Kennlinien.
+- **Fortschrittliche IAQ-Engine (BME680)**: Native C++ Auswertung mit 300°C/150ms Heizprofil, dynamischer Temperaturkompensation und Flash-Wear-Leveling.
 
-```mermaid
-graph LR
-    A[Phase 1: ABLUFT 70s] -->|Keramik lädt sich auf| B[Phase 2: ZULUFT 70s]
-    B -->|Keramik gibt Wärme ab| A
-    
-    style A fill:#ff6b6b
-    style B fill:#4ecdc4
-```
-
-### Phase 1: Abluft (Rausblasen) - 70 Sekunden
-
-```text
-Innenraum (warm) → Keramikspeicher → Außen
-    21°C              ↓ Wärme         5°C
-                  speichern
-```
-
-**Was passiert:**
-
-- 🔥 Warme Raumluft (21°C) strömt durch den Keramikspeicher
-- 📈 Keramik erwärmt sich und speichert Energie
-- 🌡️ **NTC Innen** misst am Ende die wahre Raumtemperatur
-- 💨 Abgekühlte Luft (~10°C) wird nach außen geblasen
-
-### Phase 2: Zuluft (Reinblasen) - 70 Sekunden
-
-```text
-Außen → Keramikspeicher → Innenraum (vorgewärmt)
- 5°C     ↑ Wärme           ~16°C
-        abgeben
-```
-
-**Was passiert:**
-
-- ❄️ Kalte Außenluft (5°C) strömt durch den warmen Keramikspeicher
-- 🔄 Keramik gibt gespeicherte Wärme ab
-- 🌡️ **NTC Außen** misst Außentemperatur
-- 🌡️ **NTC Innen** misst vorgewärmte Zuluft (~16°C)
-- 🏠 Vorgewärmte Luft strömt in den Raum
-
-### NTC Sensoren (Temperatur-Stabilisierung)
-
-Die NTC Sensoren messen die Temperatur am Keramikspeicher innen und außen (`temp_zuluft` und `temp_abluft`). Da die Lüfterrichtung im Wärmerückgewinnungs-Modus zyklisch (z.B. alle 70 Sekunden) wechselt, benötigen die Sensoren aufgrund ihrer thermischen Masse eine gewisse Zeit, um sich an die neue Lufttemperatur anzupassen. Um die Messung möglichst genau zu machen, werden sehr kleine NTC Sensoren genutzt, mit möglichst geringer Masse und hoher Genauigkeit. Dadurch wird die Anpassung an die wechselnde Temperatur je nach Lüftungsrichtung möglichst schnell und präzise.
-Um fehlerhafte Zwischenwerte in Home Assistant zu vermeiden und die wahren thermischen Grenzwerte exakt zu erfassen, nutzen beide Sensoren eine **intelligente, vereinheitlichte und phasengesteuerte Temperatur-Stabilisierung**:
-
-- **Phase-Lock:** Das System verwirft Messwerte während der "falschen" Luftrichtung explizit (z.B. Innensensor während der Zuluft-Phase). Dies verhindert, dass der Puffer mit bereits erwärmter/gekühlter Luft verfälscht wird.
-- **Thermische Wartezeit:** Nach einem Richtungswechsel (Push/Pull) wird die Messwertübertragung für **40% der Zyklusdauer (min. 15s)** pausiert, damit sich der NTC an den neuen Luftstrom anpassen kann.
-- **Kombinierter Filter:** Alle Stufen (Phase-Lock, History-Invalidierung, Stabilitätscheck und saisonale Selektion) sind in einer einzigen, performanten C++ Funktion (`filter_ntc_combined`) vereint.
-- **Dynamische Saison-Selektion:**
-  - **Winter/Übergang:** Der Außensensor nimmt den Minimalwert (wahre kalte Außenluft), der Innensensor den Maximalwert (wahre warme Raumluft).
-  - **Sommer-Kühlung:** Wenn die Außenluft heißer ist als die Innenluft, kehrt sich die Logik automatisch um (Außen nimmt Max, Innen nimmt Min).
-- **Median-Fallback:** Sollte ein Referenzsensor temporär ausfallen, nutzt das System den Median der letzten 3 Werte als sicheren Kompromiss.
-- **120s Failsafe-Timeout:** Ein großzügiger Watchdog hält die Sensoren in Home Assistant "online", auch wenn während langer Lüftungsphasen durch den Phase-Lock zeitweise keine Werte geliefert werden.
-
-*Hinweis zur Redundanz:* `temp_zuluft` (Außen-NTC) liefert bei nach innen gerichtetem Luftstrom die tatsächliche Außentemperatur. `temp_abluft` (Innen-NTC) liefert bei nach außen gerichtetem Luftstrom die Raumtemperatur und dient als Redundanz zum präziseren SCD41 Sensor.
-
-Konkret wird der folgende Sensor verwendet:
-
-| Hersteller | Artikelnummer | Bezugsquelle | Genauigkeit | Datenblatt |
-| :--- | :--- | :--- | :--- | :--- |
-| **VARIOHM** | `ENTC-EI-10K9777-02` | [Reichelt Elektronik](https://www.reichelt.de/de/de/shop/produkt/thermistor_ntc_-40_bis_125_c-350474) | ± 0,2 °C | [PDF](EasyEDA-Pro/components/NTC_ENTC_EI-10K9777-02.pdf) |
-
-### Luftqualität & Gassensorik (BME680)
-
-Um präzise Daten zur Raumluftqualität (IAQ) zu liefern, verfügt das System über eine hochoptimierte **BME680 Advanced IAQ Engine**. Da die BSEC2-Bibliothek zu ressourcenintensiv ist, nutzt VentoSync eine eigene, thread-sichere C++ Implementierung:
-
-- **Optimiertes Heater-Profil:** Der Gassensor arbeitet bei **300°C für 150ms** (Bosch-Empfehlung für IAQ). Dies reduziert die Eigenwärme und verlängert die Lebensdauer des Sensors im Vergleich zu Standardeinstellungen.
-- **Dynamische Thermokompensation:** Die Temperaturwerte werden basierend auf der Umgebungstemperatur dynamisch korrigiert (interpolierter Offset zwischen -1,0°C und -2,0°C), um den thermischen Einfluss der Heizplatte auszugleichen.
-- **Intelligentes Flash-Wear-Leveling:** Die Gas-Baseline wird nur dann im Flash-Speicher des ESP32 persistiert, wenn sie sich um mehr als **2%** geändert hat **und** mindestens **1 Stunde** vergangen ist. Dies schont die Lebensdauer des Speichers maximal.
-- **Health-Watchdog:** Eine dedizierte Überwachungslogik erkennt I2C-Kommunikationsfehler oder "eingefrorene" Werte und meldet ein Sensorproblem an Home Assistant nach 10 aufeinanderfolgenden Fehlern.
-- **Change-Detection Trend:** Die IAQ-Trend- und Bewertungs-Sensoren nutzen eine Change-Detection-Logik, um Netzwerkverkehr und Datenbankwachstum in Home Assistant zu minimieren.
-
-### Effizienzberechnung (Energiebasiert)
-
-Die wahre Wärmerückgewinnungseffizienz eines Keramikspeichers über einen vollständigen Zyklus ist energiebasiert, nicht basierend auf punktuellen Temperaturen (gemäß DIN EN 13141-8).
-
-Am Ende der Zuluft-Phase berechnet das System die Effizienz mittels **numerischer Trapez-Integration** über die gesamte Phasendauer:
-
-$$
-\eta_{WRG} = \frac{\int (\text{T}_{Zuluft} - \text{T}_{Außen}) dt}{\int (\text{T}_{Raum} - \text{T}_{Außen}) dt}
-$$
-
-**Warum das mathematisch überlegen ist:**
-Würde man die Effizienz als simplen Durchschnitt der momentanen Effizienzwerte berechnen, würde der Wert bei sehr kleinen Temperaturunterschieden ($\Delta T$) extrem ungenau und numerisch instabil werden (explodierende Werte) – etwa in der Übergangszeit. Durch die Integration der Temperaturdifferenzen über die Zeit bleibt die Berechnung physikalisch korrekt, stabil und liefert ein echtes Abbild der während des Zyklus zurückgewonnenen Wärmeenergie.
-
-**Zurückgewonnene thermische Energie (Wh):**
-Zusätzlich zur prozentualen Effizienz berechnet das System die tatsächlich zurückgewonnene thermische Energie in **Wattstunden (Wh)**. Dies erfolgt durch ein nicht-lineares Mapping der 10 Lüfterstufen auf die realen Volumenströme des Ventomaxx v-wrg-1 (von ca. 17 m³/h auf Stufe 1 bis zu 43 m³/h auf Stufe 10) und der Integration der tatsächlichen Temperaturdifferenz ($T_{Zuluft} - T_{Außen}$) über die Zeit. So lässt sich genau nachvollziehen, wie viel Heizenergie (oder Kühlenergie im Sommer) das System pro Zyklus "eingespart" hat.
-
-**Interpretation:**
-
-- **> 70%:** Ausgezeichnete Wärmerückgewinnung
-- **50-70%:** Gute Wärmerückgewinnung
-- **< 50%:** Keramik zu kalt, Zyklus zu kurz oder Temperaturdifferenz zu gering
-
-### Optimierung der Effizienz
-
-| Parameter                 | Auswirkung                          | Empfehlung      |
-| :------------------------ | :---------------------------------- | :-------------- |
-| **Zyklusdauer**           | Längere Zyklen = bessere Speicherung| 70-90s optimal  |
-| **Lüftergeschwindigkeit** | Langsamer = mehr Wärmeübertragung   | 60-80%          |
-| **Keramikvolumen**        | Mehr Masse = mehr Speicher          | Größer ist besser|
-| **Außentemperatur**       | Kälter = höhere Effizienz möglich   | -               |
-
-### Synchronisation mehrerer Geräte
-
-Bei Verwendung mehrerer Geräte im gleichen Raum:
-
-**Paar-Betrieb (2 Geräte):**
-
-```text
-Gerät A: Phase A (Zuluft)  ←→  Gerät B: Phase B (Abluft)
-         ↓ 70s wechseln ↓
-Gerät A: Phase B (Abluft) ←→  Gerät B: Phase A (Zuluft)
-```
-
-**Vorteile:**
-
-- ✅ Kontinuierlicher Luftaustausch
-- ✅ Keine Druckschwankungen
-- ✅ Optimale Wärmerückgewinnung
-- ✅ Synchronisiert über ESP-NOW
+> 👉 *Ausführliche mathematische Integrationsmodelle, Formeln, NTC-Filteralgorithmen, Details zur BME680-IAQ-Engine und Synchronisationsdiagramme siehe [📄 Wärmerückgewinnung & Effizienz Guide](documentation/Waermerueckgewinnung-und-Effizienz.md).*
 
 ---
 
@@ -861,143 +628,52 @@ Diese Dokumentation enthält:
 
 ```text
 VentoSync/
-├── .github/workflows/         # CI/CD (GitHub Actions) für Build & Release
-├── components/                # Eigene C++-Komponenten für ESPHome
-│   ├── ventilation_group/     # Kern-Zustandsmaschine und Koordination
-│   ├── ventilation_logic/     # IAQ-Klassifizierung und Mathematik-Hilfsfunktionen
-│   └── wrg_dashboard/         # Tailwind CSS & Chart.js Web-UI
-├── documentation/             # Detaillierte technische Anleitungen und Datenblätter
-├── EasyEDA-Pro/               # PCB-Designdateien (Schaltpläne, Layout, Stückliste)
-├── ha_integration_example/    # Beispiele für HA-Dashboards & Slave-Knoten
-├── json/                      # Deployment-Manifeste und Templates
-├── packages/                  # Modulare YAML-Konfigurationsblöcke
-│   ├── actuators/             # PID, Automatisierung & Sicherheitslogik
-│   ├── base/                  # ESP32-C6 Kern- & WLAN/OTA-Einstellungen
-│   ├── communication/         # ESP-NOW-Protokolle
-│   ├── integration/           # Datenaustausch mit Home Assistant
-│   ├── io/                    # Lüfter, Taster & Hardware-Pinbelegung
-│   ├── sensors/               # Treiber für SCD41, BME680, NTC, etc.
-│   └── ui/                    # UI-Steuerung & Diagnose
-├── tests/                     # C++ Unit-Tests für die Kernlogik
-├── ventosync.yaml             # Haupt-Einstiegspunkt (Vollversion)
-│   ├── base/
-│   │   ├── ventosync_base.yaml    # Gemeinsame Logik und globale Variablen
-│   │   ├── esp32c6_common.yaml    # Basis ESP32-C6 Einstellungen
-│   │   └── ...
-└── version.json               # Aktuelle Firmware-Version
+├── .github/workflows/         # CI/CD (GitHub Actions) für automatisierte Builds & Releases
+├── components/                # Eigene ESPHome C++ Komponenten & Hilfsbibliotheken
+│   ├── helpers/               # Modulare C++ Header (PID-Regelung, ESP-NOW Sync, IAQ-Engine, NTC-Filter)
+│   ├── ventilation_group/     # Zentrale Gruppen-Statemachine & Multi-Device-Koordination
+│   ├── ventilation_logic/     # IAQ-Klassifizierung, Komfort-Logik & mathematische Helfer
+│   └── wrg_dashboard/         # Integriertes Web-UI-Dashboard (Tailwind CSS & Chart.js)
+├── documentation/             # Detaillierte technische Anleitungen, Datenblätter & Setups
+├── EasyEDA-Pro/               # PCB-Hardware-Dateien (Schaltpläne, Gerber, BOM, Fotos)
+├── ESPHome-VentoMaxx-Analyser/# Hardware-Analyse & PWM-Oszilloskop-Messtools
+├── ha_integration_example/    # Home Assistant Dashboard-Vorlagen & Master-Node-Configs
+├── json/                      # Deployment-Manifeste & GitHub-Release-Vorlagen
+├── packages/                  # Modulare YAML-Konfigurationspakete
+│   ├── actuators/             # PID-Regler, Automationen, Schutz- & Urlaubslogik
+│   ├── base/                  # ESP32-C6 Basiskonfiguration, Geräteeinstellungen & WLAN/OTA
+│   ├── communication/         # ESP-NOW Unicast- & Broadcast-Protokolle
+│   ├── globals/               # Strukturierte globale Variablen (Automation, Netzwerk, UI, Lüfter)
+│   ├── integration/           # Home Assistant Entitäten & Datenanbindung
+│   ├── io/                    # Lüfter-PWM, Taster, PCA9685/MCP23017 Pinbelegungen
+│   ├── sensors/               # Treiber & Mocks für SCD41, BME680, Radar, BMP390, NTCs
+│   └── ui/                    # Bedienpanel-Steuerung & Diagnose-Entitäten
+├── tests/                     # C++ Unit-Tests & native Test-Suite
+├── ventosync.yaml             # Hauptkonfiguration (Vollversion mit allen Sensoren)
+├── ventosync_bme680_only.yaml # Hardware-Variante: BME680 Fallback (ohne SCD41/Radar)
+├── ventosync_radar_only.yaml  # Hardware-Variante: Nur Radar-Anwesenheitssensor
+├── ventosync_nosensor.yaml    # Hardware-Variante: Basis-Lüftersteuerung ohne Sensoren
+├── ventosync_NTConly.yaml     # Hardware-Variante: Basis-Lüftersteuerung nur mit NTCs
+├── upload_all.sh              # Batch-Kompilierungs- & OTA-Upload-Skript für alle Geräte
+└── version.json               # Aktuelle semantische Firmware-Version & Release-Metadaten
 ```
 
 ---
 
 ## 🏗️ Code-Architektur & Wartbarkeit
 
-### Modular aufgebaute Firmware
+### Mehrstufige modulare Architektur
 
-Die Firmware folgt einem **mehrstufigen modularen Architekturansatz**, der Wartbarkeit und Erweiterbarkeit maximiert:
+Um dauerhafte 24/7-Stabilität, Wartbarkeit und professionelle Codequalität zu gewährleisten, setzt VentoSync auf eine strikt entkoppelte Schichtenarchitektur:
 
-#### **1. YAML Modularisierung (Packages)**
+- **Strikte YAML-Modularisierung (`packages/`)**: Aufteilung in 8 thematische Domänenpakete (`base`, `communication`, `globals`, `io`, `sensors`, `actuators`, `integration`, `ui`). Sensor-Mocks (`mock_*.yaml`) sorgen für saubere Fallbacks ohne Kompilierfehler oder Log-Spamming bei verschiedenen Hardware-Varianten.
+- **Nativer C++ Hilfsbibliotheks-Kern (`components/helpers/`)**: Komplexe Lambdas wurden vollständig aus dem YAML-Code in typensichere C++ Header ausgelagert (PID-Regelung, ESP-NOW Status-Synchronisation, IAQ-Engines, Taster-/LED-Handler) – für maximale Ausführungsgeschwindigkeit und native Testbarkeit.
+- **Laufzeit- & Performance-Optimierungen**: Thread-sichere Eventverarbeitung mit `std::lock_guard`, Move-Semantik, NaN-sicherer PID-Regler, Flash-Schonung (8h NVS-Pufferung) und kombinierte NTC-Filterung (`filter_ntc_combined`).
+- **Deterministischer Boot-Ablauf**: Mehrstufige Initialisierungssequenz (`on_boot` Priorität -10) mit Peer-Wiederherstellung aus dem Cache, verzögertem Discovery-Broadcast und LED-Hardware-Selbsttest.
 
-Die ehemals gewaltige Hauptdatei wurde drastisch verschlankt, um die Lesbarkeit und Pflege zu vereinfachen. Das Projekt nutzt intensiv die ESPHome `packages:` Funktion, um in sich geschlossene Logikbausteine in separate YAML-Dateien auszulagern. Seit Version 0.8.171 ist das `packages/`-Verzeichnis streng hierarchisch gegliedert:
+> 👉 *Ausführliche Paket-Strukturen, C++ Architekturdetails, Vorher-Nachher-Codebeispiele, Stabilitätsmaßnahmen und das Boot-Ablaufdiagramm siehe [📄 Code-Architektur & Wartbarkeit Guide](documentation/Code-Architektur-und-Wartbarkeit.md).*
 
-- **`base/`**: Enthält die grundlegende ESP32-C6 Gerätekonfiguration.
-- **`io/`**: Kapselt die physische Hardware. Beinhaltet I2C-Busse, Port-Expander, Basis-Pinbelegungen und die zentrale Lüfterkonfiguration.
-- **`sensors/`**: Beinhaltet die gesamte Mess-Peripherie (SCD41, BME680, Radar, NTCs).
-  - 🧩 **Sensor-Mocks**: Fehlt ein Sensor (z.B. SCD41), springen automatisch Mocks (`mock_scd41.yaml`) ein. Diese verhindern Compile-Fehler, unterdrücken Log-Spamming und blenden nicht vorhandene Sensoren dank `internal: true` nahtlos aus Home Assistant aus.
-- **`actuators/`**: Das "Gehirn" der Anlage. Hier sitzen hochperformante Automatisierungen, PID-Klimaregler und die sicherheitskritische thermische Abschaltung (`logic_safety.yaml`).
-- **`integration/`**: Isoliert alle externen Home Assistant Datenpunkte (`homeassistant.yaml`), um das System autark lauffähig zu halten.
-- **`ui/`**: Enthält Web GUI, Diagnose-Entitäten und Status-LEDs.
-
-Die Hauptdateien (`ventosync.yaml` etc.) fungieren nun lediglich als schlanke "Wrapper", die die `packages/base/ventosync_base.yaml` importieren und je nach Variante spezifische Sensoren oder Mocks dazuladen.
-
-#### **2. `automation_helpers.h` - Zentrale Helper-Bibliothek**
-
-Alle komplexen Lambda-Funktionen wurden aus dem YAML Code verbannt und in wiederverwendbare native C++ Helper-Funktionen ausgelagert:
-
-**Vorteile:**
-
-- ✅ **Bessere Lesbarkeit**: YAML bleibt übersichtlich, Logik ist in C++ dokumentiert
-- ✅ **Wiederverwendbarkeit**: Funktionen können an mehreren Stellen genutzt werden
-- ✅ **Typsicherheit**: Compiler-Checks zur Compile-Zeit statt Runtime-Fehler
-- ✅ **IDE-Support**: Syntax-Highlighting, Auto-Completion und Refactoring-Tools
-- ✅ **Einfachere Wartung**: Änderungen an einem Ort statt in mehreren YAML-Lambdas
-
-**Enthaltene Funktionen:**
-
-- `handle_espnow_receive()` - ESP-NOW Paket-Verarbeitung und State-Synchronisation
-- `handle_button_*_click()` - Taster-Event-Handler (Power, Mode, Level)
-- `set_*_handler()` - UI-Element Callbacks (Timer, Cycle Duration, Fan Intensity)
-- `update_leds_logic()` - LED-Status-Aktualisierung basierend auf System-State
-- `cycle_operating_mode()` - Betriebsmodus-Wechsel-Logik
-- `calculate_heat_recovery_efficiency()` - Wärmerückgewinnungs-Berechnung
-
-**Beispiel:**
-
-```yaml
-# Vorher: Komplexe Lambda direkt im YAML
-binary_sensor:
-  - platform: gpio
-    on_press:
-      - lambda: |-
-          id(current_mode_index) = (id(current_mode_index) + 1) % 5;
-          cycle_operating_mode(id(current_mode_index));
-          id(update_leds).execute();
-
-# Nachher: Sauberer Aufruf der Helper-Funktion
-binary_sensor:
-  - platform: gpio
-    on_press:
-      - lambda: handle_button_mode_click();
-
-```
-
-#### **3. 🚀 Performance & Technische Exzellenz**
-
-Um eine 24/7-Zuverlässigkeit und Premium-Performance auf dem ESP32-C6 zu gewährleisten, implementiert die Firmware mehrere High-End C++ und Architektur-Optimierungen:
-
-- **C++ Pro Performance & Thread Safety**:
-  - ✅ **Thread Safety**: Ablösung von manuellen LwIP Semaphoren durch C++ Standard-Library `<mutex>` und `std::lock_guard` für 100% Exception-sicheres HTTP-Event Queueing.
-  - ✅ **Memory Management**: Nutzung von Move Semantics (`std::move`) und strikte Const-Correctness zur Minimierung von RAM-Fragmentierung und CPU-Overhead.
-  - ✅ **DRY Architecture**: Dedizierte, anonyme Lambda Helper-Funktionen für Web-JSON Building zur Eliminierung redundanter Logik.
-  - ✅ **Footprint Reduction**: Optimierter RAM-Verbrauch durch Entfernung veralteter Web-UI Cache-Konzepte.
-
-- **🛡️ Systemstabilität & Zuverlässigkeit**:
-  - ✅ **NaN-Sichere PID-Steuerung**: Härtung der Bedarfsberechnung gegen ungültige Sensordaten. Das System hält den letzten gültigen Status bei Sensorausfällen und verhindert so unkontrolliertes Schalten.
-  - ✅ **Einheitliche Steuerungsautorität**: Zentralisierung der Intensitätsberechnung (`evaluate_auto_mode`), um Race-Conditions zwischen unabhängigen Update-Intervallen zu eliminieren.
-  - ✅ **Smart Group Sync**: Automatische Übertragung von Modi und Konfigurationen an alle Geräte im Raum via ESP-NOW mit integrierter Loop-Prevention.
-  - ✅ **Konfigurations-Sicherheit**: Validierung von Min/Max-Lüfterstufen (Swap-Guard) zur Vermeidung von invertierter Skalierung bei Fehlkonfigurationen.
-  - ✅ **NVS-Verschleißschutz**: Schreibzugriffe auf den internen Flash-Speicher werden minimiert, indem nicht-kritische Daten wie die Filter-Betriebsstunden gepuffert und nur alle 8 Stunden (3x pro Tag) festgeschrieben werden.
-  - ✅ **LED-Selbsttest**: Beim Systemstart führt das Gerät einen 3-sekündigen Hardware-Check durch, bei dem alle LEDs auf 100% Helligkeit gezwungen werden, um die visuelle Rückmeldung zu verifizieren.
-  - ✅ **Kombinierter NTC-Filter**: Ersetzung fragmentierter YAML-Lambdas durch einen zentralen C++ Filter (`filter_ntc_combined`). Dies vereint Phase-Lock, thermische Wartezeit und saisonale Selektion in einer kohärenten Pipeline für 100% Datenintegrität.
-  - ✅ **Robustes Failsafe**: Implementierung konfigurierbarer Plausibilitätsbereiche und eines erweiterten 120s-Timeouts zur Vermeidung von "Unavailable"-Zuständen in Home Assistant während langer Lüftungsphasen.
-
-- **Vollständiger Boot-Flow nach allen Fixes**:
-
-  ```text
-  Boot (t=0)
-    │
-    ├─ on_boot (priority -10)
-    │   ├─ delay 2s
-    │   ├─ sync_config_to_controller()
-    │   ├─ cycle_operating_mode()
-    │   ├─ load_peers_from_runtime_cache()  ← NVS laden
-    │   ├─ delay 1s
-    │   ├─ send_discovery_broadcast()       ← Peers suchen
-    │   ├─ delay 3s
-    │   └─ request_peer_status()            ← State sync
-    │
-    ├─ interval 60s (wiederholt)
-    │   └─ if peer_cache.empty() → send_discovery_broadcast()
-    │
-    └─ Normalbetrieb
-  ```
-
-- **Protocol v4 & Stability (März 2026)**:
-  - ✅ **ESP-NOW v4 Upgrade**: Einführung von Magic Header (`0x42`) und Protokoll-Versionierung zur Vermeidung von Inkompatibilitäten.
-  - ✅ **Echtzeit-Settings-Sync**: Vollständiges Mirroring aller Benutzer-Konfigurationen (CO2-Grenzwerte, Fan-Levels, Timer) via Unicast.
-  - ✅ **Millis-Refactoring**: 64-Bit Arithmetik zur Vermeidung des 49-Tage Rollover Bugs in der `VentilationStateMachine`.
-  - ✅ **NTC-Performance**: Optimierung der Filter-Wartezeit (40% des Zyklus) für schnellere Wertlieferung bei gleicher Stabilität.
-  - ✅ **Sommer-Kühlung**: Präzisierung der Hysterese-Regelung (+1.5°C Aktivierung / -0.5°C Deaktivierung).
-  - ✅ **Modularisierung & Internationalisierung**: Saubere Trennung von C++ Kern und YAML-Zuschnitt (sensor-spezifische Pakete) zur Behebung von Linker-Errors und Verbesserung der Kompilierbarkeit. Umstellung sämtlicher Code-Kommentare auf Englisch zur internationalen Wartbarkeit.
+---
 
 ## 🚀 Automatisierte Release & Versionierung
 
@@ -1020,27 +696,6 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 
 - Dieses Projekt arbeitet im 12V Bereich, was generell sicher ist.
 - Das Netzteil (230V zu 12V) muss fachgerecht installiert werden.
-
-## Suchbegriffe
-
-Hier sind einige Suchbegriffe, die für die Suche nach diesem Projekt verwendet werden können:
-
-- Ventomaxx V-WRG 1 PLUS Smart Home
-- Ventomaxx V-WRG Home Assistant
-- Ventomaxx dezentrale Lüftung ESPHome
-- V-WRG Powerline Ersatz ESP32
-- Ventomaxx V-WRG Steuerung nachrüsten
-- VentoMaxx
-- V-WRG
-- HRV
-- Decentralized Heat Recovery Ventilation
-- ESPHome
-- ESP32-C6
-- SCD41
-- BME680
-- LD2450
-- mmWave Radar
-- Presence Detection
 
 ---
 
