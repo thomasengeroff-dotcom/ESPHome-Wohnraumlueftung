@@ -11,6 +11,14 @@
 Dieses Open-Source-Projekt bietet eine professionelle, dezentrale Lüftungssteuerung basierend auf ESPHome. Es ersetzt die Steuerung der VentoMaxx V-WRG Serie mittels einer eigens dafür entwickelten Platine (PCB) und steuert damit den reversierbaren 12V Lüfter zur Wärmerückgewinnung, überwacht optional die Luftqualität (CO2, Feuchte und Temperatur) mittels eines hochwertigen Sensirion SCD41 Sensors, berechnet die effektive Wärmerückgewinnung und nutzt das **originale VentoMaxx Bedienpanel** für eine nahtlose Integration, intuitive Steuerung. Darüber hinaus kann optional ein Radar-Sensor zur Anwesenheitserkennung integriert werden, der unsichtbar hinter der Blende des Lüftungsgerätes montiert werden kann.
 Die Kommunikation zwischen den einzelnen Lüftungsgeräten erfolgt über das ESP-NOW Protokoll, sodass kein WLAN oder eine zentrale Steuereinheit erforderlich sind (die Kommunikation über die Stromleitungen, welche Ventomaxx nutzt, wird nicht verwendet).
 
+<p align="center">
+  <img src="EasyEDA-Pro/PCB%20mounting/Ventomaxx-WRG-mit-VentoSync-PCB.jpg" width="48%" alt="VentoSync Platine im VentoMaxx V-WRG Gehäuse" />
+  <img src="EasyEDA-Pro/PCB%20mounting/Ventomaxx-WRG-mit-VentoSync-PCB_Radarsensor.jpg" width="48%" alt="VentoSync Platine mit Radar-Sensor im VentoMaxx V-WRG Gehäuse" />
+</p>
+<p align="center">
+  <em><strong>Drop-in Hardware-Upgrade:</strong> Maßgefertigte VentoSync ESP32-C6 Platine montiert im originalen VentoMaxx V-WRG Lüftergehäuse — Standard-Installation mit externer Antenne (links) und mit optional integriertem mmWave-Radar-Sensor zur unsichtbaren Raumpräsenzerkennung (rechts).</em>
+</p>
+
 > 💡 **Kompatibilität:** Die Steuerung funktioniert prinzipiell für jede dezentrale Wohnraumlüftung mit einem reversierbaren 12V Lüfter (3-PIN oder 4-PIN PWM). Sie wurde jedoch **speziell als Ersatz für die VentoMaxx V-WRG Serie** entwickelt. Die Hardware (PCB-Layout/Größe und Bedienpanel) ist damit explizit für die VentoMaxx V-WRG Serie optimiert und muss für andere Hersteller ggf. angepasst werden. Das PCB ist so konzipiert, dass es exakt in das Gehäuse der VentoMaxx V-WRG Serie passt und die vorhandenen Befestigungspunkte nutzt.
 Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da diese eine zentrale Steuereinheit nutzt!
 
@@ -45,12 +53,12 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 - [🎛️ Eigene Platine - PCB](#️-eigene-platine---pcb)
   - [Passgenaues SCD41 Sensor Board](#specialized-scd41-sensor-board)
 - [🛠️ Einrichtung & Installation](#🛠️-einrichtung--installation)
-  - [🧰 PCB-Montage im VentoMaxx-Gehäuse & Lüfter-Verdrahtung](#-pcb-montage-im-ventomaxx-gehäuse--lüfter-verdrahtung)
-  - [1. Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)](#1-entwicklungsumgebung-linux-venv--esphome-cli)
-  - [2. Konfiguration & Kompilierung](#2-konfiguration--kompilierung)
-  - [3. Erstmaliges Flashen & Inbetriebnahme](#3-erstmaliges-flashen--inbetriebnahme)
-  - [4. OTA-Updates & Home Assistant Integration](#4-ota-updates--home-assistant-integration)
-  - [Kalibrierung der NTCs](#kalibrierung-der-ntcs)
+  - [🧰 PCB-Montage & Lüfter-Verdrahtung](#-pcb-montage--lüfter-verdrahtung)
+  - [💻 Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)](#-entwicklungsumgebung-linux-venv--esphome-cli)
+  - [⚙️ Konfiguration & Kompilierung](#️-konfiguration--kompilierung)
+  - [⚡ Erstmaliges Flashen & Inbetriebnahme](#-erstmaliges-flashen--inbetriebnahme)
+  - [🔄 OTA-Updates & Home Assistant Integration](#-ota-updates--home-assistant-integration)
+  - [🌡️ Kalibrierung der NTC-Sensoren](#️-kalibrierung-der-ntc-sensoren)
 - [🎮 Bedienung & Steuerung](#🎮-bedienung--steuerung)
   - [🖐️ Bedienpanel (VentoMaxx Style)](#🖐️-bedienpanel-ventomaxx-style)
   - [🔄 Detaillierte Betriebsmodi (Programme)](#🔄-detaillierte-betriebsmodi-programme)
@@ -60,6 +68,7 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 - [📁 Projektstruktur](#📁-projektstruktur)
 - [🏗️ Code-Architektur & Wartbarkeit](#🏗️-code-architektur--wartbarkeit)
 - [🚀 Automatisierte Release & Versionierung](#🚀-automatisierte-release--versionierung)
+- [🙏 Danksagungen / Credits](#-danksagungen--credits)
 - [⚠️ Sicherheitshinweise](#⚠️-sicherheitshinweise)
 - [⚖️ Rechtlicher Haftungsausschluss](#⚖️-rechtlicher-haftungsausschluss)
 - [📜 Lizenz](#📜-lizenz)
@@ -188,7 +197,7 @@ Das originale Bedienpanel des VentoMaxx V-WRG-1 (9 LEDs, 3 Taster) bleibt vollst
 
 - **Sofortige Synchronisierung**: Zustandsänderungen werden sofort übertragen, mit bis zu 10-mal kleineren Nachrichtengrößen als bei MQTT.
 - **Zero-Configuration**: Automatische Erkennung in Home Assistant – keine manuelle Einrichtung von Entitäten oder ein MQTT-Broker erforderlich.
-- **Sicherheit auf Enterprise-Niveau**: Verschlüsselte Kommunikation über das Noise-Protokoll mit Pre-Shared Keys.
+- **Verschlüsselt & Sicher**: Ende-zu-Ende verschlüsselte Kommunikation mit Home Assistant über Pre-Shared Keys (ESPHome Native API Verschlüsselung auf Basis des Noise-Protokolls).
 
 **Hybride Integrations-Philosophie**: Während der **Hauptfokus** von VentoSync auf einer tiefen und nahtlosen Integration in **Home Assistant** liegt, bietet das Projekt auch eine leistungsstarke Alternative. Durch das integrierte **lokale Web-Dashboard** kann das System als **voll funktionsfähige Standalone-Lösung** genutzt werden. Dies ermöglicht es Anwendern, den vollen Funktionsumfang – von der automatisierten Lüftung bis zur Sensordiagnose – zu nutzen, ohne jemals eine Home Assistant-Instanz einrichten oder warten zu müssen.
 
@@ -230,7 +239,7 @@ Eine eigens entwickelte Platine (PCB) wurde entworfen, um alle Kernkomponenten (
 
 **Wichtige Design-Prinzipien:**
 
-- **Zuverlässigkeit auf Industrieniveau**: Die Komponenten wurden für eine voraussichtliche Lebensdauer von >10 Jahren im 24/7-Dauerbetrieb ausgewählt.
+- **Hohe Zuverlässigkeit & Langlebigkeit**: Komponenten wurden gezielt für eine prognostizierte Lebensdauer von >10 Jahren im 24/7-Dauerbetrieb ausgewählt.
 - **Sicherheit an erster Stelle**: Trotz des geringen Stromverbrauchs folgt das Layout strengen Sicherheitsstandards, um Brandschutz und Spannungsstabilität zu gewährleisten.
 - **Zukunftssichere Erweiterbarkeit**: Die Platine verfügt über dedizierte Erweiterungs-Header für zukünftige Upgrades:
   - **H4 (UART)**: Hochgeschwindigkeits-Serienverbindung (wird aktuell für das mmWave-Radar genutzt).
@@ -255,14 +264,14 @@ Um die höchstmögliche Genauigkeit zu erzielen, wurde eine separate Platine spe
 
 ## 🛠️ Einrichtung & Installation
 
-### 🧰 PCB-Montage im VentoMaxx-Gehäuse & Lüfter-Verdrahtung
+### 🧰 PCB-Montage & Lüfter-Verdrahtung
 
 Das maßgefertigte VentoSync-PCB wird als Drop-in-Replacement direkt in das Originalgehäuse der **VentoMaxx V-WRG** Serie eingesetzt und nutzt die vorhandenen Montagepunkte sowie die Originalblende.
 
 > [!CAUTION]
 > **NETZSPANNUNG (230V):** Arbeiten im Lüftungsgerät erfordern den Umgang mit gefährlicher 230V-Netzspannung. Schalte vor dem Öffnen des Gehäuses oder dem Berühren von Kabeln unbedingt den Leitungsschutzschalter am Sicherungskasten aus und prüfe die Spannungsfreiheit. Elektrische Arbeiten dürfen ausschließlich von einer qualifizierten Elektrofachkraft durchgeführt werden.
 
-#### 1. Gehäuse-Einbau & Kabelführung
+#### Gehäuse-Einbau & Kabelführung
 
 - **Passform**: Die Platine wird passgenau in die Führungsschienen des Originalgehäuses geschoben.
 - **Antennen-Ausrichtung**: Richte die externe bzw. PCB-Antenne frei in den Raum aus, um maximale Reichweite für WLAN und ESP-NOW zu erzielen.
@@ -271,7 +280,7 @@ Das maßgefertigte VentoSync-PCB wird als Drop-in-Replacement direkt in das Orig
 ![PCB und Lüfter im Gehäuse montiert](EasyEDA-Pro/PCB%20mounting/PCB-FAN-ANT-in-Gehäuse.jpg)
 *VentoSync PCB im VentoMaxx-Gehäuse montiert mit angeschlossenem Lüfter und verlegter Antenne.*
 
-#### 2. Lüfter-Kabelanschluss (Original 3-Pin / 4-Pin)
+#### Lüfter-Kabelanschluss (Original 3-Pin / 4-Pin)
 
 Schließe das Lüfterkabel an die dedizierte **FAN**-Buchse auf dem PCB an. Das PCB unterstützt sowohl den originalen 3-Pin EBM-Papst Lüfter (4412 F/2 GLL VarioPro) als auch moderne 4-Pin PWM-Lüfter (z. B. AxiRev mit Tachosignal).
 
@@ -287,7 +296,7 @@ Schließe das Lüfterkabel an die dedizierte **FAN**-Buchse auf dem PCB an. Das 
 
 ---
 
-### 1. Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)
+### 💻 Entwicklungsumgebung (Linux `venv` & ESPHome-CLI)
 
 Für eine stabile Entwicklungsumgebung wird dringend empfohlen, ESPHome in einer **virtuellen Python-Umgebung** (`venv`) zu installieren. Dies vermeidet Konflikte mit systemweiten Paketen und ist die einzige offiziell unterstützte manuelle Installationsmethode unter Linux.
 
@@ -330,7 +339,7 @@ sudo apt update && sudo apt upgrade -y
 pip install --upgrade pip setuptools
 ```
 
-### 2. Konfiguration & Kompilierung
+### ⚙️ Konfiguration & Kompilierung
 
 VentoSync nutzt eine modulare Hardware-Architektur. Wähle je nach verbauter Hardware die passende Konfigurationsdatei:
 
@@ -362,7 +371,7 @@ esphome compile ventosync_nosensor.yaml
 esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
 ```
 
-### 3. Erstmaliges Flashen & Inbetriebnahme
+### ⚡ Erstmaliges Flashen & Inbetriebnahme
 
 1. **Firmware vorbereiten**: Kompiliere die Firmware mit deinen eigenen WLAN-Zugangsdaten (via `secrets.yaml`).
 2. **Initiales Flashen**: Flashe den ESP (XIAO) initial per USB mit der VentoSync Firmware über das ESPHome Dashboard oder per ESPHome CLI-Befehl:
@@ -380,7 +389,7 @@ esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
    **Fertig!** ESPHome hat nun deine Zugangsdaten dauerhaft im NVS-Flash gesichert. **Alle zukünftigen OTA-Updates werden diese Zugangsdaten automatisch nutzen und sich sofort verbinden.**
 4. **Netzwerk-Konfiguration**: Hinterlege die IP-Adresse im Router als **feste IP (Static IP)**, um eine dauerhaft stabile Erreichbarkeit zu garantieren.
 
-### 4. OTA-Updates & Home Assistant Integration
+### 🔄 OTA-Updates & Home Assistant Integration
 
 1. **Home Assistant Integration**: Füge das Gerät in Home Assistant unter der ESPHome-Integration hinzu (es wird i. d. R. sofort automatisch erkannt).
 2. **Einstellungen anpassen**: Passe nach der Integration die folgenden Basis-Einstellungen in der Home Assistant UI oder dem lokalen Dashboard an:
@@ -393,7 +402,7 @@ esphome upload ventosync_nosensor.yaml --device <IP-Adresse> --no-logs
    Beispiel eines OTA Updates in Home Assistant:
    ![OTA Update in Home Assistant](documentation/screenshots/OTA-Update.png)
 
-### Kalibrierung der NTCs
+### 🌡️ Kalibrierung der NTC-Sensoren
 
 Die Konfiguration ist optimiert für den NTC-Thermistor **[ENTC-10K9777-02](https://www.reichelt.de/de/de/shop/produkt/thermistor_ntc_-40_bis_125_c-350474)** (10kΩ, B-Wert 3435). Falls du andere Sensoren verwendest, müssen die Werte für `b_constant` und `reference_resistance` im YAML-Code entsprechend angepasst werden.
 
@@ -664,7 +673,7 @@ VentoSync/
 
 ### Mehrstufige modulare Architektur
 
-Um dauerhafte 24/7-Stabilität, Wartbarkeit und professionelle Codequalität zu gewährleisten, setzt VentoSync auf eine strikt entkoppelte Schichtenarchitektur:
+Um dauerhafte 24/7-Stabilität, langfristige Wartbarkeit und saubere Codequalität zu gewährleisten, setzt VentoSync auf eine strikt entkoppelte Schichtenarchitektur:
 
 - **Strikte YAML-Modularisierung (`packages/`)**: Aufteilung in 8 thematische Domänenpakete (`base`, `communication`, `globals`, `io`, `sensors`, `actuators`, `integration`, `ui`). Sensor-Mocks (`mock_*.yaml`) sorgen für saubere Fallbacks ohne Kompilierfehler oder Log-Spamming bei verschiedenen Hardware-Varianten.
 - **Nativer C++ Hilfsbibliotheks-Kern (`components/helpers/`)**: Komplexe Lambdas wurden vollständig aus dem YAML-Code in typensichere C++ Header ausgelagert (PID-Regelung, ESP-NOW Status-Synchronisation, IAQ-Engines, Taster-/LED-Handler) – für maximale Ausführungsgeschwindigkeit und native Testbarkeit.
@@ -677,7 +686,7 @@ Um dauerhafte 24/7-Stabilität, Wartbarkeit und professionelle Codequalität zu 
 
 ## 🚀 Automatisierte Release & Versionierung
 
-Um eine professionelle Software-Wartung und vollständige Nachvollziehbarkeit jeder Änderung sicherzustellen, nutzt das Projekt einen hochgradig automatisierten Release-Workflow:
+Um eine zuverlässige Software-Pflege und vollständige Nachvollziehbarkeit jeder Änderung sicherzustellen, nutzt das Projekt einen automatisierten Release-Workflow:
 
 - **KI-gestützte Changelogs**: Jedem Release geht eine automatisierte Analyse der Code-Änderungen voraus. Ein KI-Assistent generiert detaillierte Einträge für die `CHANGELOG.md` und aktualisiert die Firmware-Beschreibung in `version.json`.
 - **Automatischer Version-Bump**: Die Versionierung folgt einem strengen Muster, bei dem die Patch-Version (z. B. `0.8.251` → `0.8.252`) während des Build-Prozesses automatisch erhöht wird.
@@ -686,7 +695,7 @@ Um eine professionelle Software-Wartung und vollständige Nachvollziehbarkeit je
 
 ---
 
-### 🙏 Danksagungen / Credits
+## 🙏 Danksagungen / Credits
 
 Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins12)** für sein hervorragendes Projekt **[ESPHome Fan Controller](https://github.com/patrickcollins12/esphome-fan-controller)**. Seine Implementierung und Erläuterungen zur Nutzung des [ESPHome PID Climate](https://esphome.io/components/climate/pid/) Moduls für geräuschlose (lautlose) stufenlose PWM-Lüftersteuerungen dienten als maßgebliche Inspiration und Grundlage für die CO2- und Feuchtigkeitsautomatik in diesem Projekt.
 
@@ -694,8 +703,12 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 
 ## ⚠️ Sicherheitshinweise
 
-- Dieses Projekt arbeitet im 12V Bereich, was generell sicher ist.
-- Das Netzteil (230V zu 12V) muss fachgerecht installiert werden.
+> [!CAUTION]
+> **230V-Netzspannungsgefahr:** Während die VentoSync Steuerlogik und der Lüfterkreis im sicheren Kleinspannungsbereich (12V / 3,3V DC) arbeiten, ist das interne Netzteil direkt an die **230V-Netzspannung** angeschlossen.
+> 
+> Schalte vor dem Öffnen des Gehäuses unbedingt den Leitungsschutzschalter am Sicherungskasten spannungsfrei. Installation und 230V-Netzanschluss **MÜSSEN zwingend durch eine qualifizierte Elektrofachkraft** gemäß den geltenden VDE- und Sicherheitsvorschriften ausgeführt werden!
+> 
+> *Bitte beachte die spezifischen Installations- und Sicherheitsrichtlinien im Abschnitt [PCB-Montage](#-pcb-montage--lüfter-verdrahtung) sowie im [Hardware- & Verdrahtungs-Guide](documentation/Hardware-und-Verdrahtung.md).*
 
 ---
 
