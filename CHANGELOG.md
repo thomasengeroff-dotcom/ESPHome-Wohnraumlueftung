@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.6] - 2026-08-21
+
+### Fixed
+
+- **HRV Efficiency Metrics Logging** (`hrv_efficiency.h`, `sensor_hrv_efficiency.yaml`):
+  - Added `sample_count` directly into `CycleResult` struct so callers retain access to integrated sample statistics after `finalize_cycle()` resets internal phase state.
+  - Resolved logging bug where `get_sample_count()` was called post-reset, consistently reporting `Samples: 0`.
+- **Time-Jump / Rollover Guard** (`hrv_efficiency.h`):
+  - Replaced partial update on sample time-gap anomalies (>300s) with a complete phase reset and clean re-initialization to maintain mathematical integrity of temperature summation and sample counts.
+- **Dead Code Cleanup** (`hrv_efficiency.h`):
+  - Removed unused variable `prev_supply_temp` across struct members, reset routines, and integration steps.
+
+### Documentation
+
+- **Enthalpy Guard & Absolute Humidity Logic** (`Readme.md`, `Readme_de.md`):
+  - Clarified the 2-stage humidity protection mechanism (Stage 1: PID threshold setpoint trigger, Stage 2: Enthalpy absolute humidity veto filter).
+- **Stealth Mode** (`Readme.md`, `Readme_de.md`):
+  - Highlighted automatic LED dimming/shutoff behavior to prevent light pollution in bedrooms at night.
+
 ## [0.10.01] - 2026-08-20
 
 ### Changed

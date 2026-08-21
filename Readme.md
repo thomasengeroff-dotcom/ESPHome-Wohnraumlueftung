@@ -147,7 +147,9 @@ All devices in a room find each other automatically upon startup or room change 
     - **Automatic Derating Management**: Monitoring the internal temperature in the housing of the ventilation unit to comply with Traco specifications.
     - **Emergency Shutdown**: At critical temperatures (>60°C), a safety protocol starts (fan stop and 60min deep sleep) to protect the hardware from overheating and sends a corresponding warning to Home Assistant.
 
-- **💨 Enthalpy-Balance / Absolute Humidity Guard**: Unlike conventional systems that compare relative humidity (which is misleading — cold air at 90% rH holds far less water than warm air at 50% rH), VentoSync calculates the **absolute humidity** in g/m³ using the [Magnus formula](https://en.wikipedia.org/wiki/Clausius%E2%80%93Clapeyron_relation). Humidity-driven ventilation is **only activated when outdoor air is actually drier** than indoor air. If outdoor air is more humid, the humidity demand is set to **zero** — the system will not import moisture, even if the humidity PID controller requests more ventilation.
+- **💨 Enthalpy-Balance / Absolute Humidity Guard**: To prevent importing moisture from outside, humidity-driven ventilation operates in **two coordinated stages**:
+  1. **Stage 1 (Threshold Trigger)**: The internal PID controller (`pid_humidity`) monitors indoor relative humidity against the configurable setpoint (default: 60% rH via `auto_humidity_threshold`). As long as indoor humidity is below this setpoint, the demand is `0.0` (0%) — the system will **not** ventilate simply because outdoor air is dry.
+  2. **Stage 2 (Enthalpy Guard / Veto Filter)**: When indoor humidity exceeds the setpoint and the PID controller requests ventilation, the system checks whether outdoor air is actually drier in **absolute terms** (g/m³, calculated via the [Magnus formula](https://en.wikipedia.org/wiki/Clausius%E2%80%93Clapeyron_relation)). If outdoor air holds more moisture (e.g., during rain or muggy summer days), the humidity demand is overridden to **zero** — preventing moisture intake.
 
     | Scenario | Indoor | Outdoor | Absolute Humidity | Result |
     | --- | --- | --- | --- | --- |
@@ -156,7 +158,7 @@ All devices in a room find each other automatically upon startup or room change 
     | ❄️ **Winter night** | 21°C / 45% rH | −5°C / 80% rH | Indoor: 8.3 g/m³ **>** Outdoor: 2.6 g/m³ | ✅ Cold air is very dry → ventilation helps |
 
     > [!TIP]
-    > This feature sets VentoSync apart from most commercial HRV units, which blindly ventilate based on relative humidity alone and can actually **increase** indoor moisture during rainy or muggy weather.
+    > This 2-stage approach sets VentoSync apart from most commercial HRV units, which blindly ventilate based on relative humidity alone and can actually **increase** indoor moisture during rainy or muggy weather.
 
     If both temperature sensors are unavailable, the system falls back to a simple relative humidity comparison as a safety net. See [📄 Automatic-Mode-Logic.md](documentation/Automatic-Mode-Logic.md) for full technical details.
 
@@ -495,7 +497,7 @@ The RPM range is optimized to allow for finer steps at low levels (Levels 1-6) f
 
 #### Automatic Functions
 
-- **Stealth Mode**: The LEDs are automatically switched off if the device is not operated.
+- **Stealth Mode**: The LEDs are automatically switched off when the device is not being operated — this especially prevents disturbing light in bedrooms at night.
 - **Filter Change Alarm**: Intelligent predictive maintenance tracking active fan runtime (**>365 operating days / 8,760h**) and calendar aging (**>3 years**) to protect hardware and ensure air hygiene. Includes a one-click reset entity once cleaned or replaced.
 
 > 👉 *For entity details, automation blueprints, and push notification setup in Home Assistant, see [📄 Filter Change Alarm Setup Guide](documentation/Filter-Change-Alarm-HA-Setup.md).*

@@ -146,7 +146,9 @@ Alle Geräte in einem Raum finden sich beim Start oder Raumwechsel vollautomatis
     - **Not-Abschaltung**: Bei kritischen Temperaturen (>60°C) startet ein Sicherheits-Protokoll (Lüfterstopp und 60min Deep Sleep), um die Hardware vor Überhitzung zu schützen und eine entsprechende Warnung an Home Assistant zu senden.
 
 - **💨 Fortgeschrittene Luftqualitäts-Logik**:
-  - **Enthalpie-Schutz / Absolute Feuchtigkeits-Sperre**: Anders als herkömmliche Systeme, die nur die relative Luftfeuchtigkeit vergleichen (was irreführend ist — kalte Luft bei 90% rH enthält weit weniger Wasser als warme Luft bei 50% rH), berechnet VentoSync die **absolute Luftfeuchtigkeit** in g/m³ mittels [Magnus-Formel](https://de.wikipedia.org/wiki/Clausius-Clapeyron-Gleichung). Die feuchtigkeitsgesteuerte Lüftung wird **nur aktiviert, wenn die Außenluft tatsächlich trockener** ist als die Innenluft. Ist die Außenluft feuchter, wird der Feuchtigkeits-Bedarf auf **null** gesetzt — das System importiert keine Feuchtigkeit, selbst wenn der Feuchtigkeits-PID-Regler mehr Lüftung anfordert.
+  - **Enthalpie-Schutz / Absolute Feuchtigkeits-Sperre**: Um einen Feuchtigkeitseintrag von außen zuverlässig zu verhindern, arbeitet die feuchtegeführte Lüftung in **zwei aufeinander abgestimmten Stufen**:
+    1. **Stufe 1 (Sollwert-Trigger)**: Der interne Feuchte-PID-Regler (`pid_humidity`) überwacht die Raumfeuchte gegen den konfigurierbaren Sollwert (Standard: 60 % rH via `auto_humidity_threshold`). Liegt die Raumfeuchte unter diesem Schwellwert, beträgt der Bedarf `0,0` (0 %) — das System lüftet also **nicht** grundlos, nur weil es draußen trocken ist.
+    2. **Stufe 2 (Enthalpie-Schutz / Veto-Filter)**: Steigt die Raumfeuchte über den Sollwert und der PID-Regler fordert Lüftung an, prüft das System anhand der **absoluten Luftfeuchtigkeit** in g/m³ ([Magnus-Formel](https://de.wikipedia.org/wiki/Clausius-Clapeyron-Gleichung)), ob die Außenluft tatsächlich trockener ist. Ist die Außenluft feuchter (z. B. an schwülen Sommertagen oder bei Regen), wird der Feuchte-Bedarf auf **null** erzwungen — kein Feuchtigkeitseintrag.
 
     | Szenario | Innen | Außen | Absolute Feuchtigkeit | Ergebnis |
     | --- | --- | --- | --- | --- |
@@ -155,7 +157,7 @@ Alle Geräte in einem Raum finden sich beim Start oder Raumwechsel vollautomatis
     | ❄️ **Winternacht** | 21°C / 45% rH | −5°C / 80% rH | Innen: 8,3 g/m³ **>** Außen: 2,6 g/m³ | ✅ Kalte Luft ist sehr trocken → Lüften hilft |
 
     > [!TIP]
-    > Dieses Feature hebt VentoSync von den meisten kommerziellen WRG-Geräten ab, die blind auf Basis der relativen Luftfeuchtigkeit lüften und dadurch die Raumfeuchtigkeit bei Regen oder Schwüle sogar **erhöhen** können.
+    > Dieses 2-Stufen-Prinzip hebt VentoSync von den meisten kommerziellen WRG-Geräten ab, die blind auf Basis der relativen Luftfeuchtigkeit lüften und dadurch die Raumfeuchtigkeit bei Regen oder Schwüle sogar **erhöhen** können.
 
     Falls beide Temperatursensoren ausfallen, greift ein Fallback, der die relative Feuchtigkeit direkt vergleicht. Details in der [📄 Automatic-Mode-Logic.md](documentation/Automatic-Mode-Logic.md).
 - 📊 **Echte VentoMaxx V-Kennlinie**: Basierend auf den physikalischen Parametern der Original-Hardware (50% PWM = Stopp-Zone), wurde die Kennlinie jedoch in den niedrigeren Stufen (Stufe 1-6) feiner abgestimmt, um akustisch noch dezenter zu bleiben.
@@ -594,7 +596,7 @@ Das Drehzahlband ist so optimiert, dass es in den niedrigen Stufen (Stufe 1-6) e
 
 #### Automatische Funktionen
 
-- **Unaffälligkeitsmodus**: Die LEDs werden automatisch ausgeschaltet, wenn keine Bedienung am Gerät erfolgt.
+- **Unauffälligkeitsmodus (Stealth Mode)**: Die LEDs werden bei Nichtbedienung automatisch abgedunkelt/ausgeschaltet — das verhindert insbesondere störendes Licht in Schlaf- und Wohnräumen bei Nacht.
 - **Filterwechsel-Alarm**: Intelligente vorausschauende Wartung auf Basis aktiver Lüfterlaufzeit (**>365 Betriebstage / 8.760h**) und kalendarischer Alterung (**>3 Jahre**), um Hardware und Lufthygiene zu schützen. Inklusive Ein-Klick-Reset nach dem Filtertausch.
 
 > 👉 *Ausführliche Entitäten-Übersicht, Automations-Beispiele und Push-Benachrichtigungen in Home Assistant siehe [📄 Filterwechsel-Alarm Setup Guide](documentation/Filter-Change-Alarm-HA-Setup-DE.md).*

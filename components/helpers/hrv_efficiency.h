@@ -23,6 +23,7 @@ struct CycleResult {
   float energy_recovered_wh{0.0f}; ///< Approximate recovered energy [Wh]
   float avg_supply_temp{NAN};      ///< Average supply air temp during cycle [°C]
   float cycle_duration_s{0.0f};    ///< Actual cycle duration [s]
+  uint32_t sample_count{0};        ///< Number of samples in the cycle
   bool  valid{false};              ///< Whether the result is trustworthy
 };
 
@@ -32,7 +33,6 @@ struct PhaseIntegrator {
   float denominator_integral{0.0f}; ///< ∫(T_extract - T_outside) dt
   float prev_numerator{NAN};        ///< Previous (T_supply - T_outside) sample
   float prev_denominator{NAN};      ///< Previous (T_extract - T_outside) sample
-  float prev_supply_temp{NAN};      ///< Previous T_supply for averaging
   float supply_temp_sum{0.0f};      ///< Running sum for average supply temp
   uint32_t prev_timestamp_ms{0};    ///< Timestamp of previous sample [ms]
   uint32_t start_timestamp_ms{0};   ///< Phase start timestamp [ms]
@@ -43,7 +43,6 @@ struct PhaseIntegrator {
     denominator_integral = 0.0f;
     prev_numerator = NAN;
     prev_denominator = NAN;
-    prev_supply_temp = NAN;
     supply_temp_sum = 0.0f;
     prev_timestamp_ms = 0;
     start_timestamp_ms = 0;
@@ -86,7 +85,6 @@ class HrvEfficiencyCalculator {
     if (std::isnan(phase_.prev_numerator)) {
       phase_.prev_numerator = num;
       phase_.prev_denominator = den;
-      phase_.prev_supply_temp = t_supply;
       phase_.prev_timestamp_ms = now_ms;
       phase_.start_timestamp_ms = now_ms;
       phase_.supply_temp_sum = t_supply;
@@ -97,13 +95,15 @@ class HrvEfficiencyCalculator {
     // Trapezoidal integration: area = (f(t₀) + f(t₁)) / 2 × Δt
     float dt_s = static_cast<float>(now_ms - phase_.prev_timestamp_ms) / 1000.0f;
 
-    // Guard against time jumps or rollover
+    // Guard against time jumps or rollover — treat as new phase start
     if (dt_s <= 0.0f || dt_s > 300.0f) {
-      // Reset on implausible time gap (>5 min between samples)
+      phase_.reset();
       phase_.prev_numerator = num;
       phase_.prev_denominator = den;
-      phase_.prev_supply_temp = t_supply;
       phase_.prev_timestamp_ms = now_ms;
+      phase_.start_timestamp_ms = now_ms;
+      phase_.supply_temp_sum = t_supply;
+      phase_.sample_count = 1;
       return;
     }
 
@@ -114,7 +114,6 @@ class HrvEfficiencyCalculator {
 
     phase_.prev_numerator = num;
     phase_.prev_denominator = den;
-    phase_.prev_supply_temp = t_supply;
     phase_.prev_timestamp_ms = now_ms;
   }
 
@@ -139,6 +138,7 @@ class HrvEfficiencyCalculator {
 
     float duration_s = static_cast<float>(phase_.prev_timestamp_ms - phase_.start_timestamp_ms) / 1000.0f;
     result.cycle_duration_s = duration_s;
+    result.sample_count = phase_.sample_count;
     result.avg_supply_temp = phase_.supply_temp_sum / static_cast<float>(phase_.sample_count);
 
     // Check denominator: is there enough temperature difference?

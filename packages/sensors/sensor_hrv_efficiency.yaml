@@ -95,10 +95,10 @@ interval:
               
               ESP_LOGI("hrv", "Cycle efficiency: %.1f%% | Duration: %.0fs | Samples: %lu",
                        result.efficiency_pct, result.cycle_duration_s,
-                       (unsigned long)ventosync::hrv::get_calculator().get_sample_count());
+                       (unsigned long)result.sample_count);
             } else {
               ESP_LOGD("hrv", "Cycle result invalid (samples=%lu, duration=%.0fs)",
-                       (unsigned long)ventosync::hrv::get_calculator().get_sample_count(), result.cycle_duration_s);
+                       (unsigned long)result.sample_count, result.cycle_duration_s);
             }
           } else if (!last_was_supply && is_supply) {
             // Abluft -> Zuluft (New cycle starting)
