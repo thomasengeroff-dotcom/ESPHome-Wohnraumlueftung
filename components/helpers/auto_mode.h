@@ -125,7 +125,7 @@ inline void get_effective_temperatures(uint32_t now, float &eff_in, float &eff_o
   // Safe by-value return structure (no null pointer risk possible here in C++)
   const esphome::HardwareState hw_state = v->state_machine.get_target_state(now);
   const bool is_intake = hw_state.direction_in;
-  const int internal_mode = (int)current_mode;
+  const int internal_mode = static_cast<int>(current_mode);
 
   auto read_sensor = [](esphome::sensor::Sensor *s) -> float {
       if (s == nullptr) return NAN;
@@ -358,7 +358,7 @@ inline void evaluate_auto_mode(bool force) {
   last_eval_ms = now;
 
   // 1. Snapshot common states to avoid race conditions during evaluation
-  esphome::VentilationMode current_mode = (esphome::VentilationMode)v->state_machine.current_mode;
+  esphome::VentilationMode current_mode = v->state_machine.current_mode;
   int current_level = static_cast<int>(fan_intensity_level->value());
 
   // 2. Climate Sensor Fusion

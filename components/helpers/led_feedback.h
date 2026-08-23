@@ -222,7 +222,7 @@ inline void update_leds_logic(bool force) {
   const bool is_ui_active = (ui_active != nullptr) ? ui_active->value() : true;
   const float max_b = (max_led_brightness != nullptr) ? max_led_brightness->value() : 1.0f;
   const bool is_auto = (auto_mode_active != nullptr) ? auto_mode_active->value() : false;
-  const int intensity = (fan_intensity_level != nullptr) ? (int)fan_intensity_level->value() : 1;
+  const int intensity = (fan_intensity_level != nullptr) ? static_cast<int>(fan_intensity_level->value()) : 1;
 
   // FIXED: State tracking to prevent log spam and I2C flooding
   static bool  last_system_on  = false;

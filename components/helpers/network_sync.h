@@ -129,8 +129,30 @@ inline PeerEntry* find_peer_in_cache(const uint8_t *mac) {
   return nullptr;
 }
 
+/// Minimum interval between NVS (flash) writes of the peer list. The
+/// in-RAM peer_cache and the UI display string are always updated
+/// immediately on every topology change; only the persisted espnow_peers
+/// string is throttled, so a flapping peer (repeatedly hitting
+/// MAX_PEER_SEND_FAILURES and getting rediscovered) cannot cause unbounded
+/// flash writes. Mirrors the flash-wear-protection pattern already used
+/// for filter_operating_hours (see system_lifecycle.h).
+constexpr uint32_t PEER_NVS_SAVE_MIN_INTERVAL_MS = 60000; // 60s
+
+/// True if peer_cache changed since the last successful NVS write and the
+/// write is still waiting for the throttle window to elapse.
+inline bool peer_nvs_write_pending = false;
+/// millis() of the last successful NVS write of the peer list (0 = never).
+inline uint32_t last_peer_nvs_save_ms = 0;
+
 /**
- * @brief Rebuilds the NVS-backed espnow_peers string from peer_cache and updates UI.
+ * @brief Rebuilds the peer display string from peer_cache and refreshes the UI.
+ *
+ * @details Updates the HA diagnostic text sensor immediately and unconditionally
+ *          from the authoritative in-RAM peer_cache. The actual flash (NVS)
+ *          write of the persisted espnow_peers string is rate-limited to at
+ *          most once per PEER_NVS_SAVE_MIN_INTERVAL_MS — if called again
+ *          within the window, the write is deferred (peer_nvs_write_pending
+ *          is set) and completed later by flush_pending_peer_nvs_save().
  *
  * @note  (H-2 note) Builds into a local string first, then assigns via std::move.
  *        This avoids any ambiguity about mutating the underlying storage of
@@ -139,23 +161,22 @@ inline PeerEntry* find_peer_in_cache(const uint8_t *mac) {
 inline void rebuild_peers_string() {
   if (espnow_peers == nullptr) return;
 
-  // Build into a local buffer, then assign atomically (H-2 cleanliness fix)
+  // Build into a local buffer from the authoritative in-RAM cache.
   std::string new_list;
   new_list.reserve(peer_cache.size() * 18); // "XX:XX:XX:XX:XX:XX,"
   for (size_t i = 0; i < peer_cache.size(); i++) {
     if (i > 0) new_list += ',';
     new_list += format_mac(peer_cache[i].mac.data());
   }
-  espnow_peers->value() = std::move(new_list);
 
-  // Update UI with formatted display string
-  const std::string &list = espnow_peers->value();
+  // Update UI with formatted display string — always immediate, never
+  // throttled, so the dashboard reflects peer_cache in real time.
   if (espnow_peers_display != nullptr) {
-    if (list.empty()) {
+    if (new_list.empty()) {
       espnow_peers_display->publish_state("Keine Peers");
     } else {
       // Add spaces after commas for HA line wrapping
-      std::string display = list;
+      std::string display = new_list;
       size_t pos = 0;
       while ((pos = display.find(',', pos)) != std::string::npos) {
           display.insert(pos + 1, " ");
@@ -164,6 +185,42 @@ inline void rebuild_peers_string() {
       espnow_peers_display->publish_state(display);
     }
   }
+
+  // Nothing to persist if the string is unchanged from what's already stored.
+  if (new_list == espnow_peers->value()) {
+    peer_nvs_write_pending = false;
+    return;
+  }
+
+  const uint32_t now = millis();
+  if (last_peer_nvs_save_ms != 0 &&
+      now - last_peer_nvs_save_ms < PEER_NVS_SAVE_MIN_INTERVAL_MS) {
+    // Within the throttle window — defer the flash write. peer_cache (RAM)
+    // and the UI are already current; flush_pending_peer_nvs_save() persists
+    // this once the window elapses (called from peer_presence_watchdog()).
+    peer_nvs_write_pending = true;
+    ESP_LOGD("espnow_disc", "Peer NVS write deferred (throttle window active)");
+    return;
+  }
+
+  espnow_peers->value() = std::move(new_list);
+  last_peer_nvs_save_ms = now;
+  peer_nvs_write_pending = false;
+}
+
+/**
+ * @brief Flushes a deferred peer-list NVS write once the throttle window has elapsed.
+ *
+ * @details Called periodically (see peer_presence_watchdog() in
+ *          espnow_helpers.h) to guarantee that a write deferred by
+ *          rebuild_peers_string() during a burst of topology changes is
+ *          eventually persisted, rather than being silently dropped.
+ */
+inline void flush_pending_peer_nvs_save() {
+  if (!peer_nvs_write_pending) return;
+  // Re-run the throttled rebuild; it will persist now if the window has
+  // elapsed, or keep deferring otherwise.
+  rebuild_peers_string();
 }
 
 /** @brief Removes a stale peer from peer_cache, NVS string, and ESP-NOW peer list. */
@@ -726,6 +783,7 @@ inline void handle_status_request(const esphome::VentilationPacket *pkt, const u
 inline void handle_config_sync(const esphome::VentilationPacket *pkt) {
   bool dirty = false;
   auto *v = ventilation_ctrl;
+  if (v == nullptr) return;
 
   // 1. Automatik Min/Max levels (Sliders)
   if (automatik_min_fan_level != nullptr &&
@@ -1010,7 +1068,7 @@ inline void process_espnow_packet_local(const std::vector<uint8_t> &data, const 
     return;
   }
 
-  bool changed = v->on_packet_received(data, src_mac);
+  bool changed = v->on_packet_received(pkt_val, src_mac);
 
   if (static_cast<esphome::MessageType>(pkt->msg_type) ==
           esphome::MSG_STATUS_RESPONSE &&

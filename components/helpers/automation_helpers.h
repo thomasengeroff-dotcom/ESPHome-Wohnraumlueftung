@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 //
-// File:        fan_control.h
+// File:        automation_helpers.h
 // Description: Hardware fan speed and direction management.
 // Author:      Thomas Engeroff
 // Created:     2026-03-29
@@ -210,14 +210,14 @@ inline void update_fan_logic() {
   
   // Recovery after long pauses (e.g. OTA update)
   if (dt > 5000) {
-      ESP_LOGW("fan", "Long pause detected (%lums) — resetting slew state", (unsigned long)dt);
+      ESP_LOGW("fan", "Long pause detected (%lums) — resetting slew state", static_cast<unsigned long>(dt));
       current_smoothed_speed = (current_smoothed_speed + base_speed) * 0.5f;
       dt = 100;
   }
   if (dt > 1000) dt = 1000;
   
   // Slew rate: ~10% (0.10) per second
-  const float slew_rate = 0.10f * (float)dt / 1000.0f;
+  const float slew_rate = 0.10f * static_cast<float>(dt) / 1000.0f;
   
   if (std::abs(base_speed - current_smoothed_speed) <= slew_rate) {
     current_smoothed_speed = base_speed;
@@ -265,7 +265,7 @@ inline void notify_fan_direction_changed() {
   // NOTE: NTC history invalidation is handled automatically by
   // filter_ntc_stable() via last_direction_change_time comparison.
   // Do NOT clear ntc_history here to avoid dual-invalidation logic paths.
-  ESP_LOGD("ntc_filter", "Fan direction changed at t=%lu", (unsigned long)last_direction_change_time);
+  ESP_LOGD("ntc_filter", "Fan direction changed at t=%lu", static_cast<unsigned long>(last_direction_change_time));
 }
 
 /**
