@@ -168,7 +168,8 @@ Complex YAML lambda logic is extracted to `.h` files. Each header has a single r
 
 ### NVS / Flash wear
 - Filter runtime: accumulate in RAM, write to NVS every **8 hours** max (was 30 min → caused 1440 writes/day)
-- BME680 baseline counter: RAM-based, 30 min sync interval
+- BME680 baseline counter: RAM-based; flash save gated by `save_interval_ms`
+  (1h minimum) and `save_delta_pct` (2% change) in `bme680_iaq_engine.h`
 - `restore_mode` native for UI switches where possible (no extra global variable)
 
 ---

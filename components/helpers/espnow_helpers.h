@@ -88,15 +88,12 @@ static constexpr uint32_t PEER_WATCHDOG_INTERVAL_S = 60;
  * @param src_addr   Source MAC address (6 bytes, from ESPHome callback info)
  * @param source     Which callback triggered this receive (for logging)
  *
- * @note Zero-copy design: The raw pointer is passed directly to
- *       handle_espnow_receive() without creating an intermediate
- *       std::vector. This avoids a heap allocation on every received
- *       packet – critical for a 24/7 mesh with multiple peers sending
- *       sync packets every second.
- *
- * @note If handle_espnow_receive() requires a std::vector internally,
- *       the copy should happen there (once, at the protocol boundary),
- *       not in every callback.
+ * @note This is a single allocation point, not a zero-copy path: the raw
+ *       pointer is copied into a std::vector here (once) before being
+ *       forwarded to handle_espnow_receive(), which is the protocol
+ *       boundary where a std::vector is required. Avoiding this copy
+ *       entirely would need handle_espnow_receive() to accept a raw
+ *       pointer+size pair instead.
  */
 inline void dispatch_espnow_packet(const uint8_t *data, size_t size,
                                    const uint8_t *src_addr,
@@ -105,11 +102,11 @@ inline void dispatch_espnow_packet(const uint8_t *data, size_t size,
 
     const char *source_label = RX_SOURCE_LABELS[static_cast<uint8_t>(source)];
 
-    ESP_LOGD("espnow_rx", "[%s] Packet received, size=%u, src=%02X:%02X:%02X:%02X:%02X:%02X",
-             source_label,
-             static_cast<unsigned>(size),
-             src_addr[0], src_addr[1], src_addr[2],
-             src_addr[3], src_addr[4], src_addr[5]);
+    // Guard against a null source MAC before any dereference below.
+    if (src_addr == nullptr) {
+        ESP_LOGW("espnow_rx", "[%s] src_addr is null, ignoring", source_label);
+        return;
+    }
 
     // Minimal validation: reject empty or suspiciously small packets
     if (size < 2) {
@@ -117,6 +114,12 @@ inline void dispatch_espnow_packet(const uint8_t *data, size_t size,
                  source_label, static_cast<unsigned>(size));
         return;
     }
+
+    ESP_LOGD("espnow_rx", "[%s] Packet received, size=%u, src=%02X:%02X:%02X:%02X:%02X:%02X",
+             source_label,
+             static_cast<unsigned>(size),
+             src_addr[0], src_addr[1], src_addr[2],
+             src_addr[3], src_addr[4], src_addr[5]);
 
     // Forward to protocol handler (defined in network_sync.h)
     // NOTE: If handle_espnow_receive() still expects std::vector<uint8_t>,
@@ -215,6 +218,10 @@ inline void process_pending_broadcast() {
  *       rate-limiter to avoid spamming at higher frequencies.
  */
 inline void peer_presence_watchdog() {
+    // Persist any peer-list NVS write that was throttled/deferred by
+    // rebuild_peers_string() during a burst of topology changes.
+    flush_pending_peer_nvs_save();
+
     if (peer_cache.empty()) {
         ESP_LOGI("espnow_disc",
                  "Peer watchdog: cache empty — retrying discovery");
