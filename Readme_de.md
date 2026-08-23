@@ -118,7 +118,7 @@ Diese Lösung ist ein **Drop-in Replacement** für die [VentoMaxx V-WRG / WRG PL
 | Erweiterbarkeit | ❌ | ✅ System kann mit zusätzlichen Sensoren und Aktoren oder individuellen Funktionen erweitert werden |
 | Lizenz | Proprietär | ✅ Open Source (GPL v3) |
 
- **Den vollständigen Feature-für-Feature Vergleich mit allen technischen Details findest du in [📄 Comparison-VentoMaxx.md](documentation/Comparison-VentoMaxx.md).**
+ **Den vollständigen Feature-für-Feature Vergleich mit allen technischen Details findest du in [📄 Comparison-VentoMaxx.md](documentation/de/ventomaxx-comparison.md).**
 
 ---
 
@@ -159,17 +159,17 @@ Alle Geräte in einem Raum finden sich beim Start oder Raumwechsel vollautomatis
     > [!TIP]
     > Dieses 2-Stufen-Prinzip hebt VentoSync von den meisten kommerziellen WRG-Geräten ab, die blind auf Basis der relativen Luftfeuchtigkeit lüften und dadurch die Raumfeuchtigkeit bei Regen oder Schwüle sogar **erhöhen** können.
 
-    Falls beide Temperatursensoren ausfallen, greift ein Fallback, der die relative Feuchtigkeit direkt vergleicht. Details in der [📄 Automatic-Mode-Logic.md](documentation/Automatic-Mode-Logic.md).
+    Falls beide Temperatursensoren ausfallen, greift ein Fallback, der die relative Feuchtigkeit direkt vergleicht. Details in der [📄 Automatic-Mode-Logic.md](documentation/en/smart-automatic-logic.md).
 - 📊 **Echte VentoMaxx V-Kennlinie**: Basierend auf den physikalischen Parametern der Original-Hardware (50% PWM = Stopp-Zone), wurde die Kennlinie jedoch in den niedrigeren Stufen (Stufe 1-6) feiner abgestimmt, um akustisch noch dezenter zu bleiben.
 - 🪟 **Fenstersperre (Window Guard)**: Automatischer raumweiter Lüftungsstopp bei offenen Fenstern mit 5s Verzögerung, automatischem Fortsetzen und Master-LED-Feedback.
-  > 👉 *Einrichtungsanleitung & Details: [📄 Fenstersperre Setup Guide](documentation/Window-Guard-HA-Setup-DE.md).*
+  > 👉 *Einrichtungsanleitung & Details: [📄 Fenstersperre Setup Guide](documentation/de/window-guard-ha-setup.md).*
 
 - 🌟 **Erweiterte Komfort- & Schutzfunktionen**:
   - 📈 **Phasen-Kontinuität & Sanftanlauf**: Proportionalskalierung bei Stufenwechseln und sanfte Geschwindigkeitsübergänge (~5%/s) für minimalen Verschleiß und leisen Betrieb.
   - 🔄 **Echtzeit-Diagnose**: Klartext-Richtungsanzeige (*Zuluft*, *Abluft*, *Stillstand*) und virtuelle Drehzahlberechnung (4200 RPM @ 100%).
   - 🌴 **Urlaubsmodus**: Automatischer Energiesparbetrieb mit konfigurierbarem Modus/Stufe bei längerer Abwesenheit.
   - 🔒 **Kindersicherung**: Sperrung der Gerätetasten über Home Assistant oder per Tastenkombination (5s Modus/Stufe halten) mit LED-Feedback.
-  > 👉 *Ausführliche Dokumentation, Parameter & Funktionsweise siehe [📄 Komfort- und Sicherheitsfunktionen](documentation/Komfort-und-Sicherheitsfunktionen.md).*
+  > 👉 *Ausführliche Dokumentation, Parameter & Funktionsweise siehe [📄 Komfort- und Sicherheitsfunktionen](documentation/de/comfort-and-safety-features.md).*
 
 ### ⚡ Extrem niedriger Stromverbrauch
 
@@ -191,7 +191,7 @@ Das originale Bedienpanel des VentoMaxx V-WRG-1 (9 LEDs, 3 Taster) bleibt vollst
 
 ![Bedienung am Lüftungsgerät](images/Ventomax%20V-WRG-1/PXL_20260128_232625674.jpg)
 
-> 👉 *Für eine schnelle Tastenübersicht siehe [Bedienpanel am Gerät](#🖐️-bedienpanel-ventomaxx-style) weiter unten oder die ausführliche [📄 Bedienungsanleitung Lüftungsgerät](documentation/Bedienung-Lueftungsgeraet.md).*
+> 👉 *Für eine schnelle Tastenübersicht siehe [Bedienpanel am Gerät](#🖐️-bedienpanel-ventomaxx-style) weiter unten oder die ausführliche [📄 Bedienungsanleitung Lüftungsgerät](documentation/de/control-panel-operation.md).*
 
 ### 🏠 Home Assistant Integration
 
@@ -213,7 +213,7 @@ Für VentoSync ist kein Home Assistant oder Smart-Home-Server zwingend erforderl
   <img src="documentation/screenshots/wrg-dashboard2.png" alt="WRG Dashboard Verbundene Geräte & Echtzeitdaten" width="48%" />
 </p>
 
-> 👉 *Vollständige Funktionsübersicht, ESP-NOW Live-Visualisierung und Standard-ESPHome-Interface siehe [📄 Lokales Web-Dashboard Guide](documentation/Lokales-Web-Dashboard.md).*
+> 👉 *Vollständige Funktionsübersicht, ESP-NOW Live-Visualisierung und Standard-ESPHome-Interface siehe [📄 Lokales Web-Dashboard Guide](documentation/de/local-web-dashboard.md).*
 
 ## 📡 ESP-NOW: Kabellose Autonomie
 
@@ -225,7 +225,7 @@ Ich habe mich hier bewusst **gegen die fehleranfällige Kommunikation über die 
   <img src="EasyEDA-Pro/PCB%20mounting/PCB-ANT-in-Gehäuse.jpg" alt="Externe Antenne im Gehäuse" width="500" />
 </p>
 
-> 👉 *Ausführliche Details zu Protokoll v4, dynamischer Raum-Discovery, Unicast-Architektur und Antennen-Optimierung siehe [📄 ESP-NOW Kommunikation Guide](documentation/ESP-NOW-Kommunikation.md).*
+> 👉 *Ausführliche Details zu Protokoll v4, dynamischer Raum-Discovery, Unicast-Architektur und Antennen-Optimierung siehe [📄 ESP-NOW Kommunikation Guide](documentation/de/esp-now-communication.md).*
 
 ---
 
@@ -233,7 +233,7 @@ Ich habe mich hier bewusst **gegen die fehleranfällige Kommunikation über die 
 
 VentoSync wird aktiv gepflegt und kontinuierlich weiterentwickelt, mit Fokus auf tiefere Sensorfusion, akustische Optimierung und moderne Gebäudeautomation.
 
-> 👉 *Detaillierte Beschreibungen und Konzepte aller geplanten Features und Roadmap-Meilensteine siehe [📄 Roadmap & Zukünftige Erweiterungen](documentation/Roadmap-und-Zukuenftige-Erweiterungen.md).*
+> 👉 *Detaillierte Beschreibungen und Konzepte aller geplanten Features und Roadmap-Meilensteine siehe [📄 Roadmap & Zukünftige Erweiterungen](documentation/de/roadmap-and-future-enhancements.md).*
 
 ## 🎛️ Eigene Platine - PCB
 
@@ -260,7 +260,7 @@ Um die höchstmögliche Genauigkeit zu erzielen, wurde eine separate Platine spe
 
 ![SCD41 Prototyp](EasyEDA-Pro/PCB%20SCD41%20Prototype%20Images/SCD41-PCB-3D-top_small.png)
 
-> 👉 *Detaillierte Komponentenspezifikationen, die vollständige Stückliste (BOM), Lüfter-Verdrahtung, GPIO-Pinbelegung des XIAO ESP32-C6 und schematische Blockschaltbilder siehe [📄 Hardware, BOM & Verdrahtung Guide](documentation/Hardware-und-Verdrahtung.md).*
+> 👉 *Detaillierte Komponentenspezifikationen, die vollständige Stückliste (BOM), Lüfter-Verdrahtung, GPIO-Pinbelegung des XIAO ESP32-C6 und schematische Blockschaltbilder siehe [📄 Hardware, BOM & Verdrahtung Guide](documentation/de/hardware-and-wiring.md).*
 
 ---
 
@@ -521,7 +521,7 @@ Das Panel verfügt über 3 Taster und 9 Status-LEDs.
 > **Option A (Wetterdienst):** Erstelle einen Template-Sensor basierend auf deiner Wetter-Integration (z.B. OpenWeatherMap).
 > **Option B (Lokaler Sensor):** Erstelle einen Template-Sensor (Alias) oder passe die Entity-ID in der YAML an.
 > *Ohne diesen Sensor funktioniert die Entfeuchtung trotzdem, der Outdoor-Check wird dann einfach übersprungen.*
-Details siehe [Feuchte-Management-HA-Sensor.md](documentation/Feuchte-Management-HA-Sensor.md)
+Details siehe [Feuchte-Management-HA-Sensor.md](documentation/de/humidity-management.md)
 
 ---
 
@@ -570,7 +570,7 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 - **CO2-Grenzwert**: `number.auto_co2_threshold` (Im Automatik-Modus immer aktiv)
 - **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und **CO2-Gehalt (ppm)**
 
-👉 **Tipp:** Eine detaillierte Übersicht aller verfügbaren Home Assistant Entitäten inklusive ihrer technischen Namen (`ID`) und Funktion findest du im Dokument **[Entities_Documentation.md](documentation/Entities_Documentation.md)**.
+👉 **Tipp:** Eine detaillierte Übersicht aller verfügbaren Home Assistant Entitäten inklusive ihrer technischen Namen (`ID`) und Funktion findest du im Dokument **[Entities_Documentation.md](documentation/de/home-assistant-entities.md)**.
 
 #### 📊 Lüftergeschwindigkeit pro Stufe (VentoMaxx V-Kennlinie)
 
@@ -599,7 +599,7 @@ Das Drehzahlband ist so optimiert, dass es in den niedrigen Stufen (Stufe 1-6) e
 - **Unauffälligkeitsmodus (Stealth Mode)**: Die LEDs werden bei Nichtbedienung automatisch abgedunkelt/ausgeschaltet — das verhindert insbesondere störendes Licht in Schlaf- und Wohnräumen bei Nacht.
 - **Filterwechsel-Alarm**: Intelligente vorausschauende Wartung auf Basis aktiver Lüfterlaufzeit (**>365 Betriebstage / 8.760h**) und kalendarischer Alterung (**>3 Jahre**), um Hardware und Lufthygiene zu schützen. Inklusive Ein-Klick-Reset nach dem Filtertausch.
 
-> 👉 *Ausführliche Entitäten-Übersicht, Automations-Beispiele und Push-Benachrichtigungen in Home Assistant siehe [📄 Filterwechsel-Alarm Setup Guide](documentation/Filter-Change-Alarm-HA-Setup-DE.md).*
+> 👉 *Ausführliche Entitäten-Übersicht, Automations-Beispiele und Push-Benachrichtigungen in Home Assistant siehe [📄 Filterwechsel-Alarm Setup Guide](documentation/de/filter-change-alarm-ha-setup.md).*
 
 ---
 
@@ -615,7 +615,7 @@ VentoSync nutzt einen hocheffizienten **Keramik-Wärmespeicher** (regenerativer 
 - **Energiebasierte Effizienzberechnung (DIN EN 13141-8)**: Anstelle ungenauer Momentanwerte berechnet das System den thermodynamischen Wirkungsgrad ($\eta_{WRG}$ bis zu ~85%) über eine **numerische Trapez-Integration** über den gesamten Zyklus und ermittelt die tatsächlich **rückgewonnene Wärmeenergie in Wattstunden (Wh)** anhand kalibrierter Volumenstrom-Kennlinien.
 - **Fortschrittliche IAQ-Engine (BME680)**: Native C++ Auswertung mit 300°C/150ms Heizprofil, dynamischer Temperaturkompensation und Flash-Wear-Leveling.
 
-> 👉 *Ausführliche mathematische Integrationsmodelle, Formeln, NTC-Filteralgorithmen, Details zur BME680-IAQ-Engine und Synchronisationsdiagramme siehe [📄 Wärmerückgewinnung & Effizienz Guide](documentation/Waermerueckgewinnung-und-Effizienz.md).*
+> 👉 *Ausführliche mathematische Integrationsmodelle, Formeln, NTC-Filteralgorithmen, Details zur BME680-IAQ-Engine und Synchronisationsdiagramme siehe [📄 Wärmerückgewinnung & Effizienz Guide](documentation/de/heat-recovery-and-efficiency.md).*
 
 ---
 
@@ -646,6 +646,10 @@ VentoSync/
 │   ├── ventilation_logic/     # IAQ-Klassifizierung, Komfort-Logik & mathematische Helfer
 │   └── wrg_dashboard/         # Integriertes Web-UI-Dashboard (Tailwind CSS & Chart.js)
 ├── documentation/             # Detaillierte technische Anleitungen, Datenblätter & Setups
+│   ├── de/                    # Deutsche Dokumentation
+│   ├── en/                    # Englische Dokumentation
+│   ├── datasheets/            # PDF-Datenblätter
+│   └── screenshots/           # UI & Dashboard Screenshots
 ├── EasyEDA-Pro/               # PCB-Hardware-Dateien (Schaltpläne, Gerber, BOM, Fotos)
 ├── ESPHome-VentoMaxx-Analyser/# Hardware-Analyse & PWM-Oszilloskop-Messtools
 ├── ha_integration_example/    # Home Assistant Dashboard-Vorlagen & Master-Node-Configs
@@ -682,7 +686,7 @@ Um dauerhafte 24/7-Stabilität, langfristige Wartbarkeit und saubere Codequalit�
 - **Laufzeit- & Performance-Optimierungen**: Thread-sichere Eventverarbeitung mit `std::lock_guard`, Move-Semantik, NaN-sicherer PID-Regler, Flash-Schonung (8h NVS-Pufferung) und kombinierte NTC-Filterung (`filter_ntc_combined`).
 - **Deterministischer Boot-Ablauf**: Mehrstufige Initialisierungssequenz (`on_boot` Priorität -10) mit Peer-Wiederherstellung aus dem Cache, verzögertem Discovery-Broadcast und LED-Hardware-Selbsttest.
 
-> 👉 *Ausführliche Paket-Strukturen, C++ Architekturdetails, Vorher-Nachher-Codebeispiele, Stabilitätsmaßnahmen und das Boot-Ablaufdiagramm siehe [📄 Code-Architektur & Wartbarkeit Guide](documentation/Code-Architektur-und-Wartbarkeit.md).*
+> 👉 *Ausführliche Paket-Strukturen, C++ Architekturdetails, Vorher-Nachher-Codebeispiele, Stabilitätsmaßnahmen und das Boot-Ablaufdiagramm siehe [📄 Code-Architektur & Wartbarkeit Guide](documentation/de/code-architecture-and-maintainability.md).*
 
 ---
 
@@ -710,7 +714,7 @@ Ein besonderer Dank gilt **[patrickcollins12](https://github.com/patrickcollins1
 > 
 > Schalte vor dem Öffnen des Gehäuses unbedingt den Leitungsschutzschalter am Sicherungskasten spannungsfrei. Installation und 230V-Netzanschluss **MÜSSEN zwingend durch eine qualifizierte Elektrofachkraft** gemäß den geltenden VDE- und Sicherheitsvorschriften ausgeführt werden!
 > 
-> *Bitte beachte die spezifischen Installations- und Sicherheitsrichtlinien im Abschnitt [PCB-Montage](#-pcb-montage--lüfter-verdrahtung) sowie im [Hardware- & Verdrahtungs-Guide](documentation/Hardware-und-Verdrahtung.md).*
+> *Bitte beachte die spezifischen Installations- und Sicherheitsrichtlinien im Abschnitt [PCB-Montage](#-pcb-montage--lüfter-verdrahtung) sowie im [Hardware- & Verdrahtungs-Guide](documentation/de/hardware-and-wiring.md).*
 
 ---
 
