@@ -1,16 +1,18 @@
 # 🧠 Ventilation Logic Component
 
-This component implements the core algorithmic processing for determining ventilation intensity based on environmental sensors.
+This component provides a pure, hardware-agnostic C++ utility library (`VentilationLogic`) containing deterministic math, fan PWM calculations, and thermal physics formulas. It has zero external dependencies, making it fully testable via native C++ unit tests (`tests/`).
 
 ## 📄 File Overview
 
 | File | Description |
 | :--- | :--- |
-| **`ventilation_logic.h` / `.cpp`** | **Automation Engine**: Contains the logic for processing CO2 and Humidity sensor readings through setpoint-based algorithms (PIDs). It translates environmental "demand" into a 0-100% intensity value. |
-| **`__init__.py`** | **ESPHome Integration**: Registers the logic component within ESPHome, allowing users to define setpoints and thresholds in the YAML configuration. |
+| **`ventilation_logic.h` / `.cpp`** | **Static Math & Logic Utilities (`VentilationLogic`)**: Stateless, pure functions for heat recovery efficiency calculation, bidirectional fan PWM mapping, dynamic cycle timing, virtual RPM estimation, and linear ramping. |
+| **`__init__.py`** | **ESPHome Code Injector**: Registers the component with ESPHome and injects the `#include` header globally into the generated firmware build. |
 
-## ⚙️ Key Mechanisms
+## ⚙️ Key Calculations & Functions
 
-- **Demand Calculation**: Uses a modular approach to calculate demand from multiple sources (e.g., CO2 ppm and Humidity %).
-- **Smoothing**: Ensures that calculated intensity values do not jitter or cause rapid fan oscillations.
-- **Setpoints**: Manages the target values (e.g., 800ppm CO2) provided by the Home Assistant UI or YAML defaults.
+- **Heat Recovery Efficiency ($\eta_{WRG}$)**: Computes sensible heat recovery percentage $\frac{T_{\text{supply}} - T_{\text{outdoor}}}{T_{\text{indoor}} - T_{\text{outdoor}}} \times 100$ with $\Delta T \ge 2\,^\circ\text{C}$ guard condition against sensor noise.
+- **Bidirectional Fan PWM**: Translates target speed $[0.1 \dots 1.0]$ and direction into the reversible VentoMaxx PWM duty cycle ($50\% = \text{Stop}$, $<50\% = \text{Exhaust}$, $>50\% = \text{Intake}$).
+- **Dynamic WRG Cycle Duration**: Scales the direction reversal interval dynamically from 70 seconds (Level 1) down to 50 seconds (Level 10) to optimize heat transfer at higher airflow volumes.
+- **Virtual RPM & Software Ramping**: Provides linear acceleration ramp calculations ($0.0 \dots 1.0$) and virtual tachometer RPM estimation.
+- **Unit Test Coverage**: Directly validated by native desktop test runners without requiring an ESP32 hardware target.

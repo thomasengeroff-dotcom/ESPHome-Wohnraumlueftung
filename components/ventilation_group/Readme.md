@@ -1,17 +1,18 @@
 # 🌀 Ventilation Group Component
 
-This folder contains the core ESPHome custom component for managing a group of VentoSync units. It implements the high-level coordination and state management required for synchronized push-pull ventilation.
+This folder contains the core ESPHome custom component for managing decentralized VentoSync ventilation units. It implements high-level group coordination, hardware sensor abstraction, and the finite state machine (FSM) for synchronized push-pull heat recovery.
 
 ## 📄 File Overview
 
 | File | Description |
 | :--- | :--- |
-| **`ventilation_group.h`** | **Group Coordinator**: Manages the collective state of all units assigned to the same room. Handles Master/Slave roles, ESP-NOW synchronization, and unified demand processing. |
-| **`ventilation_state_machine.h` / `.cpp`** | **Cycle Logic**: Implements the finite state machine (FSM) for the ventilation cycles. Handles phases like `SUPPLY_AIR`, `EXHAUST_AIR`, `OFF`, and the logic for ramping speeds between phases. |
-| **`__init__.py`** | **ESPHome Integration**: The Python bridge that registers this component within the ESPHome framework, allowing it to be configured via YAML (e.g., setting the Room ID and Phase). |
+| **`ventilation_group.h`** | **Group Coordinator (`VentilationController`)**: Manages local device state, Master/Slave roles, ESP-NOW v7 mesh communication, LRU peer discovery, Window Guard contact evaluation, and hardware sensor routing (Fan PWM, RPM tacho, Board/NTC/SCD41 temperature). |
+| **`ventilation_state_machine.h` / `.cpp`** | **Deterministic Cycle Engine (`VentilationStateMachine`)**: Pure logic state machine governing direction cycles, half-cycle timing (default 70 s), smooth 5-second soft ramps (`RAMP_DURATION_MS`), and operating modes (`MODE_OFF`, `MODE_ECO_RECOVERY`, `MODE_VENTILATION`, `MODE_STOSSLUEFTUNG`). |
+| **`__init__.py`** | **ESPHome Python Generator**: Registers the `VentilationController` component and `GlobalsComponent` in ESPHome, exposing YAML configuration options (`room_id`, `device_id`, `floor_id`, `is_phase_a`, fan outputs, and sensor bindings). |
 
 ## ⚙️ Key Mechanisms
 
-- **State Machine**: Ensures that direction changes are synchronized and that speed ramps are respected to protect hardware and minimize noise.
-- **Master Authority**: In most room groups, the device with the lowest ID (usually ID 1) acts as the Master to provide the timing pulses for the alternating phases.
-- **ESP-NOW Integration**: Communicates with the `network_sync.h` helper to propagate state changes across the group.
+- **Deterministic State Machine**: Calculates `HardwareState` (fan enable, airflow direction, and linear ramp factor $[0.0 \dots 1.0]$) at sub-second precision to ensure soft direction reversals without acoustic noise.
+- **Push-Pull Phase Assignment**: Units in Phase A blow inwards while units in Phase B exhaust outwards, alternating simultaneously every half-cycle (70 seconds).
+- **Stoßlüftung Sub-Cycles**: Implements an automated 2-hour burst ventilation cycle (15 minutes active boost with alternating airflow, followed by a 105-minute energy-saving pause).
+- **ESP-NOW Wireless Mesh**: Communicates with `network_sync.h` using binary packets (`VentilationPacket`, v7 protocol) to mirror master operating mode and target fan level across the room.

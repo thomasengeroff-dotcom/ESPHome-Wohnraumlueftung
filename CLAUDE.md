@@ -7,11 +7,12 @@ for the VentoMaxx V-WRG Series. It runs on a custom PCB with a **Seeed XIAO ESP3
 and replaces the proprietary VentoMaxx control unit entirely.
 
 **Key facts:**
-- Platform: ESP32-C6 (RISC-V), ESPHome
+
+- Platform: ESP32-C6 (RISC-V), ESPHome `2026.8.0`
 - Hardware: Custom PCB with Traco power supply, MCP23017 GPIO expander, PCA9685 LED driver
-- Sensors: SCD41 (CO2), BME680 (IAQ fallback), BMP390 (pressure), 2× NTC, HLK-LD2450 (mmWave radar)
-- Communication: ESP-NOW for multi-device sync (no Wi-Fi required between units), ESPHome Native API to Home Assistant
-- Language policy: **Code comments and all internal documentation in English.** HA entity names, UI labels, and user-facing strings remain in **German**.
+- Sensors: SCD41 (CO2), BME680 (IAQ fallback), BMP390 (pressure), 2× NTC thermistors, HLK-LD2450 (mmWave radar)
+- Communication: ESP-NOW (v7) for multi-device sync (no Wi-Fi router required between units), ESPHome Native API to Home Assistant
+- Language policy: **Code comments and all internal developer documentation in English.** HA entity names, UI labels, and user-facing strings remain in **German**.
 - License: GPL v3
 - Current version: see `version.json` (single source of truth, auto-bumped by `version_bump.py`)
 
@@ -19,102 +20,105 @@ and replaces the proprietary VentoMaxx control unit entirely.
 
 ## Repository Structure
 
-```
+```text
 VentoSync/
-├── ventosync.yaml                  # Full variant (SCD41 + BME680 + LD2450)
-├── ventosync_bme680_only.yaml      # Fallback: BME680, no SCD41, no radar
-├── ventosync_radar_only.yaml       # Radar only, no climate sensors
-├── ventosync_nosensor.yaml         # Basic fan control, no sensors
-├── packages/
-│   └── base/
-│       └── ventosync_base.yaml     # Shared core (HW pins, UI, network, fan) — all variants include this
-│   ├── actuators/                  # Fan logic, automation, safety shutdown
-│   ├── sensors/                    # sensor_SCD41.yaml, sensor_BME680.yaml, sensor_LD2450.yaml, sensor_NTC.yaml, mock_*.yaml
-│   ├── io/                         # GPIO expander, LED driver
-│   ├── ui/                         # ui_lights.yaml, ui_diagnostics.yaml
-│   ├── integration/                # homeassistant.yaml (HA-specific data points, isolated from core logic)
-│   └── globals_*.yaml              # globals_ventilation / _automation / _ui / _network
-├── components/                     # Custom ESPHome C++ components
-│   ├── VentilationController       # Core state machine
-│   ├── VentilationStateMachine
-│   ├── VentilationLogic
-│   ├── WrgDashboard                # Local web dashboard (Tailwind CSS + Chart.js via CDN)
-│   └── helpers/                    # auto_mode.h, espnow_helpers.h, config_helpers.h,
-│                                   # ha_fan_helpers.h, user_input.h, system_boot_helpers.h,
-│                                   # led_feedback.h, ventilation_group.h, health_helpers.h,
-│                                   # vacation_helpers.h, network_sync.h, system_lifecycle.h
-├── tests/                          # Unit tests (compiled with -std=c++17 -fsanitize=address,undefined)
-├── .github/workflows/              # build.yaml (multi-variant matrix), lint.yaml, release pipeline
-├── ESPHome-VentoMaxx-Analyser/
-├── EasyEDA-Pro/                    # PCB design files, BOM, schematics
-├── documentation/                  # Entities_Documentation.md, Comparison-VentoMaxx.md, etc.
-├── ha_integration_example/         # HA YAML examples, dashboard cards
-├── version.json                    # Single source of truth for firmware version
-├── version_bump.py                 # Auto-version bump script (called from CI)
-├── upload_all.sh                   # Bulk OTA upload to all devices
-├── secrets_example.yaml            # Template — actual secrets.yaml is gitignored
-└── CHANGELOG.md                    # Keep a Changelog format, Semantic Versioning
+├── .github/workflows/         # CI/CD (GitHub Actions) for automated build, lint & release
+├── components/                # Custom ESPHome C++ external components & helper libraries
+│   ├── helpers/               # Modular C++ headers (PID logic, ESP-NOW sync, IAQ engine, NTC filters)
+│   ├── ventilation_group/     # Core group state machine & multi-device coordination
+│   ├── ventilation_logic/     # IAQ classification, comfort logic & mathematical helpers
+│   └── wrg_dashboard/         # Built-in Web UI dashboard (Tailwind CSS & Chart.js)
+├── documentation/             # Technical deep-dive guides, datasheets & HA setup tutorials
+│   ├── en/                    # English documentation
+│   ├── de/                    # German documentation
+│   ├── datasheets/            # Component PDF datasheets
+│   └── screenshots/           # UI & dashboard screenshots
+├── EasyEDA-Pro/               # PCB hardware files (Schematics, Gerber, BOM, Photos)
+├── ESPHome-VentoMaxx-Analyser/# Hardware analysis & PWM oscilloscope verification tools
+├── ha_integration_example/    # Home Assistant dashboard templates & master-node configs
+├── json/                      # Deployment manifests & GitHub release templates
+├── packages/                  # Modular YAML configuration packages
+│   ├── actuators/             # PID controllers, automations, safety & maintenance logic
+│   ├── base/                  # ESP32-C6 core, device base config & Wi-Fi/OTA
+│   ├── communication/         # ESP-NOW unicast & broadcast protocols
+│   ├── globals/               # Separated global variables (automation, network, UI, fan)
+│   ├── integration/           # Home Assistant entity exposures & data exchange
+│   ├── io/                    # Fan PWM, buttons, PCA9685/MCP23017 hardware pinouts
+│   ├── sensors/               # Drivers & Mocks for SCD41, BME680, Radar, BMP390, NTCs
+│   └── ui/                    # On-device front panel controls & diagnostic entities
+├── tests/                     # C++ unit tests & native test runner suite
+├── ventosync.yaml             # Main configuration entry point (Full sensor variant)
+├── ventosync_bme680_only.yaml # Hardware variant: BME680 fallback (no SCD41/Radar)
+├── ventosync_radar_only.yaml  # Hardware variant: Radar presence only (no climate sensors)
+├── ventosync_nosensor.yaml    # Hardware variant: Core HRV fan control without sensors
+├── ventosync_NTConly.yaml     # Hardware variant: Core HRV with NTC temperature sensors only
+├── upload_all.sh              # Multi-device batch compilation & OTA flash script
+└── version.json               # Current semantic release version & metadata
 ```
 
 ---
 
 ## Hardware Variants & Build Flags
 
-Each top-level YAML is a thin wrapper that includes `ventosync_base.yaml` plus sensor packages.
+Each top-level YAML is a thin wrapper that includes `ventosync_base.yaml` plus modular sensor packages.
 C++ preprocessor flags control conditional compilation in `globals.h`:
 
-| Variant                     | Flags                                                      |
-|-----------------------------|------------------------------------------------------------|
-| `ventosync.yaml`            | (none — all sensors present)                               |
-| `ventosync_bme680_only.yaml`| `-DVENTOSYNC_NO_SCD41`                                     |
-| `ventosync_radar_only.yaml` | `-DVENTOSYNC_NO_CLIMATE`                                   |
-| `ventosync_nosensor.yaml`   | `-DVENTOSYNC_NO_SCD41 -DVENTOSYNC_NO_BME680 -DVENTOSYNC_NO_RADAR` |
+| Variant                     | Preprocessor Flags                                          | Description |
+|-----------------------------|-------------------------------------------------------------|-------------|
+| `ventosync.yaml`            | *(none — all sensors enabled)*                              | Full variant (SCD41 + BME680 + Radar + NTC) |
+| `ventosync_bme680_only.yaml`| `-DVENTOSYNC_NO_SCD41`                                      | Fallback: BME680 IAQ, no SCD41, no Radar |
+| `ventosync_radar_only.yaml` | `-DVENTOSYNC_NO_CLIMATE`                                    | Radar presence only, no climate sensors |
+| `ventosync_nosensor.yaml`   | `-DVENTOSYNC_NO_SCD41 -DVENTOSYNC_NO_BME680 -DVENTOSYNC_NO_RADAR` | Basic fan control without I2C sensors |
+| `ventosync_NTConly.yaml`     | `-DVENTOSYNC_NO_SCD41 -DVENTOSYNC_NO_BME680 -DVENTOSYNC_NO_RADAR` | Core HRV with NTC supply/room sensors only |
 
 Missing sensors are replaced by `mock_*.yaml` packages that return clean `NaN`/`false` values.
 Never add real sensor YAML without the corresponding mock for the fallback variants.
 
 ---
 
-## ESPHome Commands (use in VS Code integrated terminal)
+## ESPHome Commands (VS Code Integrated Terminal / WSL)
 
 ```bash
-# Activate Python venv first
+# Activate Python virtual environment
 source venv/bin/activate
 
-# Validate config (no compilation)
+# Validate configuration (syntax check, no compilation)
 esphome config ventosync.yaml
 esphome config ventosync_nosensor.yaml
 
 # Compile only (generates .bin, no upload)
 esphome compile ventosync.yaml
 
-# Compile + OTA upload
+# Compile + OTA upload to specific device
 esphome run ventosync.yaml --device <IP> --no-logs
 
-# Upload only (if already compiled)
+# Upload pre-compiled binary
 esphome upload ventosync.yaml --device <IP> --no-logs
 
-# Bulk upload to all devices
+# Bulk upload to all network devices
 ./upload_all.sh
 
-# Initial USB flash
+# Initial USB flash via UART/USB-C
 esphome run ventosync.yaml --device /dev/ttyACM0
+
+# Run native C++ unit tests
+cd tests && g++ -std=c++17 -Wall -Wextra -Wpedantic -fsanitize=address,undefined simple_test_runner.cpp -o test_runner && ./test_runner
 ```
 
-Always validate before uploading. The CI (`build.yaml`) pins ESPHome to `2026.5.0` —
+Always validate before uploading. The CI (`build.yaml`) pins ESPHome to `2026.8.0` —
 use the same version locally to avoid config drift.
 
 ---
 
 ## Operating Modes
 
-| Mode              | German name          | HA entity value   | LED_WRG | LED_VEN |
-|-------------------|----------------------|-------------------|---------|---------|
-| Smart automatic   | `Smart-Automatik`    | `Smart-Automatik` | pulses  | off     |
-| Heat recovery     | `Wärmerückgewinnung` | `Eco Recovery`    | on      | off     |
-| Cross-ventilation | `Durchlüften`        | `Ventilation`     | on      | on      |
-| Boost ventilation | `Stoßlüftung`        | `Boost Ventilation` | off   | on      |
-| Off               | `Aus`                | `Off`             | off     | off     |
+| Mode              | German UI Name       | HA Entity Value     | LED_WRG | LED_VEN | Behavior |
+|-------------------|----------------------|---------------------|---------|---------|----------|
+| Smart automatic   | `Smart-Automatik`    | `Smart-Automatik`   | pulses  | off     | Sensor-driven PID demand (CO2, Enthalpy), summer bypass |
+| Heat recovery     | `Wärmerückgewinnung` | `Eco Recovery`      | on      | off     | Alternating push-pull cycles (default 70s half-cycle) |
+| Cross-ventilation | `Durchlüften`        | `Ventilation`       | on      | on      | Continuous one-directional ventilation with optional timer |
+| Boost ventilation | `Stoßlüftung`        | `Boost Ventilation` | off     | on      | 2h cycle: 15 min active boost / 105 min pause |
+| Off               | `Aus`                | `Off`               | off     | off     | Fan stopped, standby |
 
 **Critical:** The string `"Smart-Automatik"` must match exactly in both YAML select options
 and all C++ code (`system_lifecycle.h`, `network_sync.h`, `user_input.h`).
@@ -122,72 +126,92 @@ Mismatch causes silent mode-switch failures (see CHANGELOG 0.8.169).
 
 ---
 
-## ESP-NOW Protocol
+## ESP-NOW Protocol & Cluster Synchronization
 
-- Protocol version: v4, magic header `0x42`
-- Discovery: broadcast `ROOM_DISC` on boot → matching Floor+Room ID → unicast handshake
-- Peers stored in NVS; max ~14 peers per device (254-char string limit in ESPHome Globals)
-- LRU eviction at 10 entries in `VentilationController` to prevent heap fragmentation
-- `VentilationMode` enum has explicit `uint8_t` underlying type — **do not renumber enum values**, they are serialized over the wire
-- Heartbeat interval: `sync_interval_config` (default 1 min, was 3 min)
-- Peer timeout: `PEER_TIMEOUT_MS = 900000` (15 min)
+- **Protocol Version:** `v7` (magic header byte `0x42`, version byte `0x07` in `VentilationPacket`)
+- **Discovery:** Broadcast `ROOM_DISC` packet on boot → matching Floor + Room ID → unicast pairing
+- **Dynamic Peer Cache:** LRU cache capped at 10 peers in `VentilationController` to prevent heap fragmentation
+- **Master/Slave Authority:** Device with ID=1 acts as Master; Slaves mirror target mode and discrete intensity
+- **Peer Timeout:** `PEER_TIMEOUT_MS = 900000` (15 minutes of silence drops peer)
+- **Heartbeat Sync Interval:** Configurable runtime setting `sync_interval_config` (default 60 seconds)
+- **Safe Deserialization:** Always deserialize via `std::memcpy` into stack-allocated structs — **never** cast raw pointers
 
 ---
 
 ## C++ Architecture & Coding Rules
 
 ### Namespaces
-Use `ventosync::` namespace for all new constants and helpers.
+
+Use `ventosync::` namespace for project-wide constants, guards, and helper structs.
 Sub-namespaces in use: `ventosync::vacation`, `ventosync::health`, `ventosync::config`, `ventosync::hw`.
 
-### Header files (`components/helpers/`)
-Complex YAML lambda logic is extracted to `.h` files. Each header has a single responsibility:
-- `auto_mode.h` — PID demand calculation, absolute humidity guard
-- `espnow_helpers.h` — `dispatch_espnow_packet()`, `RxSource` enum
-- `config_helpers.h` — `update_config_id()`, `ConfigField` enum, `build_config_summary()`
-- `ha_fan_helpers.h` — HA fan entity sync, guard logic (`GUARD_PROPAGATION_MS`, `GUARD_STUCK_TIMEOUT_MS`)
-- `user_input.h` — `toggle_child_lock()`, `flash_all_leds_on()`, `restore_leds_after_flash()`
-- `led_feedback.h` — null-checked LED access via `led_guard` helpers
-- `system_boot_helpers.h` — `init_external_antenna()`, `boot_discovery_broadcast()`, `boot_finish_discovery()`
-- `ventilation_group.h` — `VentilationController`, peer management, `on_packet_received()`
-- `network_sync.h` — ESP-NOW mode/fan sync, mode string mapping
+### Modular C++ Headers (`components/helpers/`)
 
-### Type safety rules
+Complex YAML lambda logic is extracted into focused header files:
+
+- **`globals.h`** — Central `extern` registry and shared pointers for all ESPHome sensors and entities
+- **`auto_mode.h`** — Dual-PID demand evaluation, CO2 priority hysteresis, summer bypass, and room sync
+- **`automation_helpers.h`** — Fan motor actuation, V-curve PWM duty calculation, soft ramps, thermal cutoff
+- **`bme680_iaq_engine.h`** — BME680 IAQ index estimation, absolute humidity, and calibration logic
+- **`climate.h`** — Phase-locked NTC stabilization filter, sensor mapping, and human-readable AQI formatting
+- **`config_helpers.h`** — Dynamic runtime configuration (Room, Floor, Device ID, Phase) and NVS persistence
+- **`espnow_helpers.h`** — Unified incoming packet validation, source tagging (`RxSource`), and dispatch routing
+- **`ha_fan_helpers.h`** — HA Fan platform bridge, bidirectional state sync, and loopback suppression
+- **`health_helpers.h`** — System watchdog, loop freeze detection, and stack/heap monitoring
+- **`hrv_efficiency.h`** — Real-time sensible and latent heat recovery calculation (DIN EN 13141-8)
+- **`led_feedback.h`** — Original VentoMaxx panel LED control (PCA9685/MCP23017), dimming, diagnostic blinks
+- **`network_sync.h`** — ESP-NOW v7 mesh communication, packet handlers, peer caching, and room sync
+- **`system_boot_helpers.h`** — Low-level GPIO configuration, RF-switch antenna path activation, boot discovery
+- **`system_lifecycle.h`** — Multi-stage boot orchestration, filter operating hours tracking, reboot hooks
+- **`user_input.h`** — Button debouncing, click/long-press handlers, timed boost countdowns, Child Lock
+- **`vacation_helpers.h`** — Vacation mode scheduling and low-intensity interval ventilation
+
+### Custom Components (`components/`)
+
+- **`ventilation_group`** (`VentilationController`, `VentilationStateMachine`): Manages multi-device coordination, 5s soft ramps (`RAMP_DURATION_MS`), and push-pull timing.
+- **`ventilation_logic`** (`VentilationLogic`): Hardware-agnostic static math and physics utility library.
+- **`wrg_dashboard`** (`WrgDashboard`): Async web server hosting the local SPA (`/ui`, `/state`, `/set`).
+
+### Type Safety & Best Practices
+
 - Use `static_cast<>` everywhere; no C-style casts
 - Prefer `constexpr` over `const` for compile-time constants
-- Add `static_assert` for critical constants (sizes, ranges, enum underlying types)
-- Use `std::clamp` for all float/int bounds enforcement — never silent overflow
-- ESP-NOW packet deserialization: use `std::memcpy` to a stack-local struct, **never** cast `uint8_t*` directly to a struct pointer (strict aliasing UB)
-- `const std::vector<uint8_t>&` for packet receive parameters — no unnecessary heap copies
+- Add `static_assert` for critical constants (packet sizes, enum types, timing bounds)
+- Use `std::clamp` for all float/integer bounds enforcement — never allow silent overflow
+- ESP-NOW packet deserialization: use `std::memcpy` to stack-local struct, **never** cast `uint8_t*` directly to struct pointer (strict aliasing UB)
+- Use `const std::vector<uint8_t>&` for packet receive parameters to avoid heap copies
 
-### ESPHome-specific patterns
+### ESPHome-Specific Patterns
+
 - Always call `->publish_state()` after direct state mutation; never mutate `->state` without publishing
 - Use `make_call()` for fan state changes, not direct state assignment
-- `internal: true` on HA entities that depend on sensors absent in some variants
-- Template sensors that read C++ globals need explicit `update_interval: 1s` or `5s` — without it they fall back to 60s polling
+- `internal: true` on HA entities that depend on sensors absent in some hardware variants
+- Template sensors reading C++ globals require an explicit `update_interval` (e.g., `1s` or `5s`)
 
-### NVS / Flash wear
-- Filter runtime: accumulate in RAM, write to NVS every **8 hours** max (was 30 min → caused 1440 writes/day)
+### NVS / Flash Wear Protection
+
+- Filter runtime: accumulate operating hours in RAM, write to NVS every **8 hours** max
 - BME680 baseline counter: RAM-based, 30 min sync interval
-- `restore_mode` native for UI switches where possible (no extra global variable)
+- Use native `restore_mode` for UI switches where possible (avoid unnecessary global variables)
 
 ---
 
-## PID Controller (Smart-Automatik mode)
+## PID Controller & Smart-Automatik Mode
 
-- CO2 PID: `kp = 0.001`, `ki = 0.0000005` (very slow integral — level transitions every 20-30 min)
-- Humidity PID: `kp = 0.05`, `ki = 0.00001`
-- Fan demand = `std::max(co2_demand, humidity_demand)` — neither signal is suppressed
-- Fan changes by **at most ±1 level per 10-second cycle**
-- Min level: `automatik_min_luefterstufe` (default 2), Max: `automatik_max_luefterstufe` (default 7)
-- Absolute humidity guard (Magnus formula): humidity demand is forced to zero when outdoor air
-  is more humid than indoor air. Requires `sensor.outdoor_humidity` in Home Assistant.
+- **CO2 PID:** `kp = 0.001`, `ki = 0.0000005` (slow integral — smooth level transitions every 20–30 min)
+- **Humidity PID:** `kp = 0.05`, `ki = 0.00001`
+- **Conflict Resolution (Hysteresis):**
+  - CO2 Grab: `co2_demand >= 0.01` takes exclusive priority over Humidity PID
+  - CO2 Release: `co2_demand < 0.005` releases exclusive hold, allowing humidity control
+- **Soft Rate Limiting:** Fan changes by **at most ±1 level per 10-second evaluation cycle**
+- **Dynamic Limits:** Clamped between `automatik_min_luefterstufe` (default 2) and `automatik_max_luefterstufe` (default 7)
+- **Enthalpy Guard (Magnus Formula):** Dehumidification via PID is suppressed when outdoor absolute humidity ($g/m^3$) exceeds indoor air. Requires `sensor.outdoor_humidity` in Home Assistant.
 
 ---
 
-## Fan PWM Curve (VentoMaxx V-curve)
+## Fan PWM Curve (VentoMaxx V-Curve)
 
-50% PWM = standstill. Direction A: 50% → 5% (increasing speed). Direction B: 50% → 95%.
+50% PWM = standstill. Direction A (Intake): 50% → 5% (increasing speed). Direction B (Exhaust): 50% → 95%.
 
 | Level | PWM Dir A | PWM Dir B | RPM (approx.) |
 |-------|-----------|-----------|---------------|
@@ -197,17 +221,16 @@ Complex YAML lambda logic is extracted to `.h` files. Each header has a single r
 | 10    | 5.0%      | 95.0%     | 4200          |
 
 Slew-rate limiter: ~5% per second, 1-second call interval.
-Direction change includes a 5-second brake + soft-start ramp.
+Direction changes execute a 5-second linear brake and soft-start ramp.
 
 ---
 
 ## CI / GitHub Actions
 
-- `build.yaml`: Matrix build of all 4 variants, pinned to ESPHome `2026.5.0`
+- `build.yaml`: 5-variant matrix build (`ventosync`, `bme680_only`, `radar_only`, `nosensor`, `NTConly`), pinned to ESPHome `2026.8.0`
 - `lint.yaml`: YAML validation + C++ checks with `-std=c++17 -Wall -Wextra -Wpedantic -fsanitize=address,undefined`
-- Release: tag → OTA `.bin` files + `manifest.json` as GitHub Release assets
+- Release: Git tag → automated generation of `.ota.bin`, `.factory.bin`, and `manifest-<variant>.json` release assets
 - Secrets stripped from release binaries — devices use NVS-stored Wi-Fi credentials
-- pip deps and PlatformIO toolchains are cached
 
 ---
 
@@ -215,7 +238,7 @@ Direction change includes a 5-second brake + soft-start ramp.
 
 - `secrets.yaml` — gitignored, use `secrets_example.yaml` as template
 - `build.log` — gitignored build artifact
-- `.version_bump_lock` — deleted automatically before each release build
+- `.version_bump_lock` — lockfile managed by `version_bump.py` during release builds
 
 ---
 
@@ -228,8 +251,12 @@ Version is bumped automatically by `version_bump.py` — do not edit `version.js
 
 ---
 
-## Documentation
+## Documentation Structure
 
-All user-facing documentation exists in both English (`Readme.md`) and German (`Readme_de.md`).
-When making changes that affect behavior, update both README files and `CHANGELOG.md`.
-Entity reference: `documentation/Entities_Documentation.md`.
+All documentation is organized in language subdirectories:
+- **English:** `documentation/en/*.md` (e.g., `documentation/en/home-assistant-entities.md`)
+- **German:** `documentation/de/*.md` (e.g., `documentation/de/home-assistant-entities.md`)
+- **Datasheets:** `documentation/datasheets/*.pdf`
+- **Main Readmes:** `Readme.md` (EN) and `Readme_de.md` (DE) in repository root.
+
+When modifying features, behavior, or configuration entities, always update both README files, the corresponding guides in `documentation/en/` and `documentation/de/`, and `CHANGELOG.md`.

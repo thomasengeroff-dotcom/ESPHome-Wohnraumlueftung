@@ -1,65 +1,74 @@
 # 📦 VentoSync Packages
 
-This directory contains the modularized ESPHome configuration files (packages). By splitting the configuration into smaller, functional blocks, maintainability and clarity are significantly improved.
+This directory contains the modularized ESPHome configuration files (packages). By splitting the configuration into smaller, functional blocks, maintainability, hardware flexibility, and build clarity are significantly improved.
 
 ## 📂 File Overview
 
 ### 🏗️ Base (`base/`)
 | File | Description |
 | :--- | :--- |
-| **`esp32c6_common.yaml`** | Shared base configuration for the ESP32-C6 platform, including common substitutions, versioning, and basic components. |
-| **`device_config.yaml`** | Dynamic device-specific configuration (IDs, Room IDs, Phases). This is the target for per-device customizations. |
-| **`wifi_ota.yaml`** | WiFi and OTA configuration without secrets, optimized for CI/GitHub Actions builds. |
+| **`ventosync_base.yaml`** | Master base package linking core platform settings, web server, and component initialization hooks. |
+| **`esp32c6_common.yaml`** | Shared base configuration for the ESP32-C6 platform, common substitutions, versioning, and framework settings. |
+| **`device_config.yaml`** | Dynamic device-specific configuration (IDs, Room IDs, Phases) persisted in NVS. |
+| **`wifi_ota.yaml`** | WiFi and Safe-Mode OTA configuration without hardcoded secrets (CI/GitHub Actions compatible). |
 
 ### 🧠 Actuators & Logic (`actuators/`)
 | File | Description |
 | :--- | :--- |
-| **`logic_automation.yaml`** | The "brain" of the project. Contains cyclic scripts, interval-based updates, fan mode handling, and high-level automation. |
-| **`logic_pid.yaml`** | Configuration for internal PID climate controllers (CO2 & Humidity). |
-| **`logic_safety.yaml`** | Safety-critical automation and emergency shutdown logic (e.g. thermal overload). |
-| **`logic_maintenance.yaml`** | Filter maintenance timers and reset logic. |
+| **`logic_automation.yaml`** | The automation brain. Cyclic 10s decision loops, Auto Mode PID evaluation, and summer cooling bypass. |
+| **`logic_pid.yaml`** | Configuration for internal PID climate controllers (CO2 & Enthalpy/Humidity). |
+| **`logic_safety.yaml`** | Safety-critical automation and emergency shutdown logic (thermal overload, hardware disconnects). |
+| **`logic_maintenance.yaml`** | Predictive filter operating hours tracker and maintenance reset triggers. |
+
+### 🌐 Global State & NVS (`globals/`)
+| File | Description |
+| :--- | :--- |
+| **`globals_ventilation.yaml`** | Core ventilation state (fan intensity, active operating mode index, timer duration, Phase A/B). |
+| **`globals_automation.yaml`** | Runtime setpoints, PID demand variables, and climate guard thresholds. |
+| **`globals_network.yaml`** | ESP-NOW cluster sync state, dynamic peer registration, and heartbeat flags. |
+| **`globals_ui.yaml`** | Physical LED brightness configuration, night-mode dimming levels, and UI state tracking. |
 
 ### 🔌 Hardware I/O (`io/`)
 | File | Description |
 | :--- | :--- |
-| **`hardware_io.yaml`** | Physical hardware interfaces: I2C buses, port expanders (MCP23017, PCA9685), and basic Pinout setup. |
-| **`hardware_fan.yaml`** | Central fan configuration including PWM parameters, RPM calculation fallbacks, and the `fan` entity itself. |
-| **`logic_buttons.yaml`** | Physical button input debouncing, click handlers, and long-press overrides (e.g. for Child Protection). |
+| **`hardware_io.yaml`** | Physical hardware buses and port expanders: I2C buses, MCP23017, PCA9685, and GPIO pin mapping. |
+| **`hardware_fan.yaml`** | Central fan actuator configuration, PWM frequency/parameters, and tachometer RPM inputs. |
+| **`logic_buttons.yaml`** | Physical button input debouncing, click handlers, and long-press overrides (e.g. Child Protection Mode). |
 
 ### 🌐 Communication (`communication/`)
 | File | Description |
 | :--- | :--- |
-| **`esp_now.yaml`** | ESP-NOW communication protocol setup and peer discovery for the device cluster. |
+| **`esp_now.yaml`** | Low-latency ESP-NOW v7 mesh protocol setup and wireless peer synchronization. |
 
 ### 🔗 Integration (`integration/`)
 | File | Description |
 | :--- | :--- |
-| **`homeassistant.yaml`** | External data points imported from Home Assistant (e.g. outdoor climate, vacation mode, window sensors). |
+| **`homeassistant.yaml`** | External data points imported from Home Assistant (outdoor climate sensors, vacation switch, window contacts). |
+| **`ha_fan_entity.yaml`** | Native Home Assistant `fan` platform integration exposing preset modes, speed percentage, and directional control for `ventosync-card`. |
 
 ### 🎛️ User Interface (`ui/`)
 | File | Description |
 | :--- | :--- |
-| **`ui_controls.yaml`** | Defines all entities exposed to Home Assistant for manual control (Sliders, Dropdowns, and UI-specific numbers). |
-| **`ui_lights.yaml`** | LED indicator configurations, strobe patterns, and animations. |
-| **`ui_diagnostics.yaml`** | Network and system diagnostic UI entities (e.g. ESP-NOW peers display). |
+| **`ui_controls.yaml`** | Entities exposed to Home Assistant for manual control (Sliders, Dropdowns, Setpoints, and Timers). |
+| **`ui_lights.yaml`** | LED indicator channels, brightness curves, fill-bar mappings, and diagnostic flash sequences. |
+| **`ui_diagnostics.yaml`** | Diagnostics and observability entities (ESP-NOW peer counts, system health, and heap metrics). |
 
 ### 🌡️ Sensors (`sensors/`)
 | File | Description |
 | :--- | :--- |
-| **`sensors_climate.yaml`** | Higher-level climate logic, including heat recovery efficiency calculations and consolidated statistics. |
-| **`sensor_SCD41.yaml`** | Integration for the high-precision Sensirion SCD41 CO2 sensor (Photoacoustic). |
-| **`sensor_BMP390.yaml`** | Integration for the Bosch BMP390 pressure sensor, including pressure trend analysis. |
-| **`sensor_BME680.yaml`** | Integration for the Bosch BME680 gas sensor (used for IAQ / fallback air quality). |
-| **`sensor_LD2450.yaml`** | Integration for the HLK-LD2450 mmWave Radar sensor (Presence Detection). |
-| **`sensor_NTC.yaml`** | Configuration for the analog NTC probes used to measure supply/exhaust air temperature. |
-| **`mock_*.yaml`** | Mock sensor definitions (SCD41, BME680, Radar) to allow firmware compilation even when specific hardware is omitted. |
+| **`sensors_climate.yaml`** | Climate calculations, absolute humidity ($g/m^3$), dew point, and fallback temperature selection. |
+| **`sensor_hrv_efficiency.yaml`** | Real-time sensible and latent heat recovery efficiency calculations (DIN EN 13141-8). |
+| **`sensor_SCD41.yaml`** | High-precision Sensirion SCD41 photoacoustic CO2, temperature, and relative humidity sensor. |
+| **`sensor_BMP390.yaml`** | Bosch BMP390 barometric pressure sensor and pressure trend metrics. |
+| **`sensor_BME680.yaml`** | Bosch BME680 environmental sensor (VOC, IAQ, temperature, pressure, humidity). |
+| **`sensor_LD2450.yaml`** | HLK-LD2450 24 GHz mmWave radar sensor for invisible human presence detection. |
+| **`sensor_NTC.yaml`** | Analog NTC temperature thermistors for supply air and room air measurement. |
+| **`mock_*.yaml`** | Mock sensor definitions (`mock_scd41`, `mock_bme680`, `mock_radar`) allowing modular firmware builds without physical sensors. |
 
-The main configuration file `ventosync.yaml` (in the root directory) uses the `packages:` instruction to merge these modules and the core logic defined in `packages/base/ventosync_base.yaml`.
-
-This modular approach is necessary because **ESPHome does not support deactivating hardware components via software at runtime.** In ESPHome, every hardware component (sensors, displays, etc.) declared in the YAML is compiled into the firmware and initialized on boot. If a component is defined but the physical hardware is missing, the firmware would continuously log errors or potentially crash during initialization. By using packages, you ensure that only the drivers for the physically present hardware are compiled into the firmware.
+---
 
 ## 🛠️ Modifying Packages
 
-- **Naming Convention**: Use `id: ...` consistently across packages to ensure logical links (e.g., `pid_co2` in `logic_automation.yaml` refers to sensors defined in `sensor_SCD41.yaml`).
-- **Dependencies**: Note that some packages depend on others (e.g., `logic_automation.yaml` depends on the presence of specific sensor IDs).
-- **Versioning**: Global versions and common platform settings should be modified in `esp32c6_common.yaml`.
+- **Naming Convention**: Use consistent IDs (`id: ...`) across packages to ensure logical cross-linking.
+- **Hardware Modularity**: Only include the hardware sensor packages that match the physical board assembly (e.g. `sensor_SCD41.yaml` vs `mock_scd41.yaml`) to prevent compilation overhead and boot errors.
+- **Platform Base**: Platform settings and global substitutions are maintained in `esp32c6_common.yaml`.

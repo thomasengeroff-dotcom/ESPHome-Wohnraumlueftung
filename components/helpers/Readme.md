@@ -1,19 +1,27 @@
 # 🛠️ VentoSync C++ Helper Library
 
-This folder contains the core C++ implementation for the VentoSync project. These headers provide the complex logic that would be too cumbersome or inefficient to implement directly within ESPHome YAML lambdas.
+This folder contains the modular C++ helper headers for the VentoSync firmware. These headers implement complex calculation, hardware abstraction, and state-machine logic that would be inefficient or impractical within plain ESPHome YAML lambdas.
 
 ## 📖 Component Overview
 
-| File | Description |
+| Header File | Responsibility / Description |
 | :--- | :--- |
-| **`globals.h`** | **Central Registry**: Provides `extern` declarations for all ESPHome components (sensors, selects, numbers). This allows all other helper files to access the current system state without naming conflicts. |
-| **`network_sync.h`** | **Communication Backbone**: Implements the ESP-NOW protocol (v7). Handles dynamic peer discovery, room-wide state synchronization (mode/intensity mirroring), and packet validation. |
-| **`fan_control.h`** | **Motor Management**: Implements the "V-Curve" control logic for reversible 12V fans. Includes slew-rate limiting (soft-start/brake) and phase position tracking. |
-| **`auto_mode.h`** | **Intelligence Layer**: The logic behind "Smart automatic". Coordinates between CO2 PID demand and Humidity PID demand to determine the optimal fan speed. |
-| **`climate.h`** | **Environmental Processing**: Implements thermal stabilization filters for NTC sensors. Pauses measurement during fan direction changes and detects disconnected sensors (>80°C) to ensure accurate data. |
-| **`led_feedback.h`** | **Visual Interface**: Orchestrates the 9-LED original VentoMaxx panel. Manages dimming, wake-up effects, and diagnostic blink codes for the Master LED. |
-| **`user_input.h`** | **Interaction Logic**: Handlers for physical button presses (Power/Mode/Level) and updates from Home Assistant UI elements. Implements debouncing and multi-click logic. |
-| **`system_lifecycle.h`** | **System Hooks**: Manages the boot sequence (`run_system_boot_initialization`), watchdog restart detection, and component initialization priority. |
+| **`globals.h`** | **Central Registry**: `extern` declarations and shared pointers for all ESPHome sensors, numbers, switches, and selects. |
+| **`auto_mode.h`** | **Smart Auto Engine**: Dual-PID control logic (CO2 & Enthalpy/Humidity), hysteresis arbitration, and passive summer cooling bypass. |
+| **`automation_helpers.h`** | **Motor & Fan Actuation**: Fan PWM scaling, bidirectional V-curve voltage control, soft ramping, and emergency thermal cutoffs. |
+| **`bme680_iaq_engine.h`** | **BME680 IAQ Engine**: Indoor Air Quality (IAQ) indexing, absolute humidity calculation ($g/m^3$), and sensor calibration algorithms. |
+| **`climate.h`** | **Thermal & Environmental Processing**: Phase-locked NTC thermal stabilization filter, sensor fallbacks, and human-readable AQI formatting. |
+| **`config_helpers.h`** | **Dynamic Device Configuration**: Runtime device provisioning (Device ID, Room, Floor, Phase) with validation and NVS persistence. |
+| **`espnow_helpers.h`** | **ESP-NOW Dispatcher**: Unified incoming packet validation, source tagging, and dispatch routing. |
+| **`ha_fan_helpers.h`** | **Home Assistant Fan Bridge**: Bidirectional state translation and loopback-suppression between ESPHome and the HA Fan entity. |
+| **`health_helpers.h`** | **System Watchdog & Health**: Controller loop liveness monitoring, task freeze detection, and stack/heap diagnostics. |
+| **`hrv_efficiency.h`** | **HRV Efficiency Engine**: Real-time sensible and latent heat recovery efficiency calculation per DIN EN 13141-8. |
+| **`led_feedback.h`** | **LED & Panel UI**: Controls the original VentoMaxx panel (PCA9685/MCP23017) with 10-level bar visualization, dimming, and Master LED diagnostic codes. |
+| **`network_sync.h`** | **Wireless Mesh (ESP-NOW v7)**: Low-latency peer discovery, LRU peer caching, room-level push-pull synchronization, and packet validation. |
+| **`system_boot_helpers.h`** | **Hardware Boot Sequence**: Low-level GPIO configuration, RF-switch antenna path activation, and early peripheral setup. |
+| **`system_lifecycle.h`** | **Lifecycle & Maintenance**: Multi-stage boot orchestration, persistent filter operating hours tracking, and graceful reboot hooks. |
+| **`user_input.h`** | **Button & Interaction Logic**: Debouncing, physical button handling (Power/Mode/Level), timed boost countdowns, and child-lock protection. |
+| **`vacation_helpers.h`** | **Vacation Mode Engine**: Low-intensity interval ventilation management to protect indoor climate during absence. |
 
 ## 🏗️ Architecture Design
 
@@ -23,4 +31,4 @@ This folder contains the core C++ implementation for the VentoSync project. Thes
 
 ## ⚠️ Maintenance Note
 
-When adding new sensors or UI elements to the YAML configuration, ensure they are also declared in `globals.h` and initialized in the appropriately priority boot hook in `system_lifecycle.h` if they are required by the C++ logic.
+When adding new sensors or UI elements to the YAML configuration, ensure they are also declared in `globals.h` and initialized in the appropriate priority boot hook in `system_lifecycle.h` if they are required by the C++ logic.
