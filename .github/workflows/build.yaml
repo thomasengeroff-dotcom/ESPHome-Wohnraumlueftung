@@ -101,6 +101,9 @@ jobs:
             name: ventosync-bme680-only
           - yaml: ventosync_NTConly.yaml
             name: ventosync-ntconly
+          - yaml: ventosync_nosensor_mqtt.yaml
+            name: ventosync-nosensor-mqtt
+            mqtt_enabled: true
 
     steps:
       - name: Checkout Repository
@@ -136,6 +139,10 @@ jobs:
           webuser: "admin"
           webpw: "admin"
           api_encryption_key: "${EFFECTIVE_KEY}"
+          mqtt_broker: "127.0.0.1"
+          mqtt_port: "1883"
+          mqtt_username: "ci_dummy"
+          mqtt_password: "ci_dummy"
           EOF
 
       # ----------------------------------------------------------------
@@ -167,6 +174,21 @@ jobs:
             packages/base/esp32c6_common.yaml
 
           echo "✅ OTA build config prepared"
+
+      # ----------------------------------------------------------------
+      # Generate the MQTT variant file for CI validation.
+      # Copies ventosync_nosensor.yaml and appends the MQTT package
+      # include. Only runs for the mqtt_enabled matrix entry.
+      # ----------------------------------------------------------------
+      - name: Prepare MQTT variant file
+        if: matrix.mqtt_enabled
+        run: |
+          set -euo pipefail
+          cp ventosync_nosensor.yaml ventosync_nosensor_mqtt.yaml
+          # Append the MQTT package to the packages section
+          echo '  mqtt_integration: !include packages/integration/mqtt.yaml' >> ventosync_nosensor_mqtt.yaml
+          echo "✅ Generated ventosync_nosensor_mqtt.yaml with MQTT package"
+          cat ventosync_nosensor_mqtt.yaml
 
       - name: Setup Python
         uses: actions/setup-python@v5

@@ -1,0 +1,61 @@
+# ==========================================================================
+# VentoSync HRV – ESPHome Configuration for MQTT Integration
+# https://github.com/thomasengeroff-dotcom/VentoSync
+#
+# Copyright (c) 2026 Thomas Engeroff
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# File:        mqtt.yaml
+# Description: Optional MQTT integration package for external consumers
+#              (Node-RED, openHAB, ioBroker, IP-Symcon, etc.).
+#              Publishes all existing entities to an MQTT broker without
+#              any per-entity configuration. ESPHome MQTT component
+#              generically publishes all registered sensors, selects,
+#              numbers, switches, buttons, fans, and text sensors.
+#
+#              This package is ADDITIVE to the native Home Assistant API
+#              integration (homeassistant.yaml) and must never replace it.
+#              Enable by adding a single line to your variant YAML:
+#                mqtt_integration: !include packages/integration/mqtt.yaml
+#
+# Author:      Thomas Engeroff
+# Created:     2026-08-27
+# Modified:    2026-08-27
+# ==========================================================================
+
+mqtt:
+  broker: !secret mqtt_broker
+  port: !secret mqtt_port
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+
+  # Topic prefix for all MQTT messages published by this device.
+  # Uses the existing per-device addressing substitutions (floor_id, room_id,
+  # device_id) already configured for ESP-NOW coordination. This guarantees
+  # unique, non-colliding topic prefixes across multiple VentoSync units on
+  # the same broker — no additional configuration required.
+  #
+  # Example result: ventosync/1/1/1/sensor/scd41_co2/state
+  #                 ventosync/2/3/1/sensor/scd41_co2/state
+  topic_prefix: ventosync/${floor_id}/${room_id}/${device_id}
+
+  # Explicitly disable MQTT discovery to prevent duplicate entities in
+  # Home Assistant. Without this setting, ESPHome would auto-register all
+  # entities via MQTT discovery IN ADDITION to the native API integration
+  # (packages/integration/homeassistant.yaml), creating duplicate entities
+  # for every sensor, switch, select, etc.
+  # This package is intended for external MQTT consumers, not as a second
+  # Home Assistant integration path.
+  discovery: false

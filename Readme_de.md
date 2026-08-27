@@ -24,9 +24,10 @@ Achtung: Diese Lösung ist nicht kompatibel mit der VentoMaxx ZR-WRG Serie, da d
 
 [![Build Status](https://github.com/thomasengeroff-dotcom/VentoSync/actions/workflows/build.yaml/badge.svg)](https://github.com/thomasengeroff-dotcom/VentoSync/actions/workflows/build.yaml)
 [![GitHub Release](https://img.shields.io/github/v/release/thomasengeroff-dotcom/VentoSync?color=blue&logo=github)](https://github.com/thomasengeroff-dotcom/VentoSync/releases)
-[![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
-[![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red)](https://esphome.io/components/esp32.html)
+[![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue?logo=esphome)](https://esphome.io/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green?logo=home-assistant)](https://www.home-assistant.io/)
+[![MQTT](https://img.shields.io/badge/MQTT-Optional-blue?logo=mqtt&logoColor=white)](documentation/en/mqtt-integration.md)
+[![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red?logo=espressif)](https://esphome.io/components/esp32.html)
 ![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
 ![Sensor: BMP390](https://img.shields.io/badge/Sensor-BMP390-lightgrey)
 ![Sensor: BME680](https://img.shields.io/badge/Sensor-BME680-lightgrey)
@@ -202,6 +203,8 @@ Das originale Bedienpanel des VentoMaxx V-WRG-1 (9 LEDs, 3 Taster) bleibt vollst
 - **Verschlüsselt & Sicher**: Ende-zu-Ende verschlüsselte Kommunikation mit Home Assistant über Pre-Shared Keys (ESPHome Native API Verschlüsselung auf Basis des Noise-Protokolls).
 
 **Hybride Integrations-Philosophie**: Während der **Hauptfokus** von VentoSync auf einer tiefen und nahtlosen Integration in **Home Assistant** liegt, bietet das Projekt auch eine leistungsstarke Alternative. Durch das integrierte **lokale Web-Dashboard** kann das System als **voll funktionsfähige Standalone-Lösung** genutzt werden. Dies ermöglicht es Anwendern, den vollen Funktionsumfang – von der automatisierten Lüftung bis zur Sensordiagnose – zu nutzen, ohne jemals eine Home Assistant-Instanz einrichten oder warten zu müssen.
+
+> 🔌 **MQTT für externe Systeme**: VentoSync unterstützt optional die MQTT-Veröffentlichung zur Integration mit Node-RED, openHAB, ioBroker und anderen MQTT-basierten Plattformen — ohne die native Home Assistant-Integration zu beeinflussen. Siehe [📄 MQTT-Integrations-Leitfaden](documentation/en/mqtt-integration.md) für die Einrichtung.
 
 ### 📊 VentoSync Dashboard - Lokales Web-Dashboard
 

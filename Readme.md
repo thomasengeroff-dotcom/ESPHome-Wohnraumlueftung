@@ -26,9 +26,10 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 
 [![Build Status](https://github.com/thomasengeroff-dotcom/VentoSync/actions/workflows/build.yaml/badge.svg)](https://github.com/thomasengeroff-dotcom/VentoSync/actions/workflows/build.yaml)
 [![GitHub Release](https://img.shields.io/github/v/release/thomasengeroff-dotcom/VentoSync?color=blue&logo=github)](https://github.com/thomasengeroff-dotcom/VentoSync/releases)
-[![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue)](https://esphome.io/)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green)](https://www.home-assistant.io/)
-[![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red)](https://esphome.io/components/esp32.html)
+[![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue?logo=esphome)](https://esphome.io/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green?logo=home-assistant)](https://www.home-assistant.io/)
+[![MQTT](https://img.shields.io/badge/MQTT-Optional-blue?logo=mqtt&logoColor=white)](documentation/en/mqtt-integration.md)
+[![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red?logo=espressif)](https://esphome.io/components/esp32.html)
 ![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
 ![Sensor: BMP390](https://img.shields.io/badge/Sensor-BMP390-lightgrey)
 ![Sensor: BME680](https://img.shields.io/badge/Sensor-BME680-lightgrey)
@@ -204,6 +205,8 @@ The original 9-LED / 3-button control panel of the VentoMaxx V-WRG-1 is fully pr
 - **Encrypted & Secure**: End-to-end encrypted communication with Home Assistant via pre-shared keys (ESPHome Native API encryption based on the Noise Protocol).
 
 **Hybrid Integration Philosophy**: While the **primary focus** of VentoSync is a deep and seamless integration into **Home Assistant**, the project also offers a powerful alternative. Through the built-in **Local Web Dashboard**, the system can be used as a **fully functional standalone solution**. This allows users to enjoy the complete range of features—from automated ventilation to sensor diagnostics—without ever needing to set up or maintain a Home Assistant instance.
+
+> 🔌 **MQTT for external systems**: VentoSync optionally supports MQTT publishing for integration with Node-RED, openHAB, ioBroker, and other MQTT-based platforms — without affecting the native Home Assistant integration. See the [📄 MQTT Integration Guide](documentation/en/mqtt-integration.md) for setup instructions.
 
 ### 📊 VentoSync Dashboard - Local Web Dashboard
 
@@ -612,9 +615,9 @@ A special thank you goes to **[patrickcollins12](https://github.com/patrickcolli
 
 > [!CAUTION]
 > **230V AC Mains Hazard:** While the VentoSync control logic and fan circuit operate in the safe low-voltage range (12V / 3.3V DC), the internal power supply connects directly to **230V AC mains electricity**.
-> 
+>
 > Always isolate and de-energize the circuit breaker before opening the unit housing. Installation and mains wiring **MUST strictly be carried out by a qualified electrician** in accordance with local safety standards and national electrical regulations.
-> 
+>
 > *Please review the specific installation warnings in the [PCB Mounting Section](#-pcb-mounting--fan-wiring) and the [Hardware & Wiring Guide](documentation/en/hardware-and-wiring.md).*
 
 ---
