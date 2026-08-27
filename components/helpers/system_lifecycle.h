@@ -277,8 +277,8 @@ inline void run_system_boot_initialization() {
       if (watchdog_restarts != nullptr) {
           watchdog_restarts->publish_state(watchdog_restarts_count->value());
       }
-      ESP_LOGW("system", "Critical reset #%d: %s", 
-               (int)watchdog_restarts_count->value(), reset_reason_str);
+      ESP_LOGW("system", "Critical reset #%d: %s",
+               static_cast<int>(watchdog_restarts_count->value()), reset_reason_str);
   }
 
   // 2. Controller & Mode Init

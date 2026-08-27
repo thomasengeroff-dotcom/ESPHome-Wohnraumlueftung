@@ -188,11 +188,11 @@ Complex YAML lambda logic is extracted into focused header files:
 - `internal: true` on HA entities that depend on sensors absent in some hardware variants
 - Template sensors reading C++ globals require an explicit `update_interval` (e.g., `1s` or `5s`)
 
-### NVS / Flash Wear Protection
-
-- Filter runtime: accumulate operating hours in RAM, write to NVS every **8 hours** max
-- BME680 baseline counter: RAM-based, 30 min sync interval
-- Use native `restore_mode` for UI switches where possible (avoid unnecessary global variables)
+### NVS / Flash wear
+- Filter runtime: accumulate in RAM, write to NVS every **8 hours** max (was 30 min → caused 1440 writes/day)
+- BME680 baseline counter: RAM-based; flash save gated by `save_interval_ms`
+  (1h minimum) and `save_delta_pct` (2% change) in `bme680_iaq_engine.h`
+- `restore_mode` native for UI switches where possible (no extra global variable)
 
 ---
 

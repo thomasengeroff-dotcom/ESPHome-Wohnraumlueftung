@@ -428,6 +428,8 @@ inline void trigger_re_discovery();
 inline void reset_peer_fail_count(const uint8_t *mac);
 /** @brief Rebuilds the JSON string for peer display. */
 inline void rebuild_peers_string();
+/** @brief Flushes a peer-list NVS write deferred by rebuild_peers_string(). */
+inline void flush_pending_peer_nvs_save();
 /** @brief Sets the ventilation timer from a UI value. */
 inline void set_ventilation_timer(float value);
 /** @brief Sets the sync interval from a UI value. */

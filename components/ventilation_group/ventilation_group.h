@@ -474,7 +474,7 @@ public:
     if (ms == state_machine.cycle_duration_ms)
       return;
     state_machine.set_cycle_duration(millis(), ms);
-    ESP_LOGI("vent", "Cycle duration updated to %lu ms", (unsigned long)ms);
+    ESP_LOGI("vent", "Cycle duration updated to %lu ms", static_cast<unsigned long>(ms));
     if (refresh_hw) {
       update_hardware();
     }
@@ -487,7 +487,7 @@ public:
    */
   void set_sync_interval(uint32_t ms) {
     sync_interval_ms = ms;
-    ESP_LOGI("vent", "Sync interval updated to %lu ms", (unsigned long)sync_interval_ms);
+    ESP_LOGI("vent", "Sync interval updated to %lu ms", static_cast<unsigned long>(sync_interval_ms));
     trigger_sync();
   }
 
@@ -523,7 +523,8 @@ public:
       return;
  
     ESP_LOGI("vent", "Mode change: %d -> %d (Duration: %lu ms, Notify: %s)",
-             (int)state_machine.current_mode, (int)mode, (unsigned long)duration, notify ? "YES" : "NO");
+             static_cast<int>(state_machine.current_mode), static_cast<int>(mode),
+             static_cast<unsigned long>(duration), notify ? "YES" : "NO");
     state_machine.set_mode(mode, millis(), duration);
  
     update_hardware();
@@ -531,52 +532,33 @@ public:
   }
 
   /**
-   * @brief   Processes an incoming ESP-NOW packet.
+   * @brief   Processes an already-validated, already-parsed ESP-NOW packet.
    *
-   * @details Validates the protocol version and group IDs (Floor/Room).
-   *          Incoming packets can trigger mode changes, sync timing, or
-   *          update peer sensor data in the local cache.
+   * @details Validates the group IDs (Floor/Room) — the only check that
+   *          belongs here, since it depends on this controller's own
+   *          configuration and cannot be done generically at the protocol
+   *          layer. Incoming packets can trigger mode changes, sync timing,
+   *          or update peer sensor data in the local cache.
    *
-   * @param[in] data  Raw byte vector received via ESP-NOW.
+   * @param[in] pkt      Already-parsed and protocol-validated packet (magic
+   *                     header, protocol version, size — see
+   *                     espnow_handler::validate_and_parse_packet() in
+   *                     network_sync.h, which is the single deserialization
+   *                     point; this function must not re-parse raw bytes).
+   * @param[in] src_mac  Sender MAC address.
    *
    * @return  true if a local state change occurred (triggers UI refresh).
    *
-   * @note    Mismatched protocol versions or group IDs are rejected to
-   *          prevent cross-room interference.
+   * @note    Mismatched group IDs are rejected to prevent cross-room
+   *          interference.
    */
-  // FIXED K-1: const-ref parameter avoids unnecessary heap copy (H-1)
-  bool on_packet_received(const std::vector<uint8_t> &data, const uint8_t *src_mac) {
+  bool on_packet_received(const VentilationPacket &pkt_val, const uint8_t *src_mac) {
     // FIXED CR-1: Single consistent timestamp for entire method (mirrors loop() pattern)
     const uint32_t now = millis();
     ESP_LOGI("vent", "on_packet_received() called");
-    if (data.size() != sizeof(VentilationPacket)) {
-      ESP_LOGW("vent_sync", "Size mismatch! Expected %zu, got %zu",
-               sizeof(VentilationPacket), data.size());
-      return false;
-    }
 
-    // FIXED K-1: Strict-Aliasing-safe deserialization via std::memcpy.
-    // VentilationPacket is trivially-copyable (__attribute__((packed))),
-    // so this copy is elided by the compiler at -O2.
-    VentilationPacket pkt_val;
-    std::memcpy(&pkt_val, data.data(), sizeof(VentilationPacket));
     const VentilationPacket *pkt = &pkt_val;
 
-    // Filter: magic header
-    if (pkt->magic_header != 0x42) {
-      ESP_LOGW("vent_sync", "Magic header mismatch! Expected 0x42, got 0x%02X",
-               pkt->magic_header);
-      return false;
-    }
-    // FIXED K2: Reject packets from nodes running a different protocol version.
-    // Always do a simultaneous OTA rollout when PROTOCOL_VERSION changes.
-    if (pkt->protocol_version != PROTOCOL_VERSION) {
-      ESP_LOGW("vent_sync",
-               "Protocol version mismatch! Got v%d, expected v%d — "
-               "update firmware on all nodes simultaneously.",
-               pkt->protocol_version, PROTOCOL_VERSION);
-      return false;
-    }
     if (pkt->floor_id != floor_id || pkt->room_id != room_id) {
       ESP_LOGI("vent_sync",
                "Group mismatch! Received: Floor %d, Room %d | Local: Floor %d, "
@@ -818,18 +800,18 @@ public:
     pkt.device_id = device_id;
     pkt.msg_type = type;
     pkt.current_mode = state_machine.current_mode;
-    pkt.current_mode_index = (mode_index_global_ != nullptr) ? (uint8_t)mode_index_global_->value() : 0;
+    pkt.current_mode_index = (mode_index_global_ != nullptr) ? static_cast<uint8_t>(mode_index_global_->value()) : 0;
     pkt.remaining_duration_ms = state_machine.get_remaining_duration(now);
     pkt.fan_intensity = current_fan_intensity;
     pkt.timestamp_ms = now;
     
     // Populate Config with explicit null checks to ensure valid packets
-    pkt.automatik_min_fan_level = automatik_min_fan_level_global_ != nullptr ? (uint8_t)automatik_min_fan_level_global_->value() : 1;
-    pkt.automatik_max_fan_level = automatik_max_fan_level_global_ != nullptr ? (uint8_t)automatik_max_fan_level_global_->value() : 10;
-    pkt.auto_co2_threshold_val = auto_co2_threshold_global_ != nullptr ? (uint16_t)auto_co2_threshold_global_->value() : 1000;
-    pkt.auto_humidity_threshold_val = auto_humidity_threshold_global_ != nullptr ? (uint8_t)auto_humidity_threshold_global_->value() : 60;
-    pkt.auto_presence_val = auto_presence_global_ != nullptr ? (int8_t)auto_presence_global_->value() : 0;
-    pkt.max_led_brightness = max_led_brightness_global_ != nullptr ? (float)max_led_brightness_global_->value() : 0.8f;
+    pkt.automatik_min_fan_level = automatik_min_fan_level_global_ != nullptr ? static_cast<uint8_t>(automatik_min_fan_level_global_->value()) : 1;
+    pkt.automatik_max_fan_level = automatik_max_fan_level_global_ != nullptr ? static_cast<uint8_t>(automatik_max_fan_level_global_->value()) : 10;
+    pkt.auto_co2_threshold_val = auto_co2_threshold_global_ != nullptr ? static_cast<uint16_t>(auto_co2_threshold_global_->value()) : 1000;
+    pkt.auto_humidity_threshold_val = auto_humidity_threshold_global_ != nullptr ? static_cast<uint8_t>(auto_humidity_threshold_global_->value()) : 60;
+    pkt.auto_presence_val = auto_presence_global_ != nullptr ? static_cast<int8_t>(auto_presence_global_->value()) : 0;
+    pkt.max_led_brightness = max_led_brightness_global_ != nullptr ? static_cast<float>(max_led_brightness_global_->value()) : 0.8f;
     
     // Timers
     // FIXED H-4: Clamp before cast to prevent silent uint16_t truncation
@@ -845,11 +827,11 @@ public:
     pkt.phase_state = state_machine.global_phase;
 
     // Fill sensor data from local components if bound
-    pkt.fan_rpm = (fan_rpm_sensor_ && fan_rpm_sensor_->has_state()) ? fan_rpm_sensor_->state : (float)NAN;
-    pkt.board_temp = (board_temp_sensor_ && board_temp_sensor_->has_state()) ? board_temp_sensor_->state : (float)NAN;
-    
+    pkt.fan_rpm = (fan_rpm_sensor_ && fan_rpm_sensor_->has_state()) ? fan_rpm_sensor_->state : static_cast<float>(NAN);
+    pkt.board_temp = (board_temp_sensor_ && board_temp_sensor_->has_state()) ? board_temp_sensor_->state : static_cast<float>(NAN);
+
     // Room Temp Logic: SCD41 (Primary) -> BME680 (Fallback)
-    float r_temp = (float)NAN;
+    float r_temp = static_cast<float>(NAN);
     if (scd41_temp_sensor_ && scd41_temp_sensor_->has_state()) {
         r_temp = scd41_temp_sensor_->state;
     } else if (bme680_temp_sensor_ && bme680_temp_sensor_->has_state()) {
