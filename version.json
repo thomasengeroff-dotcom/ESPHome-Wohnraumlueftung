@@ -1,5 +1,5 @@
 {
-    "project_version": "0.10.9",
-    "project_date": "2026-08-21",
-    "project_description": "Fix HRV efficiency metrics logging, time-jump guard, and clarify humidity guard docs"
+    "project_version": "0.10.10",
+    "project_date": "2026-08-27",
+    "project_description": "Add optional MQTT integration package, CI matrix validation, and documentation"
 }

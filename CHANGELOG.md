@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.9] - 2026-08-27
+
+### Added
+
+- **Optional MQTT Integration Package** (`packages/integration/mqtt.yaml`):
+  - Native ESPHome `mqtt:` component package for interoperability with external automation consumers (Node-RED, openHAB, ioBroker, IP-Symcon).
+  - Additive architecture that coexists with the ESPHome Native API (`api:`) without replacing it.
+  - Explicit `discovery: false` guard preventing duplicate entity registration in Home Assistant.
+  - Automatic collision-free topic prefix generation `ventosync/${floor_id}/${room_id}/${device_id}` derived from existing device location substitutions.
+  - Credential placeholders for `mqtt_broker`, `mqtt_port`, `mqtt_username`, and `mqtt_password` in `secrets_example.yaml`.
+- **MQTT Documentation & Guides** (`documentation/en/mqtt-integration.md`, `Readme.md`, `Readme_de.md`):
+  - Added comprehensive English setup tutorial with published topic hierarchies, multi-unit address mappings, broker configuration examples (Mosquitto HA add-on / standalone ACL), and standalone API timeout FAQs.
+  - Added MQTT feature teaser and status badges to both `Readme.md` and `Readme_de.md`.
+- **CI / Build Workflow Validation** (`.github/workflows/build.yaml`):
+  - Extended GitHub Actions build matrix with `ventosync-nosensor-mqtt` to validate compilation of the MQTT package alongside dummy secrets on every push and PR.
+
+### Security / Stability
+
+- **Code Review & Helper Hardening** (`components/helpers/`, `components/ventilation_group/`):
+  - **NVS Wear Protection**: Gated BME680 baseline writes by `save_interval_ms` (1h min) and `save_delta_pct` (2% change) in `bme680_iaq_engine.h`.
+  - **T-1 / K-3**: Fixed `set_mode()` early-return when mode is unchanged to prevent redundant state resets.
+  - **T-2 / K-4**: Guarded `get_cycle_pos()` against division-by-zero on zero cycle duration.
+  - **T-3 / K-2**: Prevented ramp-factor overlap in `get_target_state()`.
+  - **T-4 / H-2**: Added zero-guard and jitter tolerance in `sync_time()`.
+  - **T-5 / K-1**: Enforced overflow bounds and proportional scaling in `set_cycle_duration()`.
+
 ## [0.10.6] - 2026-08-21
 
 ### Fixed
