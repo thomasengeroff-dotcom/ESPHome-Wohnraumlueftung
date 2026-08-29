@@ -5,11 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.11] - 2026-08-29
+
+### Documentation
+
+- **Documentation Restructuring & Full 1:1 Bi-Directional Parity** (`documentation/`):
+  - Standardized file naming convention across all documentation: `documentation/en/en_<name>.md` for English and `documentation/de/de_<name>.md` for German.
+  - Added missing English documentation files (`en_co2-control.md`, `en_dynamic-configuration.md`, `en_ha-lovelace-dashboard.md`), achieving 100% parity with 24 complete documentation pairs.
+  - Added missing German documentation files (`de_smart-automatic-logic.md`, `de_operating-modes.md`, `de_mqtt-integration.md`, `de_child-lock-implementation.md`, `de_system-architecture.md`, `de_architecture-review.md`).
+  - Updated all cross-language navigation badges (`[Language: EN]` / `[Language: DE]`) across all 48 documentation files.
+  - Updated all internal markdown references in `Readme.md`, `Readme_de.md`, `CHANGELOG.md`, `CLAUDE.md`, and subpage links.
+  - Verified 446 markdown links across the repository with 0 broken references.
+
+
 ## [0.10.10] - 2026-08-29
 
 ### Documentation
 
-- **Smart Automatic Mode Logic Review & Alignment** (`documentation/en/smart-automatic-logic.md`):
+- **Smart Automatic Mode Logic Review & Alignment** (`documentation/en/en_smart-automatic-logic.md`):
   - Corrected file references for PID controllers (`logic_automation.yaml` -> `logic_pid.yaml`).
   - Documented separated fallback chains for CO2 (`effective_co2` template sensor: SCD41 -> BME680 eCO2 -> 5min hold -> NaN) and Temperature (`auto_mode.h`: SCD41 Temp -> phase-locked NTC readings -> peer ESP-NOW).
   - Clarified NTC phase-lock behavior (physically fixed sensors with direction-locked filtering in `climate.h`, guaranteeing `temp_zuluft` represents outdoor and `temp_abluft` represents indoor).
@@ -28,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Explicit `discovery: false` guard preventing duplicate entity registration in Home Assistant.
   - Automatic collision-free topic prefix generation `ventosync/${floor_id}/${room_id}/${device_id}` derived from existing device location substitutions.
   - Credential placeholders for `mqtt_broker`, `mqtt_port`, `mqtt_username`, and `mqtt_password` in `secrets_example.yaml`.
-- **MQTT Documentation & Guides** (`documentation/en/mqtt-integration.md`, `Readme.md`, `Readme_de.md`):
+- **MQTT Documentation & Guides** (`documentation/en/en_mqtt-integration.md`, `Readme.md`, `Readme_de.md`):
   - Added comprehensive English setup tutorial with published topic hierarchies, multi-unit address mappings, broker configuration examples (Mosquitto HA add-on / standalone ACL), and standalone API timeout FAQs.
   - Added MQTT feature teaser and status badges to both `Readme.md` and `Readme_de.md`.
 - **CI / Build Workflow Validation** (`.github/workflows/build.yaml`):

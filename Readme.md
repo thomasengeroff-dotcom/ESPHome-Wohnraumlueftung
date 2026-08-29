@@ -28,7 +28,7 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 [![GitHub Release](https://img.shields.io/github/v/release/thomasengeroff-dotcom/VentoSync?color=blue&logo=github)](https://github.com/thomasengeroff-dotcom/VentoSync/releases)
 [![ESPHome](https://img.shields.io/badge/ESPHome-Compatible-blue?logo=esphome)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green?logo=home-assistant)](https://www.home-assistant.io/)
-[![MQTT](https://img.shields.io/badge/MQTT-Optional-blue?logo=mqtt&logoColor=white)](documentation/en/mqtt-integration.md)
+[![MQTT](https://img.shields.io/badge/MQTT-Optional-blue?logo=mqtt&logoColor=white)](documentation/en/en_mqtt-integration.md)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red?logo=espressif)](https://esphome.io/components/esp32.html)
 ![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
 ![Sensor: BMP390](https://img.shields.io/badge/Sensor-BMP390-lightgrey)
@@ -122,7 +122,7 @@ This solution is a **drop-in replacement** for the [VentoMaxx V-WRG / WRG PLUS](
 | Extendability | ❌ | ✅ System can be extended with additional sensors and actuators or individual functions |
 | License | Proprietary | ✅ Open Source (GPL v3) |
 
- **You can find the full feature-for-feature comparison with all technical details in [📄 Comparison-VentoMaxx.md](documentation/en/ventomaxx-comparison.md).**
+ **You can find the full feature-for-feature comparison with all technical details in [📄 Comparison-VentoMaxx.md](documentation/en/en_ventomaxx-comparison.md).**
 
 ---
 
@@ -132,7 +132,7 @@ This solution is a **drop-in replacement** for the [VentoMaxx V-WRG / WRG PLUS](
 
 All devices in a room find each other automatically upon startup or room change via **dynamic ESP-NOW discovery** and subsequently communicate efficiently via unicast.
 
-- 🤖 **Smart automatic**: Fully automatic control for maximum comfort and efficiency. Standard operation in heat recovery (push-pull) with dynamic PID-based adjustment to CO2 and humidity, taking outdoor air conditions into account. In summer, cross-ventilation for passive nightly cooling is automatically activated when it is cooler outside than inside. *→ [Full details and timing examples in 📄 Operating-Modes.md](documentation/en/operating-modes.md)*
+- 🤖 **Smart automatic**: Fully automatic control for maximum comfort and efficiency. Standard operation in heat recovery (push-pull) with dynamic PID-based adjustment to CO2 and humidity, taking outdoor air conditions into account. In summer, cross-ventilation for passive nightly cooling is automatically activated when it is cooler outside than inside. *→ [Full details and timing examples in 📄 Operating-Modes.md](documentation/en/en_operating-modes.md)*
 - 🔄 **Efficient Heat Recovery**: Cyclic, bidirectional operation (push-pull) to maximize energy efficiency. While automatic CO2 and humidity control are inactive in manual mode, presence detection can dynamically adjust fan intensity if enabled.
 - 💨 **Cross-Ventilation (Summer Mode)**: Constant airflow without changing direction (Phase-A units blow in, Phase-B units blow out simultaneously to create an effective cross-draft for passive night cooling). Flexibly configurable via timer or as continuous operation.
 - 🚀 **Boost Ventilation**: Intensive ventilation for quick air exchange. The device ventilates for 15 minutes with the **manually selected intensity** and then pauses for 105 minutes to effectively remove moisture and regenerate the ceramic heat exchanger. The cycle then repeats.
@@ -161,18 +161,18 @@ All devices in a room find each other automatically upon startup or room change 
     > [!TIP]
     > This 2-stage approach sets VentoSync apart from most commercial HRV units, which blindly ventilate based on relative humidity alone and can actually **increase** indoor moisture during rainy or muggy weather.
 
-    If both temperature sensors are unavailable, the system falls back to a simple relative humidity comparison as a safety net. See [📄 Automatic-Mode-Logic.md](documentation/en/smart-automatic-logic.md) for full technical details.
+    If both temperature sensors are unavailable, the system falls back to a simple relative humidity comparison as a safety net. See [📄 Automatic-Mode-Logic.md](documentation/en/en_smart-automatic-logic.md) for full technical details.
 
 - 📊 **Optimized VentoMaxx Ventilation Curve**: Based on the physical parameters of the original hardware (50% PWM = stop zone), the curve has been optimized with finer granularity in the lower levels (Levels 1-6) to ensure even more discreet acoustic operation.
 - 🪟 **Window Guard**: Automatic room-wide ventilation pause with 5s delay, auto-resume, visual Master LED feedback, and individual bypass switches.
-  > 👉 *Setup guide & behavior details: [📄 Window Guard Setup Guide](documentation/en/window-guard-ha-setup.md).*
+  > 👉 *Setup guide & behavior details: [📄 Window Guard Setup Guide](documentation/en/en_window-guard-ha-setup.md).*
 
 - 🌟 **Advanced Comfort & Protection Features**:
   - 📈 **Phase Continuity & Soft Start**: Proportional cycle scaling during speed changes and smooth speed transitions (~5%/s) for minimal wear and quiet operation.
   - 🔄 **Real-Time Diagnostics**: Plain-text airflow direction (*Supply Air*, *Exhaust Air*, *Standstill*) and virtual speed calculation (4200 RPM @ 100%).
   - 🌴 **Vacation Mode**: Automated energy-saving mode with configurable presets during extended absences.
   - 🔒 **Child Protection Mode**: Locks physical panel buttons via Home Assistant or on-device combo (5s hold) with LED feedback.
-  > 👉 *For complete details, entities & configuration, see [📄 Comfort & Safety Features](documentation/en/comfort-and-safety-features.md).*  
+  > 👉 *For complete details, entities & configuration, see [📄 Comfort & Safety Features](documentation/en/en_comfort-and-safety-features.md).*  
 
 ### ⚡ Extremely Low Power Consumption
 
@@ -194,7 +194,7 @@ The original 9-LED / 3-button control panel of the VentoMaxx V-WRG-1 is fully pr
 
 ![Operation at the Ventilation Device](images/Ventomax%20V-WRG-1/PXL_20260128_232625674.jpg)
 
-> 👉 *For quick button actions, see [On-Device Control Panel](#️-on-device-control-panel-ventomaxx-style) below, or read the full [📄 Control Panel Operation Guide](documentation/en/control-panel-operation.md).*
+> 👉 *For quick button actions, see [On-Device Control Panel](#️-on-device-control-panel-ventomaxx-style) below, or read the full [📄 Control Panel Operation Guide](documentation/en/en_control-panel-operation.md).*
 
 ### 🏠 Home Assistant Integration
 
@@ -206,7 +206,7 @@ The original 9-LED / 3-button control panel of the VentoMaxx V-WRG-1 is fully pr
 
 **Hybrid Integration Philosophy**: While the **primary focus** of VentoSync is a deep and seamless integration into **Home Assistant**, the project also offers a powerful alternative. Through the built-in **Local Web Dashboard**, the system can be used as a **fully functional standalone solution**. This allows users to enjoy the complete range of features—from automated ventilation to sensor diagnostics—without ever needing to set up or maintain a Home Assistant instance.
 
-> 🔌 **MQTT for external systems**: VentoSync optionally supports MQTT publishing for integration with Node-RED, openHAB, ioBroker, and other MQTT-based platforms — without affecting the native Home Assistant integration. See the [📄 MQTT Integration Guide](documentation/en/mqtt-integration.md) for setup instructions.
+> 🔌 **MQTT for external systems**: VentoSync optionally supports MQTT publishing for integration with Node-RED, openHAB, ioBroker, and other MQTT-based platforms — without affecting the native Home Assistant integration. See the [📄 MQTT Integration Guide](documentation/en/en_mqtt-integration.md) for setup instructions.
 
 ### 📊 VentoSync Dashboard - Local Web Dashboard
 
@@ -218,7 +218,7 @@ You do not need a smart home server to use VentoSync: Each ventilation unit host
   <img src="documentation/screenshots/wrg-dashboard2.png" alt="WRG Dashboard Connected Devices & Real-time Data" width="48%" />
 </p>
 
-> 👉 *For full dashboard features, ESP-NOW live visualization, and the standard ESPHome interface, see [📄 Local Web Dashboard Guide](documentation/en/local-web-dashboard.md).*
+> 👉 *For full dashboard features, ESP-NOW live visualization, and the standard ESPHome interface, see [📄 Local Web Dashboard Guide](documentation/en/en_local-web-dashboard.md).*
 
 ## 📡 ESP-NOW: Wireless Autonomy
 
@@ -230,7 +230,7 @@ I deliberately chose **not** to use powerline communication (PLC / data transmis
   <img src="EasyEDA-Pro/PCB%20mounting/PCB-ANT-in-Gehäuse.jpg" alt="External Antenna in Housing" width="500" />
 </p>
 
-> 👉 *For complete protocol details (v4 packets), dynamic room discovery, unicast architecture, and antenna optimization, see [📄 ESP-NOW Communication Guide](documentation/en/esp-now-communication.md).*
+> 👉 *For complete protocol details (v4 packets), dynamic room discovery, unicast architecture, and antenna optimization, see [📄 ESP-NOW Communication Guide](documentation/en/en_esp-now-communication.md).*
 
 ---
 
@@ -238,7 +238,7 @@ I deliberately chose **not** to use powerline communication (PLC / data transmis
 
 VentoSync is actively maintained and continuously evolving with a focus on deeper sensor fusion, acoustic optimization, and next-generation smart automations.
 
-> 👉 *For complete descriptions and concepts of upcoming features and roadmap milestones, see [📄 Roadmap & Future Enhancements](documentation/en/roadmap-and-future-enhancements.md).*
+> 👉 *For complete descriptions and concepts of upcoming features and roadmap milestones, see [📄 Roadmap & Future Enhancements](documentation/en/en_roadmap-and-future-enhancements.md).*
 
 ## 🎛️ Custom Circuit Board - PCB
 
@@ -265,7 +265,7 @@ To achieve the highest possible accuracy, I developed a secondary PCB specifical
 
 ![SCD41 Prototype](EasyEDA-Pro/PCB%20SCD41%20Prototype%20Images/SCD41-PCB-3D-top_small.png)
 
-> 👉 *For complete component specifications, the full Bill of Materials (BOM), fan wiring details, XIAO ESP32-C6 GPIO pin assignments, and schematic block diagrams, see [📄 Hardware, BOM & Wiring Guide](documentation/en/hardware-and-wiring.md).*
+> 👉 *For complete component specifications, the full Bill of Materials (BOM), fan wiring details, XIAO ESP32-C6 GPIO pin assignments, and schematic block diagrams, see [📄 Hardware, BOM & Wiring Guide](documentation/en/en_hardware-and-wiring.md).*
 
 ---
 
@@ -429,7 +429,7 @@ The unit features an intuitive 3-button control panel with 9 status LEDs (dimmab
 - **Feedback**: Visualized via 5 Intensity LEDs (fill-bar with 50%/100% brightness steps), 2 Mode LEDs (`LED_WRG` / `LED_VEN`), Power LED, and Master diagnostic LED.
 
 > 📖 **Complete Control Panel Guide:**  
-> For full details on button operations, the 10-level LED fill-bar logic, diagnostic blink patterns (Master LED), and group wake-up behavior, see the **[📄 Control Panel Operation Guide](documentation/en/control-panel-operation.md)**.
+> For full details on button operations, the 10-level LED fill-bar logic, diagnostic blink patterns (Master LED), and group wake-up behavior, see the **[📄 Control Panel Operation Guide](documentation/en/en_control-panel-operation.md)**.
 
 ---
 
@@ -448,7 +448,7 @@ The ventilation system supports 5 operating modes, which can be selected via the
 | **5** | **⭕ Off** *(Monitoring)* | ⚫ / ⚫ | Fan stopped (0 RPM); all climate sensors & web UI remain online for data logging | `select.modus_lueftungsanlage` → `Off` |
 
 > 📖 **Comprehensive Operating Modes Guide:**  
-> For full technical details on the PID control logic, real-world timing examples, enthalpy-based dehumidification, summer cooling hysteresis, and Light Sleep power saving, see the **[📄 Operating Modes & Logic Guide](documentation/en/operating-modes.md)**.
+> For full technical details on the PID control logic, real-world timing examples, enthalpy-based dehumidification, summer cooling hysteresis, and Light Sleep power saving, see the **[📄 Operating Modes & Logic Guide](documentation/en/en_operating-modes.md)**.
 
 ---
 
@@ -468,7 +468,7 @@ All functions are fully integrated into Home Assistant. Changes on the panel are
   - `select.urlaubsmodus_betriebsmodus` — Operating mode when vacation is active (default: `Stoßlüftung`)
   - `number.urlaubsmodus_intensitat` — Fan intensity when vacation is active, 1–10 (default: `1`)
 
-👉 **Tip:** A detailed overview of all available Home Assistant entities, including their technical names (`ID`) and functions, can be found in the document **[Entities_Documentation.md](documentation/en/home-assistant-entities.md)**.
+👉 **Tip:** A detailed overview of all available Home Assistant entities, including their technical names (`ID`) and functions, can be found in the document **[Entities_Documentation.md](documentation/en/en_home-assistant-entities.md)**.
 
 #### 📊 Fan Speed per Level (VentoMaxx V-Curve)
 
@@ -503,7 +503,7 @@ The RPM range is optimized to allow for finer steps at low levels (Levels 1-6) f
 - **Stealth Mode**: The LEDs are automatically switched off when the device is not being operated — this especially prevents disturbing light in bedrooms at night.
 - **Filter Change Alarm**: Intelligent predictive maintenance tracking active fan runtime (**>365 operating days / 8,760h**) and calendar aging (**>3 years**) to protect hardware and ensure air hygiene. Includes a one-click reset entity once cleaned or replaced.
 
-> 👉 *For entity details, automation blueprints, and push notification setup in Home Assistant, see [📄 Filter Change Alarm Setup Guide](documentation/en/filter-change-alarm-ha-setup.md).*
+> 👉 *For entity details, automation blueprints, and push notification setup in Home Assistant, see [📄 Filter Change Alarm Setup Guide](documentation/en/en_filter-change-alarm-ha-setup.md).*
 
 ---
 
@@ -519,7 +519,7 @@ VentoSync uses a high-capacity **ceramic regenerator** (regenerative heat accumu
 - **DIN EN 13141-8 Energy-Based Efficiency**: Unlike basic systems that evaluate instantaneous points in time, VentoSync uses numerical **trapezoidal integration** over full cycles to compute the true thermodynamic heat recovery efficiency ($\eta_{WRG}$ up to ~85%) and calculates the actual **recovered thermal energy in Watt-hours (Wh)** based on calibrated volumetric airflow curves.
 - **Advanced Air Quality (BME680 Engine)**: Integrated C++ IAQ engine featuring an optimized 300°C/150ms heater profile, dynamic ambient temperature compensation, and flash wear-leveling.
 
-> 👉 *For in-depth mathematical integration models, physical formulas, NTC filter algorithms, BME680 IAQ engine internals, and multi-unit synchronization diagrams, see [📄 Heat Recovery & Efficiency Guide](documentation/en/heat-recovery-and-efficiency.md).*
+> 👉 *For in-depth mathematical integration models, physical formulas, NTC filter algorithms, BME680 IAQ engine internals, and multi-unit synchronization diagrams, see [📄 Heat Recovery & Efficiency Guide](documentation/en/en_heat-recovery-and-efficiency.md).*
 
 ---
 
@@ -527,7 +527,7 @@ VentoSync uses a high-capacity **ceramic regenerator** (regenerative heat accumu
 
 Detailed technical information about sensor optimizations, ESPHome YAML syntax, I²C configuration, and other technical aspects can be found in the separate documentation:
 
-📄 **[Technical-Details-Optimizations_en.md](EasyEDA-Pro/documentation/Technical-Details-Optimizations_en.md)** / **[Automatic-Mode-Logic.md](documentation/en/smart-automatic-logic.md)**
+📄 **[Technical-Details-Optimizations_en.md](EasyEDA-Pro/documentation/Technical-Details-Optimizations_en.md)** / **[Automatic-Mode-Logic.md](documentation/en/en_smart-automatic-logic.md)**
 
 This documentation contains:
 
@@ -590,7 +590,7 @@ To guarantee 24/7 reliability, long-term maintainability, and clean code quality
 - **Technical & Runtime Excellence**: Thread-safe HTTP event handling with `std::lock_guard`, move semantics, NaN-safe PID control, flash wear-leveling (8h NVS buffering), and unified NTC filtering (`filter_ntc_combined`).
 - **Deterministic Boot Sequence**: Staged initialization sequence (`on_boot` priority -10) with cached peer restoration, delayed mesh discovery broadcasts, and LED hardware self-test.
 
-> 👉 *For complete package breakdowns, C++ helper architectures, code refactoring examples, stability measures, and the system boot diagram, see [📄 Code Architecture & Maintainability Guide](documentation/en/code-architecture-and-maintainability.md).*
+> 👉 *For complete package breakdowns, C++ helper architectures, code refactoring examples, stability measures, and the system boot diagram, see [📄 Code Architecture & Maintainability Guide](documentation/en/en_code-architecture-and-maintainability.md).*
 
 ---
 
@@ -618,7 +618,7 @@ A special thank you goes to **[patrickcollins12](https://github.com/patrickcolli
 >
 > Always isolate and de-energize the circuit breaker before opening the unit housing. Installation and mains wiring **MUST strictly be carried out by a qualified electrician** in accordance with local safety standards and national electrical regulations.
 >
-> *Please review the specific installation warnings in the [PCB Mounting Section](#-pcb-mounting--fan-wiring) and the [Hardware & Wiring Guide](documentation/en/hardware-and-wiring.md).*
+> *Please review the specific installation warnings in the [PCB Mounting Section](#-pcb-mounting--fan-wiring) and the [Hardware & Wiring Guide](documentation/en/en_hardware-and-wiring.md).*
 
 ---
 

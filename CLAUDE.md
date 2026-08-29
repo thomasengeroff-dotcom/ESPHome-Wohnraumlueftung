@@ -254,8 +254,8 @@ Version is bumped automatically by `version_bump.py` — do not edit `version.js
 ## Documentation Structure
 
 All documentation is organized in language subdirectories:
-- **English:** `documentation/en/*.md` (e.g., `documentation/en/home-assistant-entities.md`)
-- **German:** `documentation/de/*.md` (e.g., `documentation/de/home-assistant-entities.md`)
+- **English:** `documentation/en/*.md` (e.g., `documentation/en/en_home-assistant-entities.md`)
+- **German:** `documentation/de/*.md` (e.g., `documentation/de/de_home-assistant-entities.md`)
 - **Datasheets:** `documentation/datasheets/*.pdf`
 - **Main Readmes:** `Readme.md` (EN) and `Readme_de.md` (DE) in repository root.
 
