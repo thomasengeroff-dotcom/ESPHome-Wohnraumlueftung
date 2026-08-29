@@ -10,7 +10,7 @@ Wenn der CO2-Wert steigt, erhöht sich die Lüfterdrehzahl schrittweise — sink
 Eine einstellbare **Mindest-Lüfterstufe** stellt sicher, dass auch bei Abwesenheit (niedriges CO2)
 eine Grundlüftung zum Feuchteschutz aktiv bleibt (nach DIN 1946-6).
 
-**Voraussetzung:** SCD41 CO2-Sensor muss am I2C-Bus (Header H2) angeschlossen sein.
+**Voraussetzung:** SCD43 CO2-Sensor muss am I2C-Bus (Header H2) angeschlossen sein.
 Ohne angeschlossenen Sensor bleibt die Funktion automatisch inaktiv.
 
 ---
@@ -106,7 +106,7 @@ CO2-Wert niedrig ist (z.B. leerer Raum, Nacht). Dies ist wichtig für:
 2. **Slider:** `CO2 Min Lüfterstufe` → 1–10 (Standard: 2, Feuchteschutz)
 3. **Slider:** `CO2 Max Lüfterstufe` → 1–10 (Standard: 7, Noise Control)
 
-Beim Einschalten prüft das System, ob der SCD41-Sensor angeschlossen ist.
+Beim Einschalten prüft das System, ob der SCD43-Sensor angeschlossen ist.
 Ist er nicht verfügbar (`NaN`), wird die Automatik **nicht** aktiviert und eine Warnung geloggt.
 
 ### Lokal (Bedienpanel)
@@ -120,7 +120,7 @@ das Bedienpanel kennt diese Funktion nicht.
 
 ```text
 ┌─────────────┐    30s Interval     ┌──────────────────────┐
-│ SCD41 Sensor │ ──── CO2 ppm ────▶ │ apply_co2_auto_control│
+│ SCD43 Sensor │ ──── CO2 ppm ────▶ │ apply_co2_auto_control│
 │ (I2C @ H2)  │                     │ (automation_helpers.h) │
 └─────────────┘                     └──────────┬───────────┘
                                                │
@@ -211,9 +211,9 @@ interval:
 
 | Problem | Lösung |
 | :--- | :--- |
-| CO2 Automatik lässt sich nicht einschalten | SCD41 nicht angeschlossen → am H2 Header anschließen |
+| CO2 Automatik lässt sich nicht einschalten | SCD43 nicht angeschlossen → am H2 Header anschließen |
 | Lüfter reagiert nicht auf CO2-Anstieg | `CO2 Automatik` Switch in HA prüfen |
 | Lüfter dreht zu hoch | `CO2 Max Lüfterstufe` auf gewünschten Wert reduzieren |
 | Lüfter dreht nie ab (auch bei gutem CO2) | `CO2 Min Lüfterstufe` prüfen — dies ist beabsichtigt (Feuchteschutz) |
-| Log: "SCD41 not connected" | I2C-Verbindung prüfen (SDA/SCL, Kabelbruch) |
-| CO2 Wert springt stark | Median-Filter im SCD41 Sensor bereits aktiv (window_size: 5) |
+| Log: "SCD43 not connected" | I2C-Verbindung prüfen (SDA/SCL, Kabelbruch) |
+| CO2 Wert springt stark | Median-Filter im SCD43 Sensor bereits aktiv (window_size: 5) |

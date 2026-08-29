@@ -1,5 +1,5 @@
 {
-    "project_version": "0.10.11",
-    "project_date": "2026-08-29",
-    "project_description": "Standardize documentation structure with en_/de_ prefixes, achieve 1:1 EN/DE parity (24 doc pairs), and validate all cross-links"
+    "project_version": "0.10.12",
+    "project_date": "2026-08-30",
+    "project_description": "Upgrade sensor documentation to SCD43, add modular SGP41/SHT4x ecosystem, 3D PCB renders, and aerodynamic reverse compensation roadmap"
 }

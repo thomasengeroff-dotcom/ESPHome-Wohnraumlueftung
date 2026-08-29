@@ -14,8 +14,8 @@ An intelligent, decentralized living space ventilation system that does not just
 The device acts as a "black box" data logger for its specific room.
 
 * **Internal Sensors:**
-  * CO2 (SCD41)
-  * Indoor Temperature & Humidity (SCD41/BME680)
+  * CO2 (SCD43)
+  * Indoor Temperature & Humidity (SCD43/BME680)
   * Outdoor Temperature & Humidity (NTCs + calculations)
   * Air Pressure (BME680)
   * VOC / Air Quality (BME680)

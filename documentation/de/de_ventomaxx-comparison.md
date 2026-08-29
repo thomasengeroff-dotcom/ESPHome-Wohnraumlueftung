@@ -11,7 +11,7 @@ Die **VentoSync-Steuerung** bietet **100% der Original-Funktionalität** und erw
 
 - **Smart-Home-Integration** (WiFi 6, Home Assistant Native API, OTA-Updates)
 - **Komfort & Automatik** (Feuchtigkeitsmanagement, Fenstersperre, Silent-Mode, Sanftanlauf)
-- **Präzisions-Sensorik** (SCD41 CO2, BMP390 Luftdruck, HLK-LD2450 Radar, NTC-Temperaturen, BME680 Fallback)
+- **Präzisions-Sensorik** (SCD43 CO2, BMP390 Luftdruck, HLK-LD2450 Radar, NTC-Temperaturen, BME680 Fallback)
 - **Intelligente Regelalgorithmen** (PID-gesteuerte CO2/Feuchte-Regelung, adaptive Zykluszeiten)
 - **Prädiktive Wartung** (Filterwechsel-Alarm basierend auf Betriebsstunden + Kalenderzeit)
 - **Kabelloses Mesh-Netzwerk** (ESP-NOW Discovery für autonomen / routerunabhängigen Gruppenbetrieb)
@@ -30,7 +30,7 @@ Die **VentoSync-Steuerung** bietet **100% der Original-Funktionalität** und erw
 | **Auto-Sommerbetrieb** | ❌ Nein (manuell umschalten) | ✅ **Automatische Querlüftung** wenn Außentemp. < Innentemp. (NTC + ESP-NOW Gruppendaten) | ✅ **Kein manuelles Umschalten nötig** |
 | **Stoßlüftung** | 15 Min. Intensiv, dann Pause | ✅ Ja (Konfigurierbar: Zeit/Stufe) | ✅ **Flexibler** |
 | **Lüfterregelung** | 5 feste Stufen | **10 Stufen (diskrete PID-Regelung)** (Stufen 1 - 6 sind feiner abgestimmt als die höheren Stufen, um die Lautstärke in den unteren Stufen zu optimieren) | ✅ **Feingranular** |
-| **Automatik (CO2)** | ❌ Nein (nur optionale VOC-Schätzung) | ✅ **SCD41 (echtes CO2)**: Stufenlose PID-Regelung mit Deadband-Hysterese, konfigurierbarem Min/Max-Level | ✅ **Präzise & leise** mit Präzisionssensor |
+| **Automatik (CO2)** | ❌ Nein (nur optionale VOC-Schätzung) | ✅ **SCD43 (echtes CO2)**: Stufenlose PID-Regelung mit Deadband-Hysterese, konfigurierbarem Min/Max-Level | ✅ **Präzise & leise** mit Präzisionssensor |
 | **Automatik (Feuchte)** | Schwellwerte fest: 55%, 65%, 75% r.F. | ✅ **PID-Regler** mit konfigurierbarem Grenzwert (40-100%), Outdoor-Feuchte-Vergleich, Deadband-Hysterese (±2%) | ✅ **Präzise & leise** mit Präzisionssensor + Outdoor-Check |
 | **Anwesenheit** | ❌ Nein | ✅ **mmWave-Radar (HLK-LD2450)**: 4 Profile (Keine Anpassung, Intensiv, Normal, Gering): je Raum kann Lüftungsintensität automatisch verringert oder erhöht werden bei Anwesenheit | ✅ **Bedarfsgerecht** durch Code Anpassung jeder beliebige Anwesenheitssensor integrierbar |
 | **Fenstersperre** | ❌ Nein | ✅ **Window Guard**: Lüftung wird nach 5s Zeitverzögerung bei offenem Fenster angehalten (raumweit via ESP-NOW) und setzt bei geschlossenen Fenstern automatisch im vorigen Modus fort | ✅ **Energieersparnis & Geräuschreduktion** |
@@ -45,11 +45,11 @@ Die **VentoSync-Steuerung** bietet **100% der Original-Funktionalität** und erw
 
 | Feature | VentoMaxx V-WRG (Original) | VentoSync (Dieses Projekt) | Vorteil VentoSync |
 | :--- | :--- | :--- | :--- |
-| **CO2-Messung** | ❌ Nein (nur optionales VOC-Modul) | ✅ **SCD41**: Photoacoustic sensing, 400-5000 ppm | ✅ **Echte CO2-Werte** statt Schätzung |
+| **CO2-Messung** | ❌ Nein (nur optionales VOC-Modul) | ✅ **SCD43**: Photoacoustic sensing, 400-5000 ppm | ✅ **Echte CO2-Werte** statt Schätzung |
 | **Temperatur** | ❌ Keine Anzeige | ✅ **NTC-Sensoren** (Zuluft/Abluft) + HA Wetterdaten | ✅ **Visualisierung & Automatik** |
-| **Luftfeuchtigkeit** | Rudimentär (feste Schwellen) | ✅ **SCD41** (Innen) + **Außenfeuchte** (HA Wetterdienst/Sensor) | ✅ **PID-geregelt + Outdoor-Check** |
-| **Luftdruck** | ❌ Nein | ✅ **BMP390**: Wettertrend, Sturmwarnung, **Barometrische Kompensation** für SCD41 | ✅ **Korrekturen in Echtzeit** |
-| **BME680 Fallback** | ❌ Nein | ✅ **Zusatz-Sensor**: Automatisches Backup bei SCD41 Ausfall | ✅ **Fehlertoleranz** |
+| **Luftfeuchtigkeit** | Rudimentär (feste Schwellen) | ✅ **SCD43** (Innen) + **Außenfeuchte** (HA Wetterdienst/Sensor) | ✅ **PID-geregelt + Outdoor-Check** |
+| **Luftdruck** | ❌ Nein | ✅ **BMP390**: Wettertrend, Sturmwarnung, **Barometrische Kompensation** für SCD43 | ✅ **Korrekturen in Echtzeit** |
+| **BME680 Fallback** | ❌ Nein | ✅ **Zusatz-Sensor**: Automatisches Backup bei SCD43 Ausfall | ✅ **Fehlertoleranz** |
 | **Anwesenheit** | ❌ Nein | ✅ **HLK-LD2450 mmWave-Radar**: Präsenz, Moving/Still Targets, Target Count | ✅ **Raumgenaue Erfassung** |
 | **Drehzahl** | Tacho-Signal (LED blinkt bei Fehler) | ✅ **Pulse Counter**: Virtueller Tacho (Fallback) oder Echtzeit-RPM + Fehleralarm | ✅ **Quantitative Überwachung** |
 | **Richtungsanzeige** | ❌ Nein | ✅ **Klartext-Sensor**: "Zuluft", "Abluft", "Stillstand" in HA | ✅ **Sofortige Klarheit** |

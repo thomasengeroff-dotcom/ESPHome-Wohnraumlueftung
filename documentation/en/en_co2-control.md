@@ -8,7 +8,7 @@ The CO2 automation automatically adjusts the ventilation intensity based on the 
 As CO2 rises, the fan speed increases step by step — when the level decreases, the fan gently scales back down.
 A configurable **Minimum Fan Level** ensures that base ventilation for moisture protection remains active even during periods of absence (low CO2), adhering to DIN 1946-6.
 
-**Requirement:** An SCD41 CO2 sensor must be connected to the I2C bus (Header H2).
+**Requirement:** An SCD43 CO2 sensor must be connected to the I2C bus (Header H2).
 Without a connected sensor, this automated function remains inactive.
 
 ---
@@ -99,7 +99,7 @@ The **"CO2 Min Lüfterstufe"** slider guarantees a **minimum continuous ventilat
 2. **Slider:** `CO2 Min Lüfterstufe` → 1–10 (Default: 2, Moisture Protection)
 3. **Slider:** `CO2 Max Lüfterstufe` → 1–10 (Default: 7, Noise Control)
 
-When enabled, the system verifies that the SCD41 sensor is connected. If unavailable (`NaN`), the automation remains inactive and a warning is logged.
+When enabled, the system verifies that the SCD43 sensor is connected. If unavailable (`NaN`), the automation remains inactive and a warning is logged.
 
 ### On-Device Control Panel
 
@@ -111,7 +111,7 @@ CO2 automation is primarily configured via Home Assistant or the web dashboard.
 
 ```text
 ┌─────────────┐    30s Interval     ┌──────────────────────┐
-│ SCD41 Sensor │ ──── CO2 ppm ────▶ │ apply_co2_auto_control│
+│ SCD43 Sensor │ ──── CO2 ppm ────▶ │ apply_co2_auto_control│
 │ (I2C @ H2)  │                     │ (automation_helpers.h) │
 └─────────────┘                     └──────────┬───────────┘
                                                │
@@ -143,9 +143,9 @@ CO2 automation is primarily configured via Home Assistant or the web dashboard.
 
 | Issue | Solution |
 | :--- | :--- |
-| CO2 automation cannot be activated | SCD41 not connected → Connect to header H2 |
+| CO2 automation cannot be activated | SCD43 not connected → Connect to header H2 |
 | Fan does not react to CO2 increase | Check the `CO2 Automatik` switch state in HA |
 | Fan speed is too loud | Lower the `CO2 Max Lüfterstufe` slider |
 | Fan never turns off completely | Check `CO2 Min Lüfterstufe` — this is intended behavior (moisture protection) |
-| Log: "SCD41 not connected" | Verify I2C wiring (SDA/SCL, cable continuity) |
-| CO2 readings fluctuate sharply | Median filtering is built into the SCD41 sensor driver (`window_size: 5`) |
+| Log: "SCD43 not connected" | Verify I2C wiring (SDA/SCL, cable continuity) |
+| CO2 readings fluctuate sharply | Median filtering is built into the SCD43 sensor driver (`window_size: 5`) |

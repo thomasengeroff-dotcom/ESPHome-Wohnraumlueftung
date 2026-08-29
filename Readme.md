@@ -9,7 +9,7 @@
 ## 🚀 Summary & Overview
 
 This open-source project offers a professional, decentralized heat recovery ventilation (HRV) control system based on ESPHome. It replaces the control system of the VentoMaxx V-WRG series using a custom developed printed circuit board (PCB) based on an ESP32-C6 microcontroller, controlling the reversible 12V fan for heat recovery.
-It optionally monitors air quality (CO2, humidity, and temperature) using a high-quality Sensirion SCD41 sensor, calculates effective heat recovery and uses the **original VentoMaxx control panel** for seamless integration and intuitive operation.
+It optionally monitors air quality (CO2, humidity, and temperature) using a high-quality Sensirion SCD43 sensor, calculates effective heat recovery and uses the **original VentoMaxx control panel** for seamless integration and intuitive operation.
 Furthermore, a mmWave radar sensor for presence detection can be optionally integrated and mounted invisibly behind the front cover of the ventilation unit.
 Communication between individual ventilation units takes place via the stable ESP-NOW protocol, so no Wi-Fi or power line communication is required.
 
@@ -30,7 +30,7 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Integration-green?logo=home-assistant)](https://www.home-assistant.io/)
 [![MQTT](https://img.shields.io/badge/MQTT-Optional-blue?logo=mqtt&logoColor=white)](documentation/en/en_mqtt-integration.md)
 [![Platform](https://img.shields.io/badge/Platform-ESP32--C6-red?logo=espressif)](https://esphome.io/components/esp32.html)
-![Sensor: SCD41](https://img.shields.io/badge/Sensor-SCD41-lightgrey)
+![Sensor: SCD43](https://img.shields.io/badge/Sensor-SCD43-lightgrey)
 ![Sensor: BMP390](https://img.shields.io/badge/Sensor-BMP390-lightgrey)
 ![Sensor: BME680](https://img.shields.io/badge/Sensor-BME680-lightgrey)
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
@@ -54,7 +54,8 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 - [📡 ESP-NOW: Wireless Autonomy](#📡-esp-now-wireless-autonomy)
 - [🗺️ Roadmap & Future Enhancements](#🗺️-roadmap--future-enhancements)
 - [🎛️ Custom Circuit Board - PCB](#️-custom-circuit-board---pcb)
-  - [Specialized SCD41 Sensor Board](#specialized-scd41-sensor-board)
+  - [Specialized SCD43 Sensor Board](#specialized-scd43-sensor-board)
+  - [🌿 Modular Sensor Ecosystem: SGP41 & SHT4x](#-modular-sensor-ecosystem-the-right-metric-for-every-room)
 - [🛠️ Setup & Installation](#🛠️-setup--installation)
   - [🧰 PCB Mounting & Fan Wiring](#-pcb-mounting--fan-wiring)
   - [💻 Development Environment (Linux `venv` & ESPHome CLI)](#-development-environment-linux-venv--esphome-cli)
@@ -81,7 +82,7 @@ Attention: This solution is not compatible with the VentoMaxx ZR-WRG series, as 
 ## Motivation
 
 Many years ago, as part of a house renovation, I installed the V-WRG decentralized residential ventilation from Ventomaxx (10 units) and was very satisfied with it. However, the proprietary control and the lack of integration into my smart home system always bothered me. Therefore, I decided to develop my own circuit board (PCB) including control software based on ESPHome, as there was no ready-made solution. This solution is open source and is intended to help other users who are in the same situation as I was.
-For ventilation control based on CO2, I use an extremely high-quality and precise CO2 sensor (Sensirion SCD41), which is integrated directly into the board (via a small additional PCB; Note: Currently the Bosch BME680 serves as a fallback, as the SCD41 PCB is still in production). This sensor measures the real CO2 concentration in the air and controls the ventilation intensity according to the presets (using modern PID control). All code comments and internal documentation have been switched to English for better international maintainability, while the user interface remains in German (at least for now).
+For ventilation control based on CO2, I use an extremely high-quality and precise CO2 sensor (Sensirion SCD43), which is integrated directly into the board (via a small additional PCB; Note: Currently the Bosch BME680 serves as a fallback, as the SCD43 PCB is still in production). This sensor measures the real CO2 concentration in the air and controls the ventilation intensity according to the presets (using modern PID control). All code comments and internal documentation have been switched to English for better international maintainability, while the user interface remains in German (at least for now).
 Since the ventilation units in the various rooms are usually in a very central position, I also use them directly for presence detection via a radar sensor, which can be mounted invisibly hidden behind the cover of the ventilation unit. The presence sensor is used for controlling the ventilation intensity in Smart automatic mode and can also be used in Home Assistant for any other automation.
 According to my research, the range of functionality of this project goes beyond everything currently found on the ventilation unit market!
 If you own a VentoMaxx V-WRG system, you are in luck: you can easily upgrade your system and boost it with advanced, 21st-century smart features!
@@ -140,11 +141,11 @@ All devices in a room find each other automatically upon startup or room change 
 
 ### 🛡️ Precision Sensors & Monitoring
 
-- 🌡️ **Climate Data Acquisition**: High-precision measurement of temperature and relative humidity using [Sensirion SCD41](https://sensirion.com/de/produkte/katalog/SCD41).
-  - ✅ **Photoacoustic sensing** for precise CO2 measurement (400-5000 ppm), integrated temperature and humidity measurement (SCD41), Documentation: `EasyEDA-Pro/components/SCD41-Sensirion.pdf`
+- 🌡️ **Climate Data Acquisition**: High-precision measurement of temperature and relative humidity using [Sensirion SCD43](https://sensirion.com/de/produkte/katalog/SCD43).
+  - ✅ **Photoacoustic sensing** for precise CO2 measurement (400-5000 ppm), integrated temperature and humidity measurement (SCD43), Documentation: `EasyEDA-Pro/components/SCD43-Sensirion.pdf`
   - ✅ **BME680 Advanced IAQ Engine**: The BME680 now uses a custom C++ engine for robust baseline tracking, dynamic thermal compensation, and smart flash wear-leveling. This provides high-quality VOC/IAQ data without the overhead of the BSEC library.
-  - ⚠️ **Note:** Since the SCD41 PCB is still in production, the **BME680** currently serves as a fallback (IAQ index). The code automatically detects if the SCD41 is present.
-  - 🏔️ **Air Pressure Measurement & Hardware Protection via BMP390**: The high-precision barometer sensor [Bosch BMP390](https://www.bosch-sensortec.com/en/products/environmental-sensors/pressure-sensors/pressure-sensors-bmp390.html) not only provides local weather data and barometric compensation for the SCD41 but also acts as a **safety guard for the Traco power supply**:
+  - ⚠️ **Note:** Since the SCD43 PCB is still in production, the **BME680** currently serves as a fallback (IAQ index). The code automatically detects if the SCD43 is present.
+  - 🏔️ **Air Pressure Measurement & Hardware Protection via BMP390**: The high-precision barometer sensor [Bosch BMP390](https://www.bosch-sensortec.com/en/products/environmental-sensors/pressure-sensors/pressure-sensors-bmp390.html) not only provides local weather data and barometric compensation for the SCD43 but also acts as a **safety guard for the Traco power supply**:
     - **Automatic Derating Management**: Monitoring the internal temperature in the housing of the ventilation unit to comply with Traco specifications.
     - **Emergency Shutdown**: At critical temperatures (>60°C), a safety protocol starts (fan stop and 60min deep sleep) to protect the hardware from overheating and sends a corresponding warning to Home Assistant.
 
@@ -253,17 +254,43 @@ A custom-engineered PCB has been developed to integrate all core components (XIA
   - **H3 (I²C)**: For additional environmental sensors or OLED displays.
   - **H1 (GPIO)**: 6 free GPIOs including 3.3V/GND for custom DIY expansions.
 
-![PCB Prototype](EasyEDA-Pro/PCB%20Prototype%20Images/Screenshot%202026-03-01%20175142.png)
+![PCB Prototype](EasyEDA-Pro/PCB%20Prototype%20Images/3D_PCB_ESPHome-WRG_ESP32_PWM_2026-08-28.png)
 
-### Specialized SCD41 Sensor Board
+### Specialized SCD43 Sensor Board
 
-To achieve the highest possible accuracy, I developed a secondary PCB specifically for the **Sensirion SCD41**. Unlike generic breakout boards, this design implements the manufacturer's reference specifications for decoupling:
+To achieve the highest possible accuracy, I developed a secondary PCB specifically for the **Sensirion SCD43**. Unlike generic breakout boards, this design implements the manufacturer's reference specifications for decoupling:
 
 - **Thermal Isolation**: A specialized milling slot and copper-free zones "thermally decouple" the sensor from the PCB's heat mass.
 - **Precision Filtering**: Proper decoupling capacitors are placed in immediate proximity to the sensor.
 - **Perfect Fit**: Designed with a 1.25mm pitch connector to align perfectly with the VentoMaxx housing's ventilation intake (connector H2).
 
-![SCD41 Prototype](EasyEDA-Pro/PCB%20SCD41%20Prototype%20Images/SCD41-PCB-3D-top_small.png)
+<img src="EasyEDA-Pro/PCB%20Prototype%20Images/3D_PCB%20SCD43%20Gas%20Sensor_2026-08-28.png" alt="SCD43 Prototype" width="25%" />
+
+### 🌿 Modular Sensor Ecosystem: The Right Metric for Every Room
+
+In addition to the SCD43 CO₂ sensor board, **two additional specialized sensor boards with the Sensirion SGP41** are currently in development — designed for rooms where CO₂ alone does not adequately reflect air quality:
+
+- **Living & Sleeping Areas (Human Occupancy)**: CO₂ is directly proportional to human presence. In living rooms and bedrooms, human respiration is the primary source — the **SCD43** accurately tracks occupancy and controls ventilation accordingly.
+- **Kitchen (Cooking Fumes, Odors & Combustion Gases)**: Indoor pollution is generated through cooking: aerosolized fats, strong odors, solvent fumes from cleaning agents, and nitrogen oxides (NOx) from gas stoves. CO₂ levels often remain low while air quality deteriorates significantly — a CO₂-only controller would fail to respond.
+- **Bathroom (Moisture & Volatile Compounds)**: Requires fast dehumidification combined with VOC odor removal.
+
+All sensor boards share the exact same **4-pin I²C interface (1.25 mm pitch connector, Header H2)**. This enables a **modular hardware architecture: One unified controller firmware across all units, but each room gets the sensor board perfectly tailored to its environment**:
+
+- **Sensirion SGP41**: Provides separate **VOC Index** and **NOx Index** signals — two dedicated metrics for volatile organic compounds and combustion gases.
+- **Sensirion SHT4x (e.g. SHT45)**: Delivers high-precision temperature and relative humidity for absolute humidity (enthalpy) calculation, crucial in kitchens and bathrooms.
+
+| Sensor Board | Integrated Sensors | Measured Parameters | Ideal Application |
+| :--- | :--- | :--- | :--- |
+| **SCD43 Board** | Sensirion SCD43 | CO₂, Temperature, Rel. Humidity | Living Room, Bedroom, Home Office |
+| **SGP41 + SHT4x Board** | Sensirion SGP41 + SHT45 | VOC Index, NOx Index, Temperature, Humidity (Absolute Humidity) | Kitchen, Bathroom |
+| **SGP41 Board** | Sensirion SGP41 | VOC Index, NOx Index | Kitchen (if climate data already exists via BME/NTC) |
+
+<p align="center">
+  <img src="EasyEDA-Pro/PCB%20Prototype%20Images/3D_PCB%20SGP41%20SHT4x%20VOC%20Sensor_2026-08-28.png" width="25%" alt="3D PCB SGP41 + SHT4x Sensor Board" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="EasyEDA-Pro/PCB%20Prototype%20Images/3D_PCB%20SGP41%20VOC%20Sensor_2026-08-28.png" width="25%" alt="3D PCB SGP41 VOC Sensor Board" />
+</p>
+<p align="center"><em>Left: SGP41 + SHT4x Combo Board (VOC, NOx, Temp, Humidity) &nbsp;|&nbsp; Right: SGP41 Board (VOC, NOx)</em></p>
 
 > 👉 *For complete component specifications, the full Bill of Materials (BOM), fan wiring details, XIAO ESP32-C6 GPIO pin assignments, and schematic block diagrams, see [📄 Hardware, BOM & Wiring Guide](documentation/en/en_hardware-and-wiring.md).*
 
@@ -282,7 +309,7 @@ The custom VentoSync PCB is designed to drop directly into the original **VentoM
 
 - **Form Factor**: The board slides directly into the original housing guide rails.
 - **Antenna Placement**: Ensure the external or PCB antenna is oriented freely towards the room for optimal Wi-Fi and ESP-NOW range.
-- **Sensor Cable Routing**: Route the 14-pin FFC cable to the front control panel and connect the secondary SCD41 sensor board to header **H2** (facing the intake air path).
+- **Sensor Cable Routing**: Route the 14-pin FFC cable to the front control panel and connect the secondary SCD43 sensor board to header **H2** (facing the intake air path).
 
 ![PCB and Fan Installed in Housing](EasyEDA-Pro/PCB%20mounting/PCB-FAN-ANT-in-Gehäuse.jpg)
 *VentoSync PCB mounted inside the VentoMaxx housing with fan connector and antenna routed.*
@@ -350,8 +377,8 @@ pip install --upgrade pip setuptools
 
 VentoSync now uses a modular hardware architecture. Depending on your hardware setup, select the appropriate configuration file:
 
-- **`ventosync.yaml`**: Full version (SCD41, BME680, LD2450)
-- **`ventosync_bme680_only.yaml`**: Fallback/Test version (BME680, no SCD41, no LD2450)
+- **`ventosync.yaml`**: Full version (SCD43, BME680, LD2450)
+- **`ventosync_bme680_only.yaml`**: Fallback/Test version (BME680, no SCD43, no LD2450)
 - **`ventosync_radar_only.yaml`**: Devices with mmWave presence detection but no climate sensors
 - **`ventosync_nosensor.yaml`**: Basic ventilation control without environmental sensors
 
@@ -441,11 +468,11 @@ The ventilation system supports 5 operating modes, which can be selected via the
 
 | # | Mode | Panel LEDs (`WRG` / `VEN`) | Operation & Core Function | HA Entity / Selection |
 | :-: | :--- | :---: | :--- | :--- |
-| **1** | **🤖 Smart Automatic** *(Default)* | 🟢 *(pulses)* / ⚫ | Fully autonomous PID control based on CO2, humidity, and outdoor air conditions | `select.modus_lueftungsanlage` → `Smart automatic` |
-| **2** | **❄️ Heat Recovery** *(Eco)* | 🟢 / ⚫ | Manual push-pull heat recovery (50s–70s cycle) with up to 85% heat preservation | `select.modus_lueftungsanlage` → `Eco Recovery` |
-| **3** | **💨 Boost Ventilation** | ⚫ / 🟢 | Intensive 15 min rapid air renewal followed by a 105 min core regeneration pause | `button.stosslueftung_starten` / `Boost Ventilation` |
-| **4** | **🌬️ Cross-Ventilation** *(Summer)* | 🟢 / 🟢 | Continuous unidirectional draft (Phase A in, Phase B out) for passive night cooling | `select.modus_lueftungsanlage` → `Ventilation` |
-| **5** | **⭕ Off** *(Monitoring)* | ⚫ / ⚫ | Fan stopped (0 RPM); all climate sensors & web UI remain online for data logging | `select.modus_lueftungsanlage` → `Off` |
+| **1** | **🤖 Smart Automatic** *(Default)* | 🟢 *(pulses)* / ⚫ | Fully autonomous PID control based on CO2, humidity, and outdoor air conditions | `select.luefter_modus` → `Smart-Automatik` |
+| **2** | **❄️ Heat Recovery** *(Eco)* | 🟢 / ⚫ | Manual push-pull heat recovery (50s–70s cycle) with up to 85% heat preservation | `select.luefter_modus` → `Wärmerückgewinnung` |
+| **3** | **💨 Boost Ventilation** | ⚫ / 🟢 | Intensive 15 min rapid air renewal followed by a 105 min core regeneration pause | `select.luefter_modus` → `Stoßlüftung` |
+| **4** | **🌬️ Cross-Ventilation** *(Summer)* | 🟢 / 🟢 | Continuous unidirectional draft (Phase A in, Phase B out) for passive night cooling | `select.luefter_modus` → `Durchlüften` |
+| **5** | **⭕ Off** *(Monitoring)* | ⚫ / ⚫ | Fan stopped (0 RPM); all climate sensors & web UI remain online for data logging | `select.luefter_modus` → `Aus` |
 
 > 📖 **Comprehensive Operating Modes Guide:**  
 > For full technical details on the PID control logic, real-world timing examples, enthalpy-based dehumidification, summer cooling hysteresis, and Light Sleep power saving, see the **[📄 Operating Modes & Logic Guide](documentation/en/en_operating-modes.md)**.
@@ -533,7 +560,7 @@ This documentation contains:
 
 - ESPHome YAML Syntax Best Practices
 - I²C Bus Configuration
-- SCD41 CO2 Sensor Configuration
+- SCD43 CO2 Sensor Configuration
 - ESP-NOW Communication
 - Fan Control (PWM)
 
@@ -565,11 +592,11 @@ VentoSync/
 │   ├── globals/               # Separated global variables (automation, network, UI, fan)
 │   ├── integration/           # Home Assistant entity exposures & data exchange
 │   ├── io/                    # Fan PWM, buttons, PCA9685/MCP23017 hardware pinouts
-│   ├── sensors/               # Drivers & Mocks for SCD41, BME680, Radar, BMP390, NTCs
+│   ├── sensors/               # Drivers & Mocks for SCD43, BME680, Radar, BMP390, NTCs
 │   └── ui/                    # On-device front panel controls & diagnostic entities
 ├── tests/                     # C++ unit tests & native test runner suite
 ├── ventosync.yaml             # Main configuration entry point (Full sensor variant)
-├── ventosync_bme680_only.yaml # Hardware variant: BME680 fallback (no SCD41/Radar)
+├── ventosync_bme680_only.yaml # Hardware variant: BME680 fallback (no SCD43/Radar)
 ├── ventosync_radar_only.yaml  # Hardware variant: Radar presence only (no climate sensors)
 ├── ventosync_nosensor.yaml    # Hardware variant: Core HRV fan control without sensors
 ├── ventosync_NTConly.yaml     # Hardware variant: Core HRV with NTC temperature sensors only

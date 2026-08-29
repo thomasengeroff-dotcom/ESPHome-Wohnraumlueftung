@@ -41,8 +41,8 @@ Upon initial power-on or microcontroller reset, **Mode 1 (Smart Automatic)** is 
 
 | Feature | Sensor(s) | Threshold / Control Method |
 | :--- | :--- | :--- |
-| ✅ **CO2 Control (PID)** | SCD41 (`sensor.scd41_co2`) | `number.auto_co2_threshold` (Target, e.g. 800 ppm) |
-| ✅ **Humidity Management (PID)** | SCD41 (`sensor.scd41_humidity`) + HA `sensor.outdoor_humidity` | Dehumidification via absolute humidity check |
+| ✅ **CO2 Control (PID)** | SCD43 (`sensor.scd41_co2`) | `number.auto_co2_threshold` (Target, e.g. 800 ppm) |
+| ✅ **Humidity Management (PID)** | SCD43 (`sensor.scd41_humidity`) + HA `sensor.outdoor_humidity` | Dehumidification via absolute humidity check |
 | ✅ **Summer Cooling Function** | NTC sensors + ESP-NOW group temperature | 22°C indoor temperature threshold |
 | ✅ **Group Unicast Sync** | ESP-NOW | Synchronizes fan levels and sensor demand across all units in the room |
 
@@ -116,7 +116,7 @@ Upon initial power-on or microcontroller reset, **Mode 1 (Smart Automatic)** is 
 
 - **HA Entity:** `select.modus_lueftungsanlage` → `Off`
 - **Function:** The fan motor and PWM drive are completely shut down (0 RPM).
-- **Active Sensors:** Environmental sensors (SCD41 CO2/temp/humidity, BMP390, BME680, Radar presence) and the local web dashboard remain active for uninterrupted data collection in Home Assistant.
+- **Active Sensors:** Environmental sensors (SCD43 CO2/temp/humidity, BMP390, BME680, Radar presence) and the local web dashboard remain active for uninterrupted data collection in Home Assistant.
 - **Ultra-Low-Power Light Sleep:** Long-pressing the physical Power button for **> 5s** enters deep light sleep (disables Wi-Fi, LEDs, and radar; power consumption < 0.1W). A single short press immediately wakes the unit and reconnects to the network.
 
 ---

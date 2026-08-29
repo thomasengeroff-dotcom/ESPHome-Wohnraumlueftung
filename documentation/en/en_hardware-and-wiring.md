@@ -22,7 +22,7 @@ This document provides detailed specifications of the central hardware component
 | Component | Description | Documentation |
 | :--- | :--- | :--- |
 | **Fan** | The original VentoMaxx V-WRG units use the **EBM-PAPST 4412 F/2 GLL (VarioPro)** **3-Pin PWM** (without tachometer signal) fan. Alternatively, a much more modern and quieter **AxiRev** (4-Pin PWM) can be used. For this, however, you would have to handle the mounting via a 3D-printed adapter. *Wiring shown below.* | [Fan Component](https://esphome.io/components/fan/speed.html) |
-| **SCD41** | Sensirion CO2 sensor (Real CO2 400-5000ppm, Temp, Hum) via I²C | [SCD4X Component](https://esphome.io/components/sensor/scd4x.html) |
+| **SCD43** | Sensirion CO2 sensor (Real CO2 400-5000ppm, Temp, Hum) via I²C | [SCD4X Component](https://esphome.io/components/sensor/scd4x.html) |
 | **BMP390** | Bosch high-precision barometric pressure sensor via I²C | [BMP3XX Component](https://esphome.io/components/sensor/bmp3xx.html) |
 | **BME680** | Bosch gas sensor (fallback for IAQ/air quality) via I²C | [BME680 Component](https://esphome.io/components/sensor/bme680.html) |
 | **NTCs** | 2x NTC 10k (Supply Air/Exhaust Air) for efficiency measurement | [NTC Sensor](https://esphome.io/components/sensor/NTC.html) |
@@ -56,8 +56,8 @@ The system is based on the [Seeed XIAO ESP32C6](https://wiki.seeedstudio.com/xia
 | **D1** | GPIO1 | [ADC Input](https://esphome.io/components/sensor/adc.html) | NTC Inside (Supply Air) |
 | **D2** | GPIO2 | Output | **MCP23017 Reset** |
 | **D3** | GPIO21 | Output | **PCA9685 OE** (Output Enable) |
-| **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | SCD41, BMP390, PCA9685, MCP23017 |
-| **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | SCD41, BMP390, PCA9685, MCP23017 |
+| **D4** | GPIO22 | [I2C SDA](https://esphome.io/components/i2c.html) | SCD43, BMP390, PCA9685, MCP23017 |
+| **D5** | GPIO23 | [I2C SCL](https://esphome.io/components/i2c.html) | SCD43, BMP390, PCA9685, MCP23017 |
 | **D6** | GPIO16 | [UART RX](https://esphome.io/components/uart.html) | **HLK-LD2450 Radar RX** |
 | **D7** | GPIO17 | [UART TX](https://esphome.io/components/uart.html) | **HLK-LD2450 Radar TX** |
 | **D8** | GPIO19 | [PWM Output](https://esphome.io/components/output/ledc.html) | **Fan PWM Primary** |
@@ -76,7 +76,7 @@ graph TD
 
     subgraph Digital_Bus_I2C ["I2C Bus (D4/D5)"]
     XIAO -->|D4/D5| MCP[MCP23017 GPIO Expander]
-    XIAO -->|D4/D5| SCD41[SCD41 CO2 Sensor]
+    XIAO -->|D4/D5| SCD43[SCD43 CO2 Sensor]
     XIAO -->|D4/D5| BMP390[BMP390 Pressure Sensor]
     XIAO -->|D4/D5| PCA9685[PCA9685 PWM Expander]
     MCP -->|14-Pin FFC| PANEL[VentoMaxx Control Panel]

@@ -63,7 +63,7 @@ Um fehlerhafte Zwischenwerte in Home Assistant zu vermeiden und die wahren therm
 - **Median-Fallback:** Sollte ein Referenzsensor temporär ausfallen, nutzt das System den Median der letzten 3 Werte als sicheren Kompromiss.
 - **120s Failsafe-Timeout:** Ein großzügiger Watchdog hält die Sensoren in Home Assistant "online", auch wenn während langer Lüftungsphasen durch den Phase-Lock zeitweise keine Werte geliefert werden.
 
-*Hinweis zur Redundanz:* `temp_zuluft` (Außen-NTC) liefert bei nach innen gerichtetem Luftstrom die tatsächliche Außentemperatur. `temp_abluft` (Innen-NTC) liefert bei nach außen gerichtetem Luftstrom die Raumtemperatur und dient als Redundanz zum präziseren SCD41 Sensor.
+*Hinweis zur Redundanz:* `temp_zuluft` (Außen-NTC) liefert bei nach innen gerichtetem Luftstrom die tatsächliche Außentemperatur. `temp_abluft` (Innen-NTC) liefert bei nach außen gerichtetem Luftstrom die Raumtemperatur und dient als Redundanz zum präziseren SCD43 Sensor.
 
 Konkret wird der folgende Sensor verwendet:
 

@@ -16,7 +16,7 @@ The logic is distributed across several layers to ensure maintainability and hig
 | **Main Loop** | [`logic_automation.yaml`](../../packages/actuators/logic_automation.yaml) | Triggers the evaluation cycle every 10 seconds. Calls `evaluate_auto_mode()`. |
 | **Core Logic (C++)** | [`auto_mode.h`](../../components/helpers/auto_mode.h) | The "Engine". Implements math, sensor fusion, and mode switching logic. |
 | **PID Controllers** | [`logic_pid.yaml`](../../packages/actuators/logic_pid.yaml) | Defines the internal CO2 and Humidity PID climate controllers and their dummy outputs. |
-| **Climate Sensors** | [`sensors_climate.yaml`](../../packages/sensors/sensors_climate.yaml) | Defines input sensors (SCD41, BME680, Home Assistant sensors) and efficiency metrics. |
+| **Climate Sensors** | [`sensors_climate.yaml`](../../packages/sensors/sensors_climate.yaml) | Defines input sensors (SCD43, BME680, Home Assistant sensors) and efficiency metrics. |
 | **UI & Thresholds** | [`ui_controls.yaml`](../../packages/ui/ui_controls.yaml) | Provides Home Assistant entities for runtime configuration (limits, targets). |
 | **Global State** | [`globals.h`](../../components/helpers/globals.h) | Shared pointers and variables accessible by both YAML and C++. |
 
@@ -69,8 +69,8 @@ graph TD
 
 ### 1. Sensor Fusion & Fallbacks
 The system ensures stability even if a local sensor fails.
-- **CO2 Fallback Chain** (in `effective_co2` template sensor): Local SCD41 → Local BME680 IAQ eCO2 → Hold last value (up to 5 min) → NaN.
-- **Temperature Fallback Chain** (in `auto_mode.h`): Local SCD41 Temperature → NTC Phase-Locked Values → Peer Data via ESP-NOW.
+- **CO2 Fallback Chain** (in `effective_co2` template sensor): Local SCD43 → Local BME680 IAQ eCO2 → Hold last value (up to 5 min) → NaN.
+- **Temperature Fallback Chain** (in `auto_mode.h`): Local SCD43 Temperature → NTC Phase-Locked Values → Peer Data via ESP-NOW.
 - **Phase-Locked NTC Sensors**: The NTC sensors are physically fixed in the air duct. A phase-lock filter in `climate.h` ensures each NTC only publishes values during its valid ventilation phase (Indoor NTC during exhaust, Outdoor NTC during intake), holding the last valid reading otherwise. This means `temp_zuluft` always represents outdoor temperature and `temp_abluft` always represents indoor temperature, regardless of the current fan direction.
 
 ### 2. Humidity Management (Enthalpy Logic)
@@ -118,4 +118,4 @@ To avoid different fans in the same room running at different speeds (which caus
 ---
 
 > [!TIP]
-> **Advanced Tuning**: The PID parameters ($K_p$, $K_i$) are defined in [`logic_pid.yaml`](../../packages/actuators/logic_pid.yaml). They are tuned for very slow, silent transitions to ensure the ventilation remains "forgotten" in the background. The derivative term ($K_d$) is explicitly set to zero — trend-based regulation would amplify sensor noise on the SCD41 and is unsuitable for residential ventilation.
+> **Advanced Tuning**: The PID parameters ($K_p$, $K_i$) are defined in [`logic_pid.yaml`](../../packages/actuators/logic_pid.yaml). They are tuned for very slow, silent transitions to ensure the ventilation remains "forgotten" in the background. The derivative term ($K_d$) is explicitly set to zero — trend-based regulation would amplify sensor noise on the SCD43 and is unsuitable for residential ventilation.

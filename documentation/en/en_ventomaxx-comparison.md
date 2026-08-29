@@ -10,7 +10,7 @@ This comparison is based on the analysis of the VentoMaxx manual (`MA-BA_Endmont
 The **VentoSync** offers **100% of the original functionality** and massively extends it by:
 
 - **Smart Home Integration** (WiFi, Home Assistant, OTA updates)
-- **Precision Sensors** (SCD41 CO2, BMP390 air pressure, HLK-LD2450 radar, NTC temperatures)
+- **Precision Sensors** (SCD43 CO2, BMP390 air pressure, HLK-LD2450 radar, NTC temperatures)
 - **Intelligent Control Algorithms** (PID-controlled CO2/humidity regulation, adaptive cycle times)
 - **Predictive Maintenance** (Filter change alarm based on operating hours + calendar time)
 - **Wireless Mesh Network** (ESP-NOW for autonomous group operation)
@@ -26,7 +26,7 @@ The **VentoSync** offers **100% of the original functionality** and massively ex
 | **Auto Summer Mode** | ❌ No (manual switch required) | ✅ **Automatic cross ventilation** when outdoor temp < indoor temp (NTC + ESP-NOW group data) | ✅ **No manual switching necessary** |
 | **Boost Ventilation** | 15 min. intensive, then pause | ✅ Yes (Configurable: time/level) | ✅ **More flexible** |
 | **Fan Control** | 3 fixed levels | **10 levels + stepless PID control** (silent, no audible speed jumps) | ✅ **Fine-grained & silent** |
-| **Automation (CO2)** | ❌ No (only optional VOC estimation) | ✅ **SCD41 (Real CO2)**: Stepless PID control with deadband hysteresis, configurable min/max levels | ✅ **Precise & quiet** |
+| **Automation (CO2)** | ❌ No (only optional VOC estimation) | ✅ **SCD43 (Real CO2)**: Stepless PID control with deadband hysteresis, configurable min/max levels | ✅ **Precise & quiet** |
 | **Automation (Humidity)** | Fixed thresholds: 55%, 65%, 75% rH | ✅ **PID controller** with configurable limit (40-100%), outdoor humidity comparison, deadband hysteresis (±2%) | ✅ **Customizable** + Outdoor check |
 | **Presence** | ❌ No | ✅ **mmWave Radar (HLK-LD2450)**: 4 profiles (No adjustment, Intensive, Normal, Low) | ✅ **Demand-based** per room |
 | **Night Mode** | ❌ No (manual shutdown) | 📋 Planned: Scheduled throttling/dimming | ✅ **Comfort** (in planning) |
@@ -37,10 +37,10 @@ The **VentoSync** offers **100% of the original functionality** and massively ex
 
 | Feature | VentoMaxx V-WRG (Original) | ESPHome Smart WRG (This Project) | ESPHome Advantage |
 | :--- | :--- | :--- | :--- |
-| **CO2 Measurement** | ❌ No (only optional VOC module) | ✅ **SCD41**: Photoacoustic sensing, 400-5000 ppm | ✅ **Real CO2 values** instead of estimation |
+| **CO2 Measurement** | ❌ No (only optional VOC module) | ✅ **SCD43**: Photoacoustic sensing, 400-5000 ppm | ✅ **Real CO2 values** instead of estimation |
 | **Temperature** | ❌ No display | ✅ **NTC sensors** (Supply/Extract air) + HA weather data | ✅ **Visualization & Automation** |
-| **Air Humidity** | Rudimentary (fixed thresholds) | ✅ **SCD41** (Internal) + **Outdoor humidity** (HA weather service/sensor) | ✅ **PID-controlled + Outdoor check** |
-| **Air Pressure** | ❌ No | ✅ **BMP390**: Weather trend, storm warning, SCD41 altitude compensation | ✅ **Additional environmental data** |
+| **Air Humidity** | Rudimentary (fixed thresholds) | ✅ **SCD43** (Internal) + **Outdoor humidity** (HA weather service/sensor) | ✅ **PID-controlled + Outdoor check** |
+| **Air Pressure** | ❌ No | ✅ **BMP390**: Weather trend, storm warning, SCD43 altitude compensation | ✅ **Additional environmental data** |
 | **Presence** | ❌ No | ✅ **HLK-LD2450 mmWave Radar**: Presence, Moving/Still Targets, Target Count | ✅ **Room-accurate detection** |
 | **RPM** | Tacho signal (LED flashes on error) | ✅ **Pulse Counter**: RPM value in Home Assistant + error alarm | ✅ **Quantitative monitoring** |
 

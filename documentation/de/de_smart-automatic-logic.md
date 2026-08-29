@@ -15,7 +15,7 @@ Die Logik ist über mehrere Schichten verteilt, um Wartbarkeit und hohe Performa
 | **Hauptschleife** | [`logic_automation.yaml`](../../packages/actuators/logic_automation.yaml) | Triggers the evaluation cycle every 10 seconds. Ruft `evaluate_auto_mode()` auf. |
 | **Kernlogik (C++)** | [`auto_mode.h`](../../components/helpers/auto_mode.h) | Die „Engine“. Implementiert Mathematik, Sensorfusion und Modus-Umschaltlogik. |
 | **PID-Regler** | [`logic_pid.yaml`](../../packages/actuators/logic_pid.yaml) | Definiert die internen CO2- und Feuchte-PID-Klimaregler und deren Dummy-Ausgänge. |
-| **Klimasensoren** | [`sensors_climate.yaml`](../../packages/sensors/sensors_climate.yaml) | Definiert Eingangssensoren (SCD41, BME680, Home Assistant Sensoren) und Effizienzmetriken. |
+| **Klimasensoren** | [`sensors_climate.yaml`](../../packages/sensors/sensors_climate.yaml) | Definiert Eingangssensoren (SCD43, BME680, Home Assistant Sensoren) und Effizienzmetriken. |
 | **UI & Schwellwerte** | [`ui_controls.yaml`](../../packages/ui/ui_controls.yaml) | Stellt Home Assistant Entitäten für die Laufzeitkonfiguration bereit (Grenzwerte, Sollwerte). |
 | **Globaler Status** | [`globals.h`](../../components/helpers/globals.h) | Geteilte Zeiger und Variablen, auf die sowohl YAML als auch C++ zugreifen können. |
 
@@ -68,8 +68,8 @@ graph TD
 
 ### 1. Sensorfusion & Fallbacks
 Das System gewährleistet Stabilität, selbst wenn ein lokaler Sensor ausfällt.
-- **CO2-Fallback-Kette** (im Template-Sensor `effective_co2`): Lokaler SCD41 → Lokaler BME680 IAQ eCO2 → Letzten bekannten Wert halten (bis zu 5 min) → NaN.
-- **Temperatur-Fallback-Kette** (in `auto_mode.h`): Lokale SCD41-Temperatur → Phasengekoppelte NTC-Werte → Peer-Daten über ESP-NOW.
+- **CO2-Fallback-Kette** (im Template-Sensor `effective_co2`): Lokaler SCD43 → Lokaler BME680 IAQ eCO2 → Letzten bekannten Wert halten (bis zu 5 min) → NaN.
+- **Temperatur-Fallback-Kette** (in `auto_mode.h`): Lokale SCD43-Temperatur → Phasengekoppelte NTC-Werte → Peer-Daten über ESP-NOW.
 - **Phasengekoppelte NTC-Sensoren**: Die NTC-Sensoren sind fest im Luftkanal verbaut. Ein Phase-Lock-Filter in `climate.h` stellt sicher, dass jeder NTC nur während seiner gültigen Lüftungsphase Messwerte publiziert (Innen-NTC bei Abluft, Außen-NTC bei Zuluft) und andernfalls den letzten gültigen Wert hält. Dadurch repräsentiert `temp_zuluft` stets die Außentemperatur und `temp_abluft` stets die Innentemperatur, unabhängig von der aktuellen Drehrichtung des Lüfters.
 
 ### 2. Feuchtemanagement (Enthalpie-Logik)
@@ -117,4 +117,4 @@ Um zu verhindern, dass verschiedene Lüfter im selben Raum mit unterschiedlichen
 ---
 
 > [!TIP]
-> **Erweitertes Tuning**: Die PID-Parameter ($K_p$, $K_i$) sind in [`logic_pid.yaml`](../../packages/actuators/logic_pid.yaml) definiert. Sie sind für sehr langsame, lautlose Übergänge abgestimmt, damit die Lüftung unbemerkt im Hintergrund arbeitet. Der Differentialanteil ($K_d$) ist explizit auf Null gesetzt — eine trendbasierte Regelung würde das Sensorrauschen des SCD41 verstärken und ist für eine Wohnraumlüftung ungeeignet.
+> **Erweitertes Tuning**: Die PID-Parameter ($K_p$, $K_i$) sind in [`logic_pid.yaml`](../../packages/actuators/logic_pid.yaml) definiert. Sie sind für sehr langsame, lautlose Übergänge abgestimmt, damit die Lüftung unbemerkt im Hintergrund arbeitet. Der Differentialanteil ($K_d$) ist explizit auf Null gesetzt — eine trendbasierte Regelung würde das Sensorrauschen des SCD43 verstärken und ist für eine Wohnraumlüftung ungeeignet.

@@ -16,6 +16,7 @@ This document outlines planned features, architectural concepts, and upcoming ha
 - [📅 Self-Sufficient On-Device Weekly Schedules](#-self-sufficient-on-device-weekly-schedules)
 - [🔔 Advanced Alarm & Filter Notification System](#-advanced-alarm--filter-notification-system)
 - [🔄 Closed-Loop Speed & RPM Monitoring](#-closed-loop-speed--rpm-monitoring)
+- [🌬️ Aerodynamic Reverse Compensation](#️-aerodynamic-reverse-compensation)
 - [🧠 AI-Powered Predictive Ventilation Control](#-ai-powered-predictive-ventilation-control)
 - [🔌 Hardware Expansion & Industrial Smart Home Gateways](#-hardware-expansion--industrial-smart-home-gateways)
 
@@ -67,6 +68,13 @@ This document outlines planned features, architectural concepts, and upcoming ha
 
 * **Tachometer Pulse Feedback**: Continuous real-time measurement of actual motor RPM via GPIO20 pulse counter on 4-PIN PWM fans (e.g. AxiRev).
 * **Constant Volume Flow**: Automatic PWM trim compensation when filters become dirty or backpressure increases due to strong outdoor wind gusts.
+
+---
+
+## 🌬️ Aerodynamic Reverse Compensation
+
+* **Asymmetric Fan Efficiency**: Standard axial fans (like the ebm-papst 4412 F/2 GLL) are aerodynamically optimized for a single direction of airflow. When reversing the rotation for heat recovery exhaust, volumetric efficiency drops significantly (typically 30-50% loss) due to blade profile camber and strut blockages.
+* **Software-Based Flow Balancing**: Introduction of a configurable `REVERSE_COMPENSATION_FACTOR` in the PWM calculation to automatically run the fan at a proportionally higher speed during the reverse cycle. This guarantees balanced airflow ($V_{in} \approx V_{out}$), which is critical for maximizing the thermal efficiency of the ceramic regenerator core and preventing room over/underpressure.
 
 ---
 

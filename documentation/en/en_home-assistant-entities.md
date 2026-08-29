@@ -58,16 +58,16 @@ These entities configure the behavior of the "Automatic" mode.
 
 These entities represent values read from hardware sensors.
 
-* **`sensor.scd41_temperature`** ("SCD41 Temperature")
+* **`sensor.scd41_temperature`** ("SCD43 Temperature")
   * *Type:* Sensor (SCD4x)
   * *Documentation:* Indoor temperature at the control unit.
-* **`sensor.scd41_humidity`** ("SCD41 Humidity")
+* **`sensor.scd41_humidity`** ("SCD43 Humidity")
   * *Type:* Sensor (SCD4x)
   * *Documentation:* Indoor humidity at the control unit.
-* **`sensor.scd41_co2`** ("SCD41 CO2")
+* **`sensor.scd41_co2`** ("SCD43 CO2")
   * *Type:* Sensor (SCD4x)
   * *Documentation:* Real CO2 measurement (ppm).
-* **`text_sensor.scd41_co2_evaluation`** ("SCD41 CO2 Evaluation")
+* **`text_sensor.scd41_co2_evaluation`** ("SCD43 CO2 Evaluation")
   * *Type:* Text Sensor
   * *Documentation:* Provides CO2 quality in text form (e.g., "Excellent", "Poor").
 * **`sensor.temp_supply_air`** ("Temperature Supply Air (Indoor)")

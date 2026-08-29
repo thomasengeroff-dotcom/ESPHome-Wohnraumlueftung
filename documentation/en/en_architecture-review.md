@@ -13,7 +13,7 @@ The VentoSync project exhibits a highly modular, professional-grade ESPHome arch
 
 ### ✅ Modular Configuration (`packages`)
 **Status: Excellent**
-The project masterfully utilizes the ESPHome `packages:` feature (e.g., `ventosync.yaml` calling `packages/base/ventosync_base.yaml`, which then includes dedicated packages like `packages/io/hardware_fan.yaml`, `packages/sensors/sensor_SCD41.yaml`, etc.).
+The project masterfully utilizes the ESPHome `packages:` feature (e.g., `ventosync.yaml` calling `packages/base/ventosync_base.yaml`, which then includes dedicated packages like `packages/io/hardware_fan.yaml`, `packages/sensors/sensor_SCD43.yaml`, etc.).
 
 ### ✅ Custom C++ Integration (`external_components` & `includes`)
 **Status: Excellent**
@@ -33,7 +33,7 @@ The project correctly utilizes ESPHome's `RestoringGlobalsComponent` (via `resto
 
 *   **ESP-NOW Unicast Efficiency**: Moving away from standard Wi-Fi reliance for local cluster synchronization to ESP-NOW is a brilliant architectural decision. Using dynamic discovery broadcasts followed by targeted Unicast ensures ultra-low latency phase synchronization and resilience against Wi-Fi router failures.
 *   **Hardware Abstraction Layer (HAL)**: The use of `globals.h` pointers (`extern esphome::globals::...`) acts as a bridge between the YAML-defined entities and the C++ logic. This creates a clean boundary where the UI/Sensor YAMLs can change without requiring major C++ rewrites.
-*   **Graceful Degradation / Hardware Variants**: Providing `ventosync_nosensor.yaml` and `mock_*.yaml` configurations allows the system to function and compile even when premium sensors (like SCD41) are unavailable or during testing environments.
+*   **Graceful Degradation / Hardware Variants**: Providing `ventosync_nosensor.yaml` and `mock_*.yaml` configurations allows the system to function and compile even when premium sensors (like SCD43) are unavailable or during testing environments.
 
 ## 4. Areas for Consideration / Minor Improvements
 

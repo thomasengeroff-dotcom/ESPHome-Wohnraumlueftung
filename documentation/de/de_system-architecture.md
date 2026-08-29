@@ -17,7 +17,7 @@ graph TB
     subgraph I2C_Bus ["I2C-Bus (3.3V)"]
         MCP[MCP23017 GPIO-Expander] -->|FFC-Kabel| Panel[Physisches Bedienpanel]
         PCA[PCA9685 PWM-Treiber] -->|LED-Ansteuerung| Panel
-        SCD[SCD41 CO2/Temp/Feuchte]
+        SCD[SCD43 CO2/Temp/Feuchte]
         BMP[BMP390 Druck/Höhe]
     end
 
@@ -85,7 +85,7 @@ graph LR
 
 ## Funktionsübersicht
 
-1. **Sensoren**: Erfassung von Umweltdaten über SCD41, BMP390, mmWave-Radar und NTCs.
+1. **Sensoren**: Erfassung von Umweltdaten über SCD43, BMP390, mmWave-Radar und NTCs.
 2. **Logik**: Die Schicht `logic_automation` verarbeitet Sensordaten über PID-Regler zur Ermittlung der optimalen Lüfterdrehzahl.
 3. **Mesh-Synchronisierung**: Die Komponente `ventilation_group` stellt über ESP-NOW sicher, dass alle Geräte in einem Raum/Stockwerk mit synchronisierten Phasen und Betriebsmodi arbeiten.
 4. **Dashboard**: Die Komponente `wrg_dashboard` stellt eine performante Echtzeit-Weboberfläche (mit Tailwind CSS & Chart.js) unabhängig von Home Assistant bereit.

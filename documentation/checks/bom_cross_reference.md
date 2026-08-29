@@ -20,7 +20,7 @@ The following components are mentioned in `Hardware-Setup-Readme.md` but are **N
 - **Impact**: Environmental sensing will not work without this component
 - **Action**: Must be ordered separately if needed
 
-#### 2. **SCD41** - CO2 Sensor
+#### 2. **SCD43** - CO2 Sensor
 
 - **Mentioned in Readme**: Line 45 (now marked with ⚠️)
 - **I2C Address**: 0x62
@@ -107,7 +107,7 @@ The following components are mentioned in `Hardware-Setup-Readme.md` but are **N
 - ✅ **V1** (S10K275 Varistor) - Overvoltage protection
 - ✅ **U17** (FPC 0.5-14P) - Front panel connector
 - ✅ **H1** (3-Pin header) - Fan connector
-- ✅ **H2** (4-Pin header) - SCD41 connector (sensor not in BOM!)
+- ✅ **H2** (4-Pin header) - SCD43 connector (sensor not in BOM!)
 - ✅ **U28, U29** (2-Pin screw terminals) - NTC sensors
 - ✅ **U30, U31** (4-Pin screw terminals) - External connections
 - ✅ **U3** (2-Pin screw terminal 5.08mm) - Power input
@@ -118,7 +118,7 @@ The following components are mentioned in `Hardware-Setup-Readme.md` but are **N
 
 | Category | Count | Status |
 | :--- | :--- | :--- |
-| **Missing Sensors** | 2 | ⚠️ BME680, SCD41 |
+| **Missing Sensors** | 2 | ⚠️ BME680, SCD43 |
 | **Component Substitutions** | 2 | ✅ S8050, TSR 1-2450 |
 | **Design Changes** | 1 | ✅ MCP23017 → PCA9685 + Direct GPIO |
 | **Total BOM Components** | 34 | ✅ All present in CSV |
@@ -136,7 +136,7 @@ The following components are mentioned in `Hardware-Setup-Readme.md` but are **N
 
 ### If you need CO2 monitoring
 
-1. **Order SCD41** sensor
+1. **Order SCD43** sensor
    - Connect to H2 header (4-pin, 1.27mm)
    - I2C address 0x62
    - Update ESPHome YAML to enable SCD4x component
@@ -148,7 +148,7 @@ The following components are mentioned in `Hardware-Setup-Readme.md` but are **N
 - ✅ Front panel (9 LEDs, 3 buttons)
 - ✅ ESP-NOW communication
 - ❌ Air quality (IAQ) - requires BME680
-- ❌ CO2 measurement - requires SCD41
+- ❌ CO2 measurement - requires SCD43
 
 ---
 

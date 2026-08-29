@@ -67,7 +67,7 @@ Diese Entitäten repräsentieren die von den Hardware-Sensoren gelesenen Werte s
 ### Kombinierte & Berechnete Werte
 * **`sensor.effective_co2`** ("Effektiver CO2 Wert")
   * *Typ:* Sensor
-  * *Dokumentation:* Der primäre CO2-Wert für die Regelung. Nutzt bevorzugt den SCD41 (echtes CO2), fällt bei dessen Fehlen aber automatisch auf den BME680 (CO2eq) zurück.
+  * *Dokumentation:* Der primäre CO2-Wert für die Regelung. Nutzt bevorzugt den SCD43 (echtes CO2), fällt bei dessen Fehlen aber automatisch auf den BME680 (CO2eq) zurück.
 * **`text_sensor.effective_co2_bewertung`** ("CO2 Bewertung")
   * *Typ:* Text Sensor
   * *Dokumentation:* Qualitative Einstufung des aktuellen CO2-Werts (z.B. "Ausgezeichnet", "Mangelhaft").
@@ -76,10 +76,10 @@ Diese Entitäten repräsentieren die von den Hardware-Sensoren gelesenen Werte s
   * *Dokumentation:* Berechnet den energetischen Wirkungsgrad (%) basierend auf den Temperaturdifferenzen zwischen Innen, Außen und Zuluft.
 * **`text_sensor.wrg_reference_sensor`** ("WRG Referenz-Messpunkt")
   * *Typ:* Text Sensor
-  * *Dokumentation:* Gibt an, welcher Sensor aktuell als Referenz für die Raumtemperatur dient (SCD41 oder BME680).
+  * *Dokumentation:* Gibt an, welcher Sensor aktuell als Referenz für die Raumtemperatur dient (SCD43 oder BME680).
 
 ### Primäre Sensoren (Hardware)
-* **SCD41 (Präzisions-CO2):**
+* **SCD43 (Präzisions-CO2):**
   * `sensor.scd41_co2` (CO2 ppm)
   * `sensor.scd41_temperature` (Temp °C)
   * `sensor.scd41_humidity` (Feuchte %)

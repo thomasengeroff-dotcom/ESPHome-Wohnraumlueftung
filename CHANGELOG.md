@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.12] - 2026-08-30
+
+### Documentation
+
+- **Sensirion SCD43 Migration** (`Readme.md`, `Readme_de.md`, `documentation/`):
+  - Updated all references across 26 markdown files from SCD41 to the upgraded Sensirion **SCD43** sensor model.
+  - Fixed TOC anchors for the specialized SCD43 sensor board in English and German README files.
+- **Modular Sensor Ecosystem & Dedicated 3D PCB Renderings** (`Readme.md`, `Readme_de.md`):
+  - Added dedicated documentation for the modular room-specific sensor architecture sharing a unified 4-pin I²C connector (Header H2):
+    - **SCD43**: CO₂ tracking for living and sleeping areas (human occupancy detection).
+    - **SGP41 + SHT4x (SHT45)**: VOC, NOx, temperature, and absolute humidity for kitchens and bathrooms.
+    - **SGP41**: VOC and NOx monitoring when ambient climate data is already available.
+  - Added high-resolution 3D board renderings for the main PCB, SCD43 sensor board, SGP41 + SHT4x board, and standalone SGP41 board.
+- **Aerodynamic Reverse Compensation Roadmap** (`documentation/en/en_roadmap-and-future-enhancements.md`, `documentation/de/de_roadmap-and-future-enhancements.md`):
+  - Documented volumetric efficiency loss (30–50%) of standard axial fans (ebm-papst 4412 F/2 GLL) in reverse rotation due to blade profile camber and stator strut obstruction.
+  - Added roadmap item for software-based flow balancing via configurable `REVERSE_COMPENSATION_FACTOR` in `calculate_fan_pwm()`.
+- **Home Assistant Entity Documentation Harmonization** (`Readme.md`, `Readme_de.md`):
+  - Aligned operating mode table entries with ESPHome `ui_controls.yaml` definitions (`select.luefter_modus` with exact German state options).
+
+
 ## [0.10.11] - 2026-08-29
 
 ### Documentation

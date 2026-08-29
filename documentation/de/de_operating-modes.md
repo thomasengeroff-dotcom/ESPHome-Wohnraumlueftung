@@ -40,8 +40,8 @@ Nach dem ersten Einschalten oder einem Microcontroller-Reset ist standardmäßig
 
 | Funktion | Sensor(en) | Schwellwert / Regelmethode |
 | :--- | :--- | :--- |
-| ✅ **CO2-Regelung (PID)** | SCD41 (`sensor.scd41_co2`) | `number.auto_co2_threshold` (Sollwert, z.B. 1000 ppm) |
-| ✅ **Feuchtemanagement (PID)** | SCD41 (`sensor.scd41_humidity`) + HA `sensor.outdoor_humidity` | Entfeuchtung via Enthalpie-Check (absolute Feuchte) |
+| ✅ **CO2-Regelung (PID)** | SCD43 (`sensor.scd41_co2`) | `number.auto_co2_threshold` (Sollwert, z.B. 1000 ppm) |
+| ✅ **Feuchtemanagement (PID)** | SCD43 (`sensor.scd41_humidity`) + HA `sensor.outdoor_humidity` | Entfeuchtung via Enthalpie-Check (absolute Feuchte) |
 | ✅ **Sommerkühlung** | NTC-Sensoren + ESP-NOW Gruppentemperatur | 22°C Raumtemperaturschwelle |
 | ✅ **Gruppen-Unicast-Sync** | ESP-NOW | Synchronisiert Lüfterstufen und Bedarfsanforderungen aller Geräte im Raum |
 
@@ -115,7 +115,7 @@ Nach dem ersten Einschalten oder einem Microcontroller-Reset ist standardmäßig
 
 - **HA-Entität:** `select.modus_lueftungsanlage` → `Aus`
 - **Funktion:** Lüftermotor und PWM-Ansteuerung sind komplett abgeschaltet (0 RPM).
-- **Aktive Sensoren:** Umweltsensoren (SCD41 CO2/Temp/Feuchte, BMP390, BME680, Radar-Präsenz) sowie das lokale Web-Dashboard bleiben für lückenlose Messwerterfassung in Home Assistant aktiv.
+- **Aktive Sensoren:** Umweltsensoren (SCD43 CO2/Temp/Feuchte, BMP390, BME680, Radar-Präsenz) sowie das lokale Web-Dashboard bleiben für lückenlose Messwerterfassung in Home Assistant aktiv.
 - **Ultra-Low-Power Light Sleep:** Langes Drücken der physischen Power-Taste für **> 5s** versetzt das Gerät in den Deep-Light-Sleep (deaktiviert WLAN, LEDs und Radar; Leistungsaufnahme < 0.1W). Ein kurzer Tastendruck weckt das Gerät sofort wieder auf und verbindet es erneut mit dem Netzwerk.
 
 ---

@@ -12,7 +12,7 @@ Das VentoSync-Projekt zeichnet sich durch eine hochgradig modulare, professionel
 
 ### ✅ Modulare Konfiguration (`packages`)
 **Status: Exzellent**  
-Das Projekt nutzt das `packages:`-Feature von ESPHome vorbildlich (z.B. ruft `ventosync.yaml` die Datei `packages/base/ventosync_base.yaml` auf, welche wiederum dedizierte Pakete wie `packages/io/hardware_fan.yaml`, `packages/sensors/sensor_SCD41.yaml` etc. einbindet).
+Das Projekt nutzt das `packages:`-Feature von ESPHome vorbildlich (z.B. ruft `ventosync.yaml` die Datei `packages/base/ventosync_base.yaml` auf, welche wiederum dedizierte Pakete wie `packages/io/hardware_fan.yaml`, `packages/sensors/sensor_SCD43.yaml` etc. einbindet).
 
 ### ✅ Maßgeschneiderte C++ Integration (`external_components` & `includes`)
 **Status: Exzellent**  
@@ -32,7 +32,7 @@ Das Projekt nutzt ESPHomes `RestoringGlobalsComponent` (via `restore_value: true
 
 * **ESP-NOW Unicast-Effizienz**: Der Verzicht auf Standard-WLAN für die lokale Cluster-Synchronisation zugunsten von ESP-NOW ist eine hervorragende Designentscheidung. Dynamisches Discovery per Broadcast gefolgt von gezieltem Unicast garantiert minimale Latenz bei der Phasensynchronisation und Ausfallsicherheit bei Router-Problemen.
 * **Hardware Abstraction Layer (HAL)**: Die Verwendung globaler Zeiger in `globals.h` (`extern esphome::globals::...`) fungiert als Brücke zwischen YAML-Entitäten und C++ Logik. Dies schafft eine saubere Schnittstelle, sodass UI- und Sensor-YAMLs angepasst werden können, ohne C++ Code umschreiben zu müssen.
-* **Graceful Degradation / Hardwarevarianten**: Die Bereitstellung von `ventosync_nosensor.yaml` und Mock-Konfigurationen ermöglicht den fehlerfreien Betrieb und das Kompilieren auch dann, wenn optionale Sensoren (wie SCD41) nicht verbaut sind.
+* **Graceful Degradation / Hardwarevarianten**: Die Bereitstellung von `ventosync_nosensor.yaml` und Mock-Konfigurationen ermöglicht den fehlerfreien Betrieb und das Kompilieren auch dann, wenn optionale Sensoren (wie SCD43) nicht verbaut sind.
 
 ## 4. Empfehlungen & Optimierungspotenziale
 

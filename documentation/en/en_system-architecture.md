@@ -18,7 +18,7 @@ graph TB
     subgraph I2C_Bus ["I2C Bus (3.3V)"]
         MCP[MCP23017 GPIO Expander] -->|FFC Connection| Panel[Physical Control Panel]
         PCA[PCA9685 PWM Driver] -->|LED Control| Panel
-        SCD[SCD41 CO2/Temp/Hum]
+        SCD[SCD43 CO2/Temp/Hum]
         BMP[BMP390 Pressure/Alt]
     end
 
@@ -86,7 +86,7 @@ graph LR
 
 ## Functional Overview
 
-1.  **Sensors**: Data is collected from SCD41, BMP390, Radar, and NTCs.
+1.  **Sensors**: Data is collected from SCD43, BMP390, Radar, and NTCs.
 2.  **Logic**: The `logic_automation` layer processes sensor data using PID controllers to determine the optimal fan speed.
 3.  **Mesh Sync**: The `ventilation_group` component via ESP-NOW ensures all nodes in a room/floor operate with synchronized phases and modes.
 4.  **Dashboard**: The `wrg_dashboard` provides a real-time, high-performance UI (using Tailwind CSS) independent of Home Assistant.

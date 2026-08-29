@@ -16,6 +16,7 @@ Dieses Dokument beschreibt geplante Funktionen, Architekturkonzepte und zukünft
 - [📅 Autarker Wochenzeitplan](#-autarker-wochenzeitplan)
 - [🔔 Erweiterte Alarm- & Filterüberwachung](#-erweiterte-alarm--filterüberwachung)
 - [🔄 Closed-Loop Drehzahlüberwachung](#-closed-loop-drehzahlüberwachung)
+- [🌬️ Aerodynamische Rückwärts-Kompensation](#️-aerodynamische-rückwärts-kompensation)
 - [🧠 KI-gestützte vorausschauende Lüftungssteuerung](#-ki-gestützte-vorausschauende-lüftungssteuerung)
 - [🔌 Erweiterungen & Gebäudeautomations-Gateways](#-erweiterungen--gebäudeautomations-gateways)
 
@@ -67,6 +68,13 @@ Dieses Dokument beschreibt geplante Funktionen, Architekturkonzepte und zukünft
 
 * **Echtzeit-Tachomessung**: Kontinuierliches Monitoring der tatsächlichen Drehzahl über den GPIO20 Pulse-Counter bei 4-PIN PWM-Lüftern (z. B. AxiRev).
 * **Konstanter Volumenstrom**: Automatischer Ausgleich von Gegendruck bei starkem Wind oder zunehmender Filterverschmutzung.
+
+---
+
+## 🌬️ Aerodynamische Rückwärts-Kompensation
+
+* **Asymmetrische Lüftereffizienz**: Standard-Axiallüfter (wie der ebm-papst 4412 F/2 GLL) sind aerodynamisch stark auf eine Strömungsrichtung optimiert. Bei Drehrichtungsumkehr für die Abluftphase bricht das Fördervolumen durch das asymmetrische Schaufelprofil und die Statorstege signifikant ein (oft 30–50 % Verlust).
+* **Softwarebasierter Volumenstrom-Ausgleich**: Einführung eines konfigurierbaren `REVERSE_COMPENSATION_FACTOR` in der PWM-Berechnung. Der Lüfter wird in der ineffizienten Richtung automatisch mit einem berechneten Drehzahl-Offset (höheres PWM-Delta) angesteuert, um absolut identische Fördervolumina ($V_{Zuluft} \approx V_{Abluft}$) zu garantieren. Dies ist essenziell für die maximale Rückwärmezahl des Keramik-Wärmetauschers und verhindert unerwünschte Druckdifferenzen im Raum.
 
 ---
 

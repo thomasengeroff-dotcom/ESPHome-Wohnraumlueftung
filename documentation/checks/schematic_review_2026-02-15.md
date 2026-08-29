@@ -32,7 +32,7 @@ Cross-reference of EasyEDA schematic (V1.0, 2026-02-14) against component datash
 | ----- | ---------------- | --------- | ------ |
 | U26 (AP63205WU-7) input range | 3.8 V – 32 V | VIN = 12 V DC from TMPS10 | ✅ OK |
 | U26 fixed output voltage | 5.0 V | Connected to 5 V rail | ✅ OK |
-| U26 output current | 2 A max | Powers PCA9685 + LEDs + SCD41 + ESP32 | ✅ OK — well within limits |
+| U26 output current | 2 A max | Powers PCA9685 + LEDs + SCD43 + ESP32 | ✅ OK — well within limits |
 | U26 switching freq | 1.1 MHz | — | ✅ OK |
 | U26 pin assignment (TSOT-26) | 1=VIN, 2=GND, 3=EN, 4=FB, 5=SW, 6=BST | Pin 1→12V, 2→GND, 3→EN(12V via R?), 4→FB(output/divider), 5→SW→L2, 6→BST cap | ✅ Check below |
 | **EN pin** | Must be driven HIGH to enable; internal 1.18 V threshold | Schematic shows EN tied to VIN (12 V) | ✅ OK — always enabled |
@@ -83,7 +83,7 @@ Cross-reference of EasyEDA schematic (V1.0, 2026-02-14) against component datash
 | Check | Spec | Schematic | Status |
 | ----- | ---- | --------- | ------ |
 | Vrwm (Stand-off) | 5 V | Signal lines at 3.3 V level | ✅ OK — 5 V > 3.3 V |
-| Clamping voltage | 9 V | Below SCD41/ESP32 abs max | ✅ OK |
+| Clamping voltage | 9 V | Below SCD43/ESP32 abs max | ✅ OK |
 | Peak pulse power | 100 W (8/20 µs) | ESD protection on I2C, buttons, NTC | ✅ OK |
 | Bidirectional | Yes | Suitable for I2C (bidirectional) | ✅ OK |
 | Number of channels | 2 per device | SOT-23 package, protects 2 lines each | ✅ OK |
@@ -157,18 +157,18 @@ Cross-reference of EasyEDA schematic (V1.0, 2026-02-14) against component datash
 
 ---
 
-## 8. SCD41 CO2 Sensor
+## 8. SCD43 CO2 Sensor
 
-### Components: SCD41, Pull-up Widerstände, U-Schraubverbinder
+### Components: SCD43, Pull-up Widerstände, U-Schraubverbinder
 
 | Check | Spec (Datasheet) | Schematic | Status |
 | ----- | ---------------- | --------- | ------ |
-| SCD41 VDD range | 2.25 V – 5.5 V | Powered from 3.3 V rail | ✅ OK |
-| SCD41 I2C speed | max 100 kHz | ESP32C6 I2C default | ✅ OK |
-| SCD41 I2C pull-ups | Required on SDA/SCL | R1, R2 = 4.7 kΩ to 3.3 V shown | ✅ OK |
-| SCD41 max pin voltage | VDD + 0.3 V = 3.6 V | I2C at 3.3 V logic | ✅ OK |
+| SCD43 VDD range | 2.25 V – 5.5 V | Powered from 3.3 V rail | ✅ OK |
+| SCD43 I2C speed | max 100 kHz | ESP32C6 I2C default | ✅ OK |
+| SCD43 I2C pull-ups | Required on SDA/SCL | R1, R2 = 4.7 kΩ to 3.3 V shown | ✅ OK |
+| SCD43 max pin voltage | VDD + 0.3 V = 3.6 V | I2C at 3.3 V logic | ✅ OK |
 | H2 connector (1.27 mm, 4P) | GND, VDD, SDA, SCL | 4 pin header for sensor cable | ✅ OK |
-| SCD41 decoupling | 100 nF recommended | C3 = 100 nF am Sensor-Stecker | ✅ OK |
+| SCD43 decoupling | 100 nF recommended | C3 = 100 nF am Sensor-Stecker | ✅ OK |
 
 ---
 
@@ -199,7 +199,7 @@ Cross-reference of EasyEDA schematic (V1.0, 2026-02-14) against component datash
 | U15 EXTCLK | External clock input | Not connected or tied LOW | ✅ OK |
 | U15 output current | 25 mA sink, 10 mA source @ 5 V | LEDs via 470 Ω series resistors | ✅ Check below |
 | LED current through RN1/RN2 | I = (3.3 V - V_LED) / 470 Ω ≈ (3.3 - 2.0) / 470 = 2.8 mA | Well within 25 mA sink | ✅ OK |
-| I2C pull-ups for PCA9685 | Required, shared with SCD41 | R1/R2 = 4.7 kΩ to 3.3 V | ✅ OK |
+| I2C pull-ups for PCA9685 | Required, shared with SCD43 | R1/R2 = 4.7 kΩ to 3.3 V | ✅ OK |
 | U16 (10 kΩ) purpose | Pull-up on EXTCLK or address pin | Address/config | ✅ OK |
 | RN3 (10 kΩ array) purpose | Pull-up/-down on DIP-Switch inputs | Address/config via DIP | ✅ OK |
 | Decoupling | 100 nF recommended | C4 = 100 nF | ✅ OK |
@@ -214,7 +214,7 @@ Cross-reference of EasyEDA schematic (V1.0, 2026-02-14) against component datash
 | ----- | ---- | --------- | ------ |
 | VCC supply | 3.3 V from buck U25 | 3.3 V rail | ✅ OK |
 | GPIO usage | All GPIOs mapped per pin table in schematic | Buttons, PWM, I2C, ADC, Fan Tacho | ✅ OK |
-| I2C pins | SDA/SCL via pull-ups R1/R2 to 3.3 V | Connected to PCA9685 + SCD41 | ✅ OK |
+| I2C pins | SDA/SCL via pull-ups R1/R2 to 3.3 V | Connected to PCA9685 + SCD43 | ✅ OK |
 | ADC pins | D0 (NTC Out), D1 (NTC In) | Voltage divider with R4/R5 | ✅ OK |
 | Button inputs | D6 (Power), D9 (Mode), D2 (Level) | With TVS protection + R8 pull-down | ✅ OK |
 | Fan PWM outputs | D8 (GPIO19) primary, D10 (GPIO18) secondary | Connected to Q2 base (via R3) and Q3/Q4 gates | ✅ OK |
@@ -257,7 +257,7 @@ Cross-reference of EasyEDA schematic (V1.0, 2026-02-14) against component datash
 | Q3/Q4 Low-Side MOSFETs | Korrekt — Vgs(th) = 1 V, Gate = 3.3 V |
 | D1–D3 Freilaufdioden | Korrekt platziert und spezifiziert |
 | Jumper JP1/JP2/JP3 | Korrekt für Moduswahl |
-| SCD41 Anbindung | Korrekt — 3.3 V, I2C mit 4.7 kΩ Pull-ups |
+| SCD43 Anbindung | Korrekt — 3.3 V, I2C mit 4.7 kΩ Pull-ups |
 | NTC Spannungsteiler | Korrekt — 10 kΩ 0.1% passend zu NTC |
 | PCA9685 LED-Treiber | Korrekt — 3.3 V, I2C, 470 Ω Vorwiderstände |
 | ESP32C6 Anbindung | Korrekt — alle GPIOs korrekt zugeordnet |
