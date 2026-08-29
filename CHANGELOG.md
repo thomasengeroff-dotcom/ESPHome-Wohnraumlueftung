@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.10] - 2026-08-29
+
+### Documentation
+
+- **Smart Automatic Mode Logic Review & Alignment** (`documentation/en/smart-automatic-logic.md`):
+  - Corrected file references for PID controllers (`logic_automation.yaml` -> `logic_pid.yaml`).
+  - Documented separated fallback chains for CO2 (`effective_co2` template sensor: SCD41 -> BME680 eCO2 -> 5min hold -> NaN) and Temperature (`auto_mode.h`: SCD41 Temp -> phase-locked NTC readings -> peer ESP-NOW).
+  - Clarified NTC phase-lock behavior (physically fixed sensors with direction-locked filtering in `climate.h`, guaranteeing `temp_zuluft` represents outdoor and `temp_abluft` represents indoor).
+  - Updated Mermaid flow diagram with hysteresis hold-state branch (`0.005 to 0.01`) and connection to Master evaluation.
+  - Clarified PID demand conflict resolution as "Priority with Boost" (`max(CO2, Humidity)`) rather than exclusive suppression.
+  - Added technical note regarding $K_d = 0.0$ tuning for CO2 regulation to prevent noise amplification from SCD41 sensors.
+
+
 ## [0.10.9] - 2026-08-27
 
 ### Added

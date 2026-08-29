@@ -1,5 +1,5 @@
 {
     "project_version": "0.10.10",
-    "project_date": "2026-08-27",
-    "project_description": "Add optional MQTT integration package, CI matrix validation, and documentation"
+    "project_date": "2026-08-29",
+    "project_description": "Clarify and align Smart Automatic Mode logic documentation with implementation"
 }
