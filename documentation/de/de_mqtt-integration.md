@@ -2,7 +2,26 @@
 
 [![Language: EN](https://img.shields.io/badge/Language-EN-blue.svg)](../en/en_mqtt-integration.md)
 
-VentoSync unterstützt optionales MQTT-Publishing zur Integration in **Node-RED**, **openHAB**, **ioBroker**, **IP-Symcon** und jede andere MQTT-basierte Automatisierungsplattform — ohne die native Home Assistant Integration zu beeinträchtigen.
+VentoSync unterstützt optionales MQTT-Publishing zur Integration in **Node-RED**, **openHAB**, **ioBroker**, **IP-Symcon**, **LOXONE**, **Homey** und jede andere MQTT-basierte Automatisierungsplattform — ohne die native Home Assistant Integration zu beeinträchtigen.
+
+---
+
+## 🌐 Unterstützte Systeme & Kompatibilität
+
+VentoSync lässt sich dank des hybriden Integrationsmodells (Native ESPHome API, MQTT und lokales Web-Dashboard) in nahezu jedes moderne Smart-Home-Ökosystem einbinden:
+
+| Ökosystem / Plattform | Integrationsart | Beschreibung / Protokoll |
+|---|---|---|
+| **🏠 Home Assistant** | **Nativ** *(Primär)* | Tiefenintegration über die ESPHome Native API (`api:`). Automatische Erkennung aller Sensoren, Steuerungen, Betriebsmodi und Diagnose-Entitäten. |
+| **🔴 Node-RED** | **Direkt** *(MQTT)* | Vollständige bidirektionale Steuerung und Telemetrie über MQTT-Topics und Befehle. |
+| **⭕ openHAB** | **Direkt** *(MQTT)* | Anbindung über generische MQTT Things und Channels mit vollständiger Telemetrie- und Steuerungsfunktionalität. |
+| **🔵 ioBroker** | **Direkt** *(MQTT)* | Integration über den ioBroker MQTT Broker/Client Adapter. |
+| **🟦 IP-Symcon (SYMCON)** | **Direkt** *(MQTT)* | Bidirektionale Kommunikation über das native MQTT Server/Client Modul. |
+| **🟩 LOXONE** | **Direkt** *(MQTT)* | Anbindung über das Loxone Miniserver MQTT-Gateway oder HTTP-Endpunkte. |
+| **🌈 Homey** | **Direkt** *(MQTT)* | Integration über Homey MQTT Hub & Client Apps. |
+| **🍏 Apple Home (HomeKit)** | **Indirekt** *(Bridge)* | Weiterleitung über die Home Assistant HomeKit Bridge oder Matter-Integration. |
+| **🏠 Google Home** | **Indirekt** *(Bridge)* | Weiterleitung über die Home Assistant Google Assistant Integration. |
+| **🔊 Amazon Alexa** | **Indirekt** *(Bridge)* | Weiterleitung über die Home Assistant Alexa Integration. |
 
 ---
 

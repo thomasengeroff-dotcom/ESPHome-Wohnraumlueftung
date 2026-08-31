@@ -19,6 +19,7 @@ Dieses Dokument beschreibt geplante Funktionen, Architekturkonzepte und zukünft
 - [🌬️ Aerodynamische Rückwärts-Kompensation](#️-aerodynamische-rückwärts-kompensation)
 - [🧠 KI-gestützte vorausschauende Lüftungssteuerung](#-ki-gestützte-vorausschauende-lüftungssteuerung)
 - [🔌 Erweiterungen & Gebäudeautomations-Gateways](#-erweiterungen--gebäudeautomations-gateways)
+- [❄️🔥 Intelligente Klimaanlagen-Koordination (Smart Climate Control)](#️-intelligente-klimaanlagen-koordination-smart-climate-control)
 
 ---
 
@@ -90,3 +91,13 @@ Dieses Dokument beschreibt geplante Funktionen, Architekturkonzepte und zukünft
 
 * **Mixed-Air VOC+CO2-Regelung**: Kombination von BME680 VOC/Gas-Messwerten mit Sensirion SCD4x CO2-Daten für eine ganzheitliche Luftqualitätsregelung.
 * **Gebäudeleittechnik-Brücke (Modbus / KNX)**: Schnittstellen zur Einbindung von VentoSync in professionelle Gebäudeautomationssysteme zur gewerkeübergreifenden Abstimmung mit Heizung und Klimatechnik.
+
+---
+
+## ❄️🔥 Intelligente Klimaanlagen-Koordination (Smart Climate Control)
+
+* **Intelligente Klima-Koordination**: Wenn eine Raumklimaanlage aktiv ist, drosselt VentoSync die Lüftung automatisch auf das Minimum, das für gesunde Raumluft (CO2-basiert) erforderlich ist — und verhindert so Energieverschwendung durch den Import heißer Außenluft.
+* **Dedizierter Aktivierungsschalter**: Eine `smart_climate_control` Boolean-Entität ermöglicht die geräteweise Aktivierung des HVAC-Koordinations-Features.
+* **Reiner CO2-Luftqualitäts-Schutz**: Wechselt von Dual-PID (CO2 + Feuchte) auf eine gelockerte CO2-only-Regelschleife (Zielwert: 1200 ppm / DIN EN 13779 IDA 3) mit einer harten Lüfterstufen-Obergrenze (Standard: Stufe 3).
+* **Notfall-Override**: Überschreitet der CO2-Wert 1500 ppm, kehrt das System automatisch in den vollen Automatik-Modus zurück, um die Gesundheit der Bewohner zu gewährleisten.
+* *Die vollständige technische Spezifikation, den Zustandsautomaten und die Konfigurations-Entitäten findest du in [📄 Intelligente Klimaanlagen-Koordination](de_smart-climate-control.md).*

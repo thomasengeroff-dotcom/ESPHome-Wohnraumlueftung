@@ -19,6 +19,7 @@ This document outlines planned features, architectural concepts, and upcoming ha
 - [🌬️ Aerodynamic Reverse Compensation](#️-aerodynamic-reverse-compensation)
 - [🧠 AI-Powered Predictive Ventilation Control](#-ai-powered-predictive-ventilation-control)
 - [🔌 Hardware Expansion & Industrial Smart Home Gateways](#-hardware-expansion--industrial-smart-home-gateways)
+- [❄️🔥 Smart Climate Control — HVAC Coordination](#️-smart-climate-control--hvac-coordination)
 
 ---
 
@@ -90,3 +91,13 @@ This document outlines planned features, architectural concepts, and upcoming ha
 
 * **Mixed-Air IAQ Logic (CO2 + VOC)**: Combining Bosch BME680 VOC/gas measurements with Sensirion SCD4x CO2 data for an all-encompassing Indoor Air Quality control loop.
 * **Building Automation Gateways (Modbus / KNX)**: Standardized interfaces to bridge VentoSync units into professional commercial BMS (Building Management Systems) for HVAC and heating coordination.
+
+---
+
+## ❄️🔥 Smart Climate Control — HVAC Coordination
+
+* **Intelligent AC Coordination**: When a room air conditioner is active, VentoSync automatically throttles ventilation to the minimum level required for healthy indoor air quality (CO2-based), preventing energy waste from importing hot outdoor air.
+* **Dedicated Enable/Disable Switch**: A `smart_climate_control` boolean entity allows per-device activation of the HVAC coordination feature.
+* **CO2-Only Air Quality Guard**: Switches from dual-PID (CO2 + Humidity) to a relaxed CO2-only control loop (target: 1200 ppm / DIN EN 13779 IDA 3) with a hard fan level cap (default: Level 3).
+* **Emergency Override**: If CO2 exceeds 1500 ppm, the system automatically reverts to full automatic mode to guarantee occupant health.
+* *For the complete technical specification, state machine, and configuration entities, see [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).*

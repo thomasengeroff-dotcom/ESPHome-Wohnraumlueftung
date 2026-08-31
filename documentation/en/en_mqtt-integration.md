@@ -3,7 +3,26 @@
 [![Language: DE](https://img.shields.io/badge/Language-DE-red.svg)](../de/de_mqtt-integration.md)
 
 
-VentoSync supports optional MQTT publishing for integration with **Node-RED**, **openHAB**, **ioBroker**, **IP-Symcon**, and any other MQTT-based automation platform — without affecting the native Home Assistant integration.
+VentoSync supports optional MQTT publishing for integration with **Node-RED**, **openHAB**, **ioBroker**, **IP-Symcon**, **LOXONE**, **Homey**, and any other MQTT-based automation platform — without affecting the native Home Assistant integration.
+
+---
+
+## 🌐 Supported Systems & Compatibility
+
+VentoSync can be integrated into virtually any modern smart home ecosystem through its hybrid architecture (Native ESPHome API, MQTT, and Local Web Dashboard):
+
+| Ecosystem / Platform | Integration Type | Description / Protocol |
+|---|---|---|
+| **🏠 Home Assistant** | **Native** *(Primary)* | Deep, seamless integration via ESPHome Native API (`api:`). Automatic discovery of all sensors, controls, modes, and diagnostic entities. |
+| **🔴 Node-RED** | **Direct** *(MQTT)* | Full bidirectional control and telemetry via standard MQTT topic subscription and publishing. |
+| **⭕ openHAB** | **Direct** *(MQTT)* | Generic MQTT Things and Channels with full telemetry and command capabilities. |
+| **🔵 ioBroker** | **Direct** *(MQTT)* | Integration via the ioBroker MQTT Broker/Client adapter. |
+| **🟦 IP-Symcon (SYMCON)** | **Direct** *(MQTT)* | Bidirectional communication via the native MQTT Server/Client module. |
+| **🟩 LOXONE** | **Direct** *(MQTT)* | Connection via Loxone Miniserver MQTT Gateway or HTTP endpoints. |
+| **🌈 Homey** | **Direct** *(MQTT)* | Integration via Homey MQTT Hub & Client apps. |
+| **🍏 Apple Home (HomeKit)** | **Indirect** *(Bridge)* | Exposed via Home Assistant HomeKit Bridge or Matter integration. |
+| **🏠 Google Home** | **Indirect** *(Bridge)* | Exposed via Home Assistant Google Assistant integration. |
+| **🔊 Amazon Alexa** | **Indirect** *(Bridge)* | Exposed via Home Assistant Alexa integration. |
 
 ---
 
