@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.13] - 2026-09-02
+
+### Added
+
+- **Smart Climate Control — HVAC Coordination** (`components/ventilation_logic/hvac_coordinator.h`, `components/helpers/auto_mode.h`, `components/helpers/globals.h`, `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml`):
+  - New pure, unit-tested state machine `ventosync::hvac::Coordinator` that restricts `Smart-Automatik` while the room air conditioner / heat pump is active: CO2-only regulation with relaxed setpoint (default 1200 ppm, DIN EN 13779 IDA 3), fan level window `[1, hvac_max_fan_level]` (default 1–3), humidity PID ignored, summer bypass suppressed and heat recovery enforced.
+  - Health guards with hysteresis: CO2 emergency override (enter ≥ `hvac_emergency_co2` = 1500 ppm, release ≤ `hvac_co2_threshold`; emergency kept ≥ setpoint + 100 ppm) and a mold guard (enter ≥ 70 % rH while outdoor air is drier in absolute terms, release ≤ 65 %). Without a CO2 reading the coordinator never throttles (`Ausgesetzt (kein CO2-Wert)`).
+  - AC-state robustness: 120 s release debounce (`AC_RELEASE_DELAY_MS`) against compressor cycling and HA reconnects; unknown / unavailable entity or disconnected HA API is treated as "AC inactive" (fail-safe for health).
+  - CO2 PID setpoint authority: `apply_co2_setpoint()` re-asserts the correct target every cycle (relaxed vs. user threshold) and resets the integral on change; humidity PID integral is reset when re-enabled.
+  - New HA entities: `switch.klima_koordination` (`smart_climate_control`, default off, persisted), `number` sliders `hvac_co2_threshold` (800–1500 ppm), `hvac_max_fan_level` (1–5), `hvac_emergency_co2` (1200–2000 ppm), diagnostic `text_sensor` `hvac_status`, and the internal HA import `hvac_ac_active` bound to the new substitution `hvac_ac_sensor_id` (default `binary_sensor.ventosync_hvac_active_room_${room_id}`).
+  - Multi-device rooms need no ESP-NOW protocol change: slaves already mirror the Master's discrete level and mode; the feature is configured per device.
+- **Unit tests** (`tests/simple_test_runner.cpp`): T-7a–T-7j covering disabled transparency, standby, throttled profile and cap clamping, CO2 emergency hysteresis, emergency margin guard, AC release debounce, fail-safe unknown AC state, suspension without CO2, mold guard, and latch reset.
+
+### Documentation
+
+- Rewrote `documentation/en/en_smart-climate-control.md` and `documentation/de/de_smart-climate-control.md` to reflect the implemented behavior. Concept corrections found during review: the `climate` entity `state` (hvac_mode) must be mapped instead of the cycling `hvac_action` (would oscillate); mixed hvac_mode/hvac_action values in the original mapping fixed; `select.ventilation_mode` corrected to `select.luefter_modus`; the invented 1100 ppm "ramping" hysteresis replaced by the real PID + level-hysteresis behavior; the "humidity PID disabled" rule is unsafe in heat-pump heating mode and was replaced by the mold guard; emergency now documented as also lifting the humidity suppression while keeping heat recovery enforced; HA setup example with template binary sensor added.
+- Updated `Readme.md`, `Readme_de.md`, `documentation/*/…home-assistant-entities.md`, `documentation/*/…smart-automatic-logic.md`, `documentation/*/…roadmap-and-future-enhancements.md` (marked as implemented), `tests/README.md` and `CLAUDE.md`.
+
+
 ## [0.10.12] - 2026-08-30
 
 ### Documentation

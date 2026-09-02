@@ -165,6 +165,8 @@ Alle Geräte in einem Raum finden sich beim Start oder Raumwechsel vollautomatis
 - 📊 **Echte VentoMaxx V-Kennlinie**: Basierend auf den physikalischen Parametern der Original-Hardware (50% PWM = Stopp-Zone), wurde die Kennlinie jedoch in den niedrigeren Stufen (Stufe 1-6) feiner abgestimmt, um akustisch noch dezenter zu bleiben.
 - 🪟 **Fenstersperre (Window Guard)**: Automatischer raumweiter Lüftungsstopp bei offenen Fenstern mit 5s Verzögerung, automatischem Fortsetzen und Master-LED-Feedback.
   > 👉 *Einrichtungsanleitung & Details: [📄 Fenstersperre Setup Guide](documentation/de/de_window-guard-ha-setup.md).*
+- ❄️🔥 **Klima-Koordination (Smart Climate Control)**: Solange die Raumklimaanlage oder Wärmepumpe aktiv ist, drosselt die `Smart-Automatik` auf eine reine CO2-Regelung (gelockertes Ziel 1200 ppm, Lüfter-Obergrenze Stufe 3, erzwungene Wärmerückgewinnung), damit die Lüftung keine heiße Außenluft importiert. CO2-Notfall (1500 ppm) und Schimmelschutz (70 % rH) stellen die volle Regelung automatisch wieder her; die Freigabe ist entprellt (120 s).
+  > 👉 *Konzept, Zustandsautomat & HA-Template-Sensor: [📄 Intelligente Klimaanlagen-Koordination](documentation/de/de_smart-climate-control.md).*
 
 - 🌟 **Erweiterte Komfort- & Schutzfunktionen**:
   - 📈 **Phasen-Kontinuität & Sanftanlauf**: Proportionalskalierung bei Stufenwechseln und sanfte Geschwindigkeitsübergänge (~5%/s) für minimalen Verschleiß und leisen Betrieb.
@@ -598,6 +600,12 @@ Alle Funktionen sind vollständig in Home Assistant integriert. Änderungen am P
 - **Timer**: Konfiguration für "Durchlüften" (Standard: 30 Min)
 - **LED-Helligkeit**: `number.max_led_brightness` (0-100%, Standard: 80%) zur Begrenzung der maximalen Panel-Helligkeit.
 - **CO2-Grenzwert**: `number.auto_co2_threshold` (Im Automatik-Modus immer aktiv)
+- **Klima-Koordination** *(Konfiguration)*:
+  - `switch.klima_koordination` — HVAC-Koordination für dieses Gerät aktivieren (Standard: aus)
+  - `number.klima_koordination_co2_grenzwert` — Gelockerter CO2-Sollwert bei aktiver Klimaanlage, 800–1500 ppm (Standard: `1200`)
+  - `number.klima_koordination_max_lufterstufe` — Lüfter-Obergrenze bei aktiver Klimaanlage, 1–5 (Standard: `3`)
+  - `number.klima_koordination_co2_notfallgrenze` — CO2-Notfallgrenze, 1200–2000 ppm (Standard: `1500`)
+  - `text_sensor.klima_koordination_status` — Aktueller Koordinator-Zustand (Diagnose)
 - **Diagnose**: Anzeige von RPM, Temperatur, Feuchte und **CO2-Gehalt (ppm)**
 
 👉 **Tipp:** Eine detaillierte Übersicht aller verfügbaren Home Assistant Entitäten inklusive ihrer technischen Namen (`ID`) und Funktion findest du im Dokument **[Entities_Documentation.md](documentation/de/de_home-assistant-entities.md)**.

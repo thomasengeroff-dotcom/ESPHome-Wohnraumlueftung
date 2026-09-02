@@ -68,6 +68,7 @@
 #include "esphome/components/pid/pid_climate.h"
 #include "esphome/components/ventilation_group/ventilation_group.h"
 #include "esphome/components/ventilation_logic/ventilation_logic.h"
+#include "esphome/components/ventilation_logic/hvac_coordinator.h"
 
 // --- Constants ---------------------------------------------------------
 static constexpr float SUMMER_COOLING_THRESHOLD_INDOOR = 22.0f;
@@ -294,6 +295,29 @@ extern esphome::homeassistant::HomeassistantBinarySensor
     *const sommerbetrieb; ///< Summer mode gate (HA: season + outdoor temp > 18°C)
 extern esphome::homeassistant::HomeassistantBinarySensor
     *const window_locked; ///< Window lock gate (HA: open windows in room)
+extern esphome::homeassistant::HomeassistantBinarySensor
+    *const hvac_ac_active; ///< Smart Climate Control: room AC active (HA import)
+/// @}
+
+/// @name Smart Climate Control (HVAC Coordination)
+/// @{
+extern esphome::template_::TemplateSwitch
+    *const smart_climate_control; ///< Master enable switch for HVAC coordination.
+extern esphome::template_::TemplateNumber
+    *const hvac_co2_threshold; ///< Relaxed CO2 setpoint while the AC is active (ppm).
+extern esphome::template_::TemplateNumber
+    *const hvac_max_fan_level; ///< Fan level cap while the AC is active (1-10).
+extern esphome::template_::TemplateNumber
+    *const hvac_emergency_co2; ///< CO2 level that lifts the restrictions (ppm).
+
+namespace hvac_state {
+  /// Stateful coordinator (debounce timer + emergency latches).
+  inline ventosync::hvac::Coordinator coordinator;
+  /// Last decision applied by evaluate_auto_mode() — read by the status text sensor.
+  inline ventosync::hvac::Decision last_decision;
+  /// Previous suppress_humidity flag — used to reset the humidity PID on release.
+  inline bool prev_suppress_humidity = false;
+}
 /// @}
 
 /// @name Status LEDs (monochromatic light components)

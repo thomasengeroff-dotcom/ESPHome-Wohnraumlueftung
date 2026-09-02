@@ -25,6 +25,7 @@
 // ==========================================================================
 
 #include "../components/ventilation_logic/ventilation_logic.h"
+#include "../components/ventilation_logic/hvac_coordinator.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -205,6 +206,227 @@ bool test_co2_logic() {
 
 #include "../components/ventilation_group/ventilation_state_machine.h"
 #include <limits>
+
+// ============================================================
+// [0.10.13] Smart Climate Control — HVAC Coordinator
+// Pure state machine from components/ventilation_logic/hvac_coordinator.h
+// ============================================================
+namespace {
+ventosync::hvac::Inputs hvac_inputs(bool enabled, bool ac_on, float co2, uint32_t now) {
+  ventosync::hvac::Inputs in;
+  in.enabled = enabled;
+  in.ha_connected = true;
+  in.ac_has_state = true;
+  in.ac_reported_active = ac_on;
+  in.co2_ppm = co2;
+  in.indoor_rh_percent = 50.0f;
+  in.ventilation_can_dry = true;
+  in.now_ms = now;
+  return in;
+}
+} // namespace
+
+// T-7a: Disabled switch → Smart-Automatik untouched, even with AC on
+bool test_hvac_disabled_is_transparent() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(false, true, 1800.0f, 0));
+  TEST_ASSERT(d.state == State::DISABLED);
+  TEST_ASSERT(!d.restrict_levels);
+  TEST_ASSERT(!d.relaxed_co2_setpoint);
+  TEST_ASSERT(!d.suppress_humidity);
+  TEST_ASSERT(!d.lock_eco_mode);
+  TEST_ASSERT(!d.ac_active);
+  return true;
+}
+
+// T-7b: Enabled, AC off → STANDBY, no restrictions
+bool test_hvac_standby_when_ac_off() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(true, false, 900.0f, 0));
+  TEST_ASSERT(d.state == State::STANDBY);
+  TEST_ASSERT(!d.restrict_levels);
+  TEST_ASSERT(!d.lock_eco_mode);
+  TEST_ASSERT(!d.suppress_humidity);
+  return true;
+}
+
+// T-7c: AC on → THROTTLED: CO2-only, relaxed setpoint, level cap [1..3], ECO lock
+bool test_hvac_throttled_profile() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(true, true, 900.0f, 0));
+  TEST_ASSERT(d.state == State::THROTTLED);
+  TEST_ASSERT(d.ac_active);
+  TEST_ASSERT(d.restrict_levels);
+  TEST_ASSERT(d.min_level == MIN_FAN_LEVEL);
+  TEST_ASSERT(d.max_level == DEFAULT_MAX_FAN_LEVEL);
+  TEST_ASSERT(d.relaxed_co2_setpoint);
+  TEST_ASSERT(std::abs(d.co2_setpoint - DEFAULT_CO2_THRESHOLD_PPM) < 0.01f);
+  TEST_ASSERT(d.suppress_humidity);
+  TEST_ASSERT(d.lock_eco_mode);
+
+  // Configurable cap is honoured and clamped to hardware range
+  ventosync::hvac::Inputs in = hvac_inputs(true, true, 900.0f, 0);
+  in.max_fan_level = 5;
+  in.co2_threshold_ppm = 1100.0f;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.max_level == 5);
+  TEST_ASSERT(std::abs(d.co2_setpoint - 1100.0f) < 0.01f);
+  in.max_fan_level = 42;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.max_level == HARDWARE_MAX_FAN_LEVEL);
+  in.max_fan_level = 0;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.max_level == MIN_FAN_LEVEL);
+  return true;
+}
+
+// T-7d: CO2 emergency with hysteresis (enter ≥ 1500, release ≤ 1200)
+bool test_hvac_co2_emergency_hysteresis() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(true, true, 1400.0f, 0));
+  TEST_ASSERT(d.state == State::THROTTLED);
+
+  d = c.evaluate(hvac_inputs(true, true, 1500.0f, 10));
+  TEST_ASSERT(d.state == State::EMERGENCY_CO2);
+  TEST_ASSERT(!d.restrict_levels);        // Level cap lifted
+  TEST_ASSERT(!d.relaxed_co2_setpoint);   // Normal user setpoint again
+  TEST_ASSERT(!d.suppress_humidity);      // Full dual-PID again
+  TEST_ASSERT(d.lock_eco_mode);           // Still no summer bypass while AC runs
+
+  // Between 1200 and 1500 the emergency latch holds
+  d = c.evaluate(hvac_inputs(true, true, 1350.0f, 20));
+  TEST_ASSERT(d.state == State::EMERGENCY_CO2);
+
+  // Released once back at/below the relaxed setpoint
+  d = c.evaluate(hvac_inputs(true, true, 1200.0f, 30));
+  TEST_ASSERT(d.state == State::THROTTLED);
+  return true;
+}
+
+// T-7e: Emergency threshold is forced ≥ setpoint + 100 ppm
+bool test_hvac_emergency_margin_guard() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  ventosync::hvac::Inputs in = hvac_inputs(true, true, 1450.0f, 0);
+  in.co2_threshold_ppm = 1400.0f;
+  in.emergency_co2_ppm = 1200.0f; // Misconfigured: below the setpoint
+  Decision d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::THROTTLED); // 1450 < 1400 + 100 → not yet emergency
+  in.co2_ppm = 1500.0f;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::EMERGENCY_CO2);
+  return true;
+}
+
+// T-7f: AC "off" is debounced (compressor cycling must not toggle the fan)
+bool test_hvac_ac_release_delay() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(true, true, 900.0f, 1000));
+  TEST_ASSERT(d.state == State::THROTTLED);
+
+  // AC reports off → still throttled until the release delay elapsed
+  d = c.evaluate(hvac_inputs(true, false, 900.0f, 2000));
+  TEST_ASSERT(d.state == State::THROTTLED);
+  TEST_ASSERT(d.ac_active);
+  d = c.evaluate(hvac_inputs(true, false, 900.0f, 2000 + AC_RELEASE_DELAY_MS - 1));
+  TEST_ASSERT(d.state == State::THROTTLED);
+
+  // Short compressor pause followed by "on" resets the timer
+  d = c.evaluate(hvac_inputs(true, true, 900.0f, 2000 + AC_RELEASE_DELAY_MS));
+  TEST_ASSERT(d.state == State::THROTTLED);
+  d = c.evaluate(hvac_inputs(true, false, 900.0f, 3000 + AC_RELEASE_DELAY_MS));
+  TEST_ASSERT(d.state == State::THROTTLED);
+
+  // Continuous "off" for the full delay → STANDBY
+  d = c.evaluate(hvac_inputs(true, false, 900.0f, 3000 + 2 * AC_RELEASE_DELAY_MS));
+  TEST_ASSERT(d.state == State::STANDBY);
+  TEST_ASSERT(!d.ac_active);
+  return true;
+}
+
+// T-7g: Unknown AC state (HA offline / entity unavailable) is fail-safe = inactive
+bool test_hvac_unknown_ac_state_is_inactive() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  ventosync::hvac::Inputs in = hvac_inputs(true, true, 900.0f, 0);
+  in.ac_has_state = false;
+  Decision d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::STANDBY);
+
+  in = hvac_inputs(true, true, 900.0f, 0);
+  in.ha_connected = false;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::STANDBY);
+  return true;
+}
+
+// T-7h: No CO2 reading → health cannot be guaranteed → no throttling
+bool test_hvac_suspended_without_co2() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(true, true, std::numeric_limits<float>::quiet_NaN(), 0));
+  TEST_ASSERT(d.state == State::SUSPENDED_NO_CO2);
+  TEST_ASSERT(!d.restrict_levels);
+  TEST_ASSERT(!d.suppress_humidity);
+  TEST_ASSERT(d.lock_eco_mode); // AC still active → no summer bypass
+  return true;
+}
+
+// T-7i: Mold guard — high indoor rH lifts the restrictions only when ventilation can dry
+bool test_hvac_mold_guard() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  ventosync::hvac::Inputs in = hvac_inputs(true, true, 900.0f, 0);
+  in.indoor_rh_percent = 72.0f;
+  in.ventilation_can_dry = false; // Outdoor air muggier → ventilating would not help
+  Decision d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::THROTTLED);
+
+  in.ventilation_can_dry = true;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::EMERGENCY_HUMIDITY);
+  TEST_ASSERT(!d.restrict_levels);
+  TEST_ASSERT(!d.suppress_humidity);
+
+  // Hysteresis: 67 % keeps the latch, 65 % releases it
+  in.indoor_rh_percent = 67.0f;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::EMERGENCY_HUMIDITY);
+  in.indoor_rh_percent = 65.0f;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::THROTTLED);
+
+  // CO2 emergency has priority over the mold guard in the reported state
+  in.indoor_rh_percent = 80.0f;
+  in.co2_ppm = 1600.0f;
+  d = c.evaluate(in);
+  TEST_ASSERT(d.state == State::EMERGENCY_CO2);
+  return true;
+}
+
+// T-7j: Disabling the switch clears all latches; AC off clears emergencies
+bool test_hvac_latch_reset() {
+  using namespace ventosync::hvac;
+  Coordinator c;
+  Decision d = c.evaluate(hvac_inputs(true, true, 1600.0f, 0));
+  TEST_ASSERT(d.state == State::EMERGENCY_CO2);
+  TEST_ASSERT(c.is_co2_emergency());
+
+  d = c.evaluate(hvac_inputs(false, true, 1600.0f, 10));
+  TEST_ASSERT(d.state == State::DISABLED);
+  TEST_ASSERT(!c.is_co2_emergency());
+  TEST_ASSERT(!c.is_ac_active());
+
+  // Re-enable at moderate CO2 → throttled again (no stale latch)
+  d = c.evaluate(hvac_inputs(true, true, 1300.0f, 20));
+  TEST_ASSERT(d.state == State::THROTTLED);
+  return true;
+}
 
 // ============================================================
 // [Unreleased] MODE_OFF — Lüfter gestoppt
@@ -812,6 +1034,28 @@ int main() {
   } else {
     std::cout << "[FAIL] T-6: Type Layout (enum : uint8_t + HardwareState)" << std::endl;
     all_passed = false;
+  }
+
+  struct HvacCase { const char *name; bool (*fn)(); };
+  const HvacCase hvac_cases[] = {
+    {"T-7a: HVAC Coordinator disabled is transparent", test_hvac_disabled_is_transparent},
+    {"T-7b: HVAC Coordinator standby when AC off", test_hvac_standby_when_ac_off},
+    {"T-7c: HVAC Coordinator throttled profile (CO2-only, cap, ECO lock)", test_hvac_throttled_profile},
+    {"T-7d: HVAC Coordinator CO2 emergency hysteresis", test_hvac_co2_emergency_hysteresis},
+    {"T-7e: HVAC Coordinator emergency margin guard", test_hvac_emergency_margin_guard},
+    {"T-7f: HVAC Coordinator AC release delay (debounce)", test_hvac_ac_release_delay},
+    {"T-7g: HVAC Coordinator unknown AC state is fail-safe", test_hvac_unknown_ac_state_is_inactive},
+    {"T-7h: HVAC Coordinator suspended without CO2", test_hvac_suspended_without_co2},
+    {"T-7i: HVAC Coordinator mold guard", test_hvac_mold_guard},
+    {"T-7j: HVAC Coordinator latch reset", test_hvac_latch_reset},
+  };
+  for (const auto &tc : hvac_cases) {
+    if (tc.fn()) {
+      std::cout << "[PASS] " << tc.name << std::endl;
+    } else {
+      std::cout << "[FAIL] " << tc.name << std::endl;
+      all_passed = false;
+    }
   }
 
   if (all_passed) {

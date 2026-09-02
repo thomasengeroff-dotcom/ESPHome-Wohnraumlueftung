@@ -103,6 +103,16 @@ To avoid different fans in the same room running at different speeds (which caus
 - **Slaves (ID > 1)**: Ignore their own demand calculation and mirror the Master's discrete level in real-time.
 - **Soft Ramping**: All devices apply a max transition of **+/- 1 level per 10 seconds** for silent and motor-friendly speed changes.
 
+### 6. Smart Climate Control (HVAC Coordination)
+An optional modifier evaluated at the start of every 10-second cycle (`auto_mode::evaluate_hvac_coordination()`). While the `Klima-Koordination` switch is on **and** the imported AC state is active, the cycle runs with a restricted profile:
+- **CO2-only loop**: the humidity PID demand is ignored, the CO2 PID setpoint is switched to `hvac_co2_threshold` (default 1200 ppm) and re-asserted every cycle.
+- **Level window**: `[1, hvac_max_fan_level]` (default 1–3) replaces `automatik_min/max_fan_level`.
+- **Mode lock**: `determine_auto_operating_mode()` always returns heat recovery — no summer bypass while the AC runs.
+- **Health guards**: a CO2 emergency (≥ `hvac_emergency_co2`, release ≤ `hvac_co2_threshold`) and a mold guard (≥ 70 % rH while outdoor air is drier, release ≤ 65 %) restore the normal limits and dual-PID. Without a CO2 reading nothing is throttled.
+- **Debounce**: AC "off" must persist 120 s before the restrictions are released; the ramp back is the standard ±1 level per cycle.
+
+Details, state machine and HA setup: [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).
+
 ---
 
 ## ⚙️ Configuration Entities
@@ -114,6 +124,10 @@ To avoid different fans in the same room running at different speeds (which caus
 | `Automatik: CO2 Grenzwert` | `auto_co2_threshold` | 1000 | Target setpoint for the CO2 PID. |
 | `Automatik: Feuchte Grenzwert`| `auto_humidity_threshold` | 60% | Target setpoint for the Humidity PID. |
 | `Sommerbetrieb` | `sommerbetrieb` | (Binary) | Master switch from HA to enable/disable cooling. |
+| `Klima-Koordination` | `smart_climate_control` | Off | Enables the HVAC coordination modifier (see section 6). |
+| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | 1200 | Relaxed CO2 setpoint while the AC is active. |
+| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | 3 | Fan level cap while the AC is active. |
+| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | 1500 | CO2 emergency override threshold. |
 
 ---
 

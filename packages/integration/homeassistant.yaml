@@ -51,6 +51,19 @@ binary_sensor:
     entity_id: ${window_sensor_id}
     internal: true
     
+  # Smart Climate Control (Klima-Koordination) - AC active state from HA.
+  # Provided by a HA template binary sensor that maps the room AC / heat pump
+  # climate entity (see documentation/en/en_smart-climate-control.md).
+  # When unavailable (HA offline), the coordinator treats the AC as inactive
+  # so the ventilation is never throttled blindly (fail-safe for health).
+  - platform: homeassistant
+    name: "Klima Aktiv (Raum)"
+    id: hvac_ac_active
+    entity_id: ${hvac_ac_sensor_id}
+    internal: true
+    on_state:
+      - lambda: "evaluate_auto_mode();"
+
   # Vacation Mode (Urlaubsmodus) - HA State
   - platform: homeassistant
     name: "Urlaubsmodus Sensor"

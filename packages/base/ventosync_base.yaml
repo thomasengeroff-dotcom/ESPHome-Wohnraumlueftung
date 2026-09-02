@@ -43,6 +43,12 @@ substitutions:
   # Default convention: binary_sensor.ventosync_window_lock_room_${room_id}
   window_sensor_id: "binary_sensor.ventosync_window_lock_room_${room_id}"
 
+  # SMART CLIMATE CONTROL (HVAC COORDINATION) CONFIG
+  # Entity ID of the Home Assistant binary sensor that is "on" while the room
+  # air conditioner / heat pump is actively conditioning the room.
+  # Default convention: binary_sensor.ventosync_hvac_active_room_${room_id}
+  hvac_ac_sensor_id: "binary_sensor.ventosync_hvac_active_room_${room_id}"
+
   # VACATION MODE CONFIG
   # Entity ID of the Home Assistant input_boolean helper for vacation mode.
   vacation_sensor_id: "input_boolean.ventosync_vacation_mode"

@@ -1,5 +1,5 @@
 {
-    "project_version": "0.10.12",
-    "project_date": "2026-08-30",
-    "project_description": "Upgrade sensor documentation to SCD43, add modular SGP41/SHT4x ecosystem, 3D PCB renders, and aerodynamic reverse compensation roadmap"
+    "project_version": "0.10.13",
+    "project_date": "2026-09-02",
+    "project_description": "Implement Smart Climate Control (HVAC coordination) with unit-tested coordinator, health guards, HA entities and documentation"
 }
