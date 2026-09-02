@@ -167,6 +167,8 @@ All devices in a room find each other automatically upon startup or room change 
 - 📊 **Optimized VentoMaxx Ventilation Curve**: Based on the physical parameters of the original hardware (50% PWM = stop zone), the curve has been optimized with finer granularity in the lower levels (Levels 1-6) to ensure even more discreet acoustic operation.
 - 🪟 **Window Guard**: Automatic room-wide ventilation pause with 5s delay, auto-resume, visual Master LED feedback, and individual bypass switches.
   > 👉 *Setup guide & behavior details: [📄 Window Guard Setup Guide](documentation/en/en_window-guard-ha-setup.md).*
+- ❄️🔥 **Smart Climate Control (HVAC Coordination)**: While the room air conditioner or heat pump is active, `Smart-Automatik` throttles to a CO2-only loop (relaxed 1200 ppm target, fan cap Level 3, enforced heat recovery) so the ventilation stops importing hot outdoor air. CO2 emergency (1500 ppm) and mold guard (70 % rH) restore full regulation automatically; AC release is debounced (120 s).
+  > 👉 *Concept, state machine & HA template sensor: [📄 Smart Climate Control](documentation/en/en_smart-climate-control.md).*
 
 - 🌟 **Advanced Comfort & Protection Features**:
   - 📈 **Phase Continuity & Soft Start**: Proportional cycle scaling during speed changes and smooth speed transitions (~5%/s) for minimal wear and quiet operation.
@@ -490,6 +492,12 @@ All functions are fully integrated into Home Assistant. Changes on the panel are
 - **Timer**: Configuration for "Ventilation" (default: 30 min)
 - **LED Brightness**: `number.max_led_brightness` (0-100%, default: 80%) to limit the maximum panel brightness.
 - **CO2 Limit**: `number.auto_CO2_threshold` (always active in Automatik mode)
+- **Smart Climate Control** *(Configuration)*:
+  - `switch.klima_koordination` — Enable HVAC coordination for this device (default: off)
+  - `number.klima_koordination_co2_grenzwert` — Relaxed CO2 target while the AC is active, 800–1500 ppm (default: `1200`)
+  - `number.klima_koordination_max_lufterstufe` — Fan level cap while the AC is active, 1–5 (default: `3`)
+  - `number.klima_koordination_co2_notfallgrenze` — CO2 emergency override, 1200–2000 ppm (default: `1500`)
+  - `text_sensor.klima_koordination_status` — Current coordinator state (diagnostic)
 - **Diagnostics**: Display of RPM, temperature, humidity, and **CO2 content (ppm)**
 - **Vacation Mode** *(Configuration)*:
   - `select.urlaubsmodus_betriebsmodus` — Operating mode when vacation is active (default: `Stoßlüftung`)

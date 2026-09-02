@@ -96,8 +96,11 @@ Dieses Dokument beschreibt geplante Funktionen, Architekturkonzepte und zukünft
 
 ## ❄️🔥 Intelligente Klimaanlagen-Koordination (Smart Climate Control)
 
-* **Intelligente Klima-Koordination**: Wenn eine Raumklimaanlage aktiv ist, drosselt VentoSync die Lüftung automatisch auf das Minimum, das für gesunde Raumluft (CO2-basiert) erforderlich ist — und verhindert so Energieverschwendung durch den Import heißer Außenluft.
-* **Dedizierter Aktivierungsschalter**: Eine `smart_climate_control` Boolean-Entität ermöglicht die geräteweise Aktivierung des HVAC-Koordinations-Features.
-* **Reiner CO2-Luftqualitäts-Schutz**: Wechselt von Dual-PID (CO2 + Feuchte) auf eine gelockerte CO2-only-Regelschleife (Zielwert: 1200 ppm / DIN EN 13779 IDA 3) mit einer harten Lüfterstufen-Obergrenze (Standard: Stufe 3).
-* **Notfall-Override**: Überschreitet der CO2-Wert 1500 ppm, kehrt das System automatisch in den vollen Automatik-Modus zurück, um die Gesundheit der Bewohner zu gewährleisten.
+> ✅ **Implementiert in Version 0.10.13.** Zur Referenz hier belassen; das Konzept wurde bei der Umsetzung geprüft und verfeinert.
+
+* **Intelligente Klima-Koordination**: Wenn eine Raumklimaanlage oder Wärmepumpe aktiv ist, drosselt VentoSync die Lüftung automatisch auf das Minimum, das für gesunde Raumluft (CO2-basiert) erforderlich ist — und verhindert so Energieverschwendung durch den Import heißer Außenluft. Wirkt ausschließlich als Modifikator der `Smart-Automatik`; manuelle Modi bleiben unberührt.
+* **Dedizierter Aktivierungsschalter**: Der Schalter `smart_climate_control` („Klima-Koordination") ermöglicht die geräteweise Aktivierung des HVAC-Koordinations-Features.
+* **Reiner CO2-Luftqualitäts-Schutz**: Wechselt von Dual-PID (CO2 + Feuchte) auf eine gelockerte CO2-only-Regelschleife (Zielwert: 1200 ppm / DIN EN 13779 IDA 3) mit harter Lüfterstufen-Obergrenze (Standard: Stufe 3) und erzwungener Wärmerückgewinnung (kein Sommer-Bypass).
+* **Gesundheitsschutz**: Ein CO2-Notfall-Override (Standard 1500 ppm, Hysterese zurück auf 1200 ppm) und ein Schimmelschutz (≥ 70 % rH, solange die Außenluft trockener ist) heben die Einschränkungen automatisch auf. Ohne CO2-Messwert wird nie gedrosselt.
+* **Robuste Klima-Erkennung**: 120 s Freigabeverzögerung und Fail-Safe „Klima inaktiv" bei getrenntem Home Assistant; das HA-Mapping nutzt den gewählten `hvac_mode`, nicht die taktende Kompressor-`hvac_action`.
 * *Die vollständige technische Spezifikation, den Zustandsautomaten und die Konfigurations-Entitäten findest du in [📄 Intelligente Klimaanlagen-Koordination](de_smart-climate-control.md).*

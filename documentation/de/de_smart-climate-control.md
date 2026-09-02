@@ -2,12 +2,18 @@
 
 [![Language: EN](https://img.shields.io/badge/Language-EN-red.svg)](../en/en_smart-climate-control.md)
 
+> **Status:** Implementiert seit Version **0.10.13**. Die Entscheidungslogik liegt in
+> [`components/ventilation_logic/hvac_coordinator.h`](../../components/ventilation_logic/hvac_coordinator.h)
+> (rein, unit-getestet), die Integration in die Smart-Automatik in
+> [`components/helpers/auto_mode.h`](../../components/helpers/auto_mode.h) und die Home-Assistant-Entitäten in
+> [`packages/ui/ui_controls.yaml`](../../packages/ui/ui_controls.yaml) sowie
+> [`packages/integration/homeassistant.yaml`](../../packages/integration/homeassistant.yaml).
 
 ## Problemstellung
 
-Dezentrale Wohnraumlüftungen mit Wärmerückgewinnung tauschen ständig Innen- gegen Außenluft aus. Wenn eine **Raumklimaanlage (Split-Klimagerät, mobiles Klimagerät oder Wärmepumpe)** aktiv einen Raum kühlt, ist intensive Lüftung kontraproduktiv: Sie zieht heiße, feuchte Außenluft herein, was den Klimakompressor stärker belastet und erheblich Energie verschwendet. Andererseits verschlechtert das vollständige Abschalten der Lüftung die Raumluftqualität (CO2-Anstieg, VOC-Anreicherung).
+Dezentrale Wohnraumlüftungen mit Wärmerückgewinnung tauschen ständig Innen- gegen Außenluft aus. Wenn eine **Raumklimaanlage (Split-Klimagerät, mobiles Klimagerät oder Luft-Luft-Wärmepumpe)** einen Raum aktiv konditioniert, ist intensive Lüftung kontraproduktiv: Sie importiert heiße, feuchte Außenluft (bzw. bläst im Winter teuer erwärmte Raumluft hinaus), belastet den Kompressor stärker und verschwendet Energie. Andererseits verschlechtert das vollständige Abschalten der Lüftung die Raumluftqualität (CO2-Anstieg, VOC-Anreicherung) und beseitigt den für den Feuchteschutz nötigen Grundluftwechsel.
 
-**Ziel:** Wenn die Klimaanlage in einem Raum aktiv ist, soll VentoSync die Lüftung automatisch auf das **Minimum drosseln, das für gesunde Raumluft erforderlich ist** — und nicht mehr.
+**Ziel:** Solange die Klimaanlage im Raum aktiv ist, drosselt VentoSync die Lüftung auf das **Minimum, das für gesunde Raumluft erforderlich ist** — und nicht mehr. Gesundheit hat immer Vorrang vor Energieeffizienz.
 
 ---
 
@@ -15,61 +21,110 @@ Dezentrale Wohnraumlüftungen mit Wärmerückgewinnung tauschen ständig Innen- 
 
 ### Aktivierung & Modusumschaltung
 
-VentoSync bietet eine **dedizierte Boolean-Entität** in Home Assistant an, mit der das Smart Climate Control Feature pro Gerät aktiviert oder deaktiviert werden kann:
+VentoSync bietet einen **dedizierten Schalter** in Home Assistant, mit dem Smart Climate Control pro Gerät aktiviert oder deaktiviert wird:
 
 | HA-Entität | YAML-ID | Typ | Standard | Zweck |
 | :--- | :--- | :---: | :---: | :--- |
-| `Smart Climate Control` | `smart_climate_control` | **Switch** | Aus | Master-Schalter zur Aktivierung/Deaktivierung der HVAC-Koordination für dieses Gerät. |
+| `switch.klima_koordination` („Klima-Koordination") | `smart_climate_control` | **Switch** | Aus | Master-Schalter zur Aktivierung/Deaktivierung der HVAC-Koordination für dieses Gerät. Wird im Flash gespeichert. |
 
-Bei **deaktiviertem** Schalter ignoriert das Lüftungssystem den Klima-Status vollständig und arbeitet normal weiter.
-Bei **aktiviertem** Schalter reagiert VentoSync auf die Klimaanlagen-Entität des Raums und passt sein Verhalten entsprechend an.
+Bei **deaktiviertem** Schalter ignoriert die Lüftung den Klima-Status vollständig und arbeitet normal.
+Bei **aktiviertem** Schalter reagiert VentoSync auf die Klimaanlagen-Entität des Raums und wendet das unten beschriebene eingeschränkte Profil **ausschließlich im Betriebsmodus `Smart-Automatik`** an. Manuelle Modi (Wärmerückgewinnung, Durchlüften, Stoßlüftung, Aus) werden nie verändert — das Feature ist ein *Modifikator* der Automatik, kein eigener Betriebsmodus.
 
 ### Klimaanlagen-Status (aus Home Assistant)
 
-Der Betriebszustand der Klimaanlage wird VentoSync über einen **Home Assistant Binary Sensor** (oder den Status einer `climate`-Entität) mitgeteilt. Die Konfiguration erfolgt pro Raum in Home Assistant:
+Der Betriebszustand der Klimaanlage erreicht die Firmware über einen **von ESPHome importierten Home-Assistant-Binary-Sensor** (gleicher Mechanismus wie `sensor.outdoor_humidity` und die Fenstersperre):
 
-| HA-Entität (Eingang) | Typ | Zweck |
-| :--- | :---: | :--- |
-| `input_boolean.ac_active_<raum>` oder `climate.<klimageraet>` | Binary / Climate | Zeigt an, ob die Klimaanlage in diesem Raum gerade aktiv kühlt (oder heizt). |
+| ESPHome-ID | Standard-HA-Entität (Substitution `hvac_ac_sensor_id`) | Bedeutung |
+| :--- | :--- | :--- |
+| `hvac_ac_active` | `binary_sensor.ventosync_hvac_active_room_<room_id>` | `on` = Klimaanlage / Wärmepumpe ist in einem konditionierenden Modus eingeschaltet. |
 
-VentoSync liest diese Entität über den bestehenden HA-Sensor-Import-Mechanismus ein (analog zu `sensor.outdoor_humidity`). Die Zuordnung:
+Die ESPHome-Plattform `homeassistant` für Binary-Sensoren versteht nur `on` / `off`. Eine `climate`-Entität muss daher in Home Assistant über einen **Template-Binary-Sensor** abgebildet werden (siehe [Home-Assistant-Einrichtung](#️-home-assistant-einrichtung)).
 
-- **Klima aktiv** = `on` / Climate-Status ∈ {`cooling`, `heating`, `heat_cool`, `dry`}
-- **Klima inaktiv** = `off` / Climate-Status ∈ {`off`, `fan_only`, `idle`}
+> [!IMPORTANT]
+> **Den Betriebsmodus der Klimaanlage verwenden, nicht die Kompressor-Aktion.** Eine `climate`-Entität liefert zwei verschiedene Signale:
+> `state` (der gewählte *hvac_mode*: `cool`, `heat`, `heat_cool`, `dry`, `fan_only`, `off`) und das Attribut `hvac_action`
+> (was das Gerät *gerade jetzt* tut: `cooling`, `heating`, `drying`, `idle`, `off`). Sobald der Sollwert erreicht ist, wechselt
+> der Kompressor alle paar Minuten zwischen `cooling` und `idle`. Würde „Klima aktiv" auf `hvac_action` abgebildet, würde die
+> Lüftung ständig zwischen gedrosseltem und normalem Profil pendeln. Die empfohlene Zuordnung lautet deshalb:
+>
+> - **Klima aktiv** = `state` ∈ {`cool`, `heat`, `heat_cool`, `dry`, `auto`}
+> - **Klima inaktiv** = `state` ∈ {`off`, `fan_only`, `unavailable`, `unknown`}
+>
+> `fan_only` zählt als inaktiv: Das Gerät wälzt nur Luft um, es gibt keine thermische Last zu schützen.
+
+**Fail-Safe-Verhalten:** Hat die Entität noch nie einen Zustand gemeldet, ist sie `unavailable` oder ist die API-Verbindung zu Home Assistant getrennt, gilt die Klimaanlage als **inaktiv**. Die Lüftung wird nie blind gedrosselt.
 
 ---
 
-## Regelungsstrategie: Nur-Luftqualitäts-Modus
+## Regelungsstrategie: Nur-Luftqualitäts-Profil
 
-Wenn Smart Climate Control **aktiviert** ist und die Klimaanlage **aktiv** läuft, wechselt die Lüftungslogik in ein eingeschränktes **„Nur Luftqualität"**-Regelprofil:
+Wenn Smart Climate Control **aktiviert** ist, der Betriebsmodus **Smart-Automatik** lautet und die Klimaanlage **aktiv** ist, wechselt die Automatik in das eingeschränkte **„Nur Luftqualität"**-Profil:
 
 ### Leitprinzip
 
-> **Nur so viel lüften wie für die Gesundheit nötig — nicht für Komfort oder Entfeuchtung.**
+> **Nur so viel lüften, wie für die Gesundheit nötig ist — nicht für Komfort oder Entfeuchtung.**
 
 Die standardmäßige Dual-PID-Regelung (CO2 + Feuchte) wird durch eine **reine CO2-Regelschleife** mit verschärften Grenzen ersetzt:
 
-| Parameter | Normaler Automatik-Modus | HVAC-Koordinationsmodus | Begründung |
+| Parameter | Normale Smart-Automatik | HVAC-Koordination (gedrosselt) | Begründung |
 | :--- | :---: | :---: | :--- |
-| **CO2-Zielwert (PID-Sollwert)** | `auto_co2_threshold` (Standard: 1000 ppm) | **1200 ppm** (konfigurierbar) | Gelockerte Zielgröße; 1200 ppm sind laut DIN EN 13779 Kategorie IDA 3 noch „akzeptabel" und ermöglichen deutlich weniger Luftaustausch. |
-| **Max. Lüfterstufe** | `automatik_max_fan_level` (Standard: 7) | **3** (konfigurierbar, `hvac_max_fan_level`) | Harte Obergrenze zur Vermeidung von Energieverschwendung; Stufe 3 erzeugt minimale Geräusche und thermische Last. |
-| **Min. Lüfterstufe** | `automatik_min_fan_level` (Standard: 2) | **1** | Absolutes Minimum für den Feuchteschutz (Grundlüftung nach DIN 1946-6). |
-| **Feuchte-PID** | Aktiv (Entfeuchtung) | **Deaktiviert** | Die Klimaanlage übernimmt die Entfeuchtung wesentlich effizienter (Kondensation am Verdampfer). Lüftungsbasierte Entfeuchtung würde feuchte Außenluft importieren. |
-| **Sommerkühlung (Bypass)** | Aktiv (Querlüftung) | **Deaktiviert** | Querlüftung und Bypass-Modus sind kontraproduktiv — sie ziehen heiße Luft herein, die die Klimaanlage dann erneut kühlen muss. |
-| **Betriebsmodus-Override** | Dynamisch (ECO / VENTILATION) | **Erzwungen: ECO_RECOVERY** | Immer im Wärmerückgewinnungsmodus betreiben, um den thermischen Austausch mit der Außenluft zu minimieren. |
+| **CO2-Sollwert (PID)** | `auto_co2_threshold` (Standard 1000 ppm) | `hvac_co2_threshold` (Standard **1200 ppm**) | Gelockerte Zielgröße; 1200 ppm sind laut DIN EN 13779 Kategorie IDA 3 noch „mäßig / akzeptabel" und benötigen deutlich weniger Luftwechsel. |
+| **Max. Lüfterstufe** | `automatik_max_fan_level` (Standard 7) | `hvac_max_fan_level` (Standard **3**) | Harte Obergrenze gegen Energieverschwendung; Stufe 3 erzeugt minimale Geräusche und thermische Last. |
+| **Min. Lüfterstufe** | `automatik_min_fan_level` (Standard 2) | **1** (fest) | Grundlüftung (Feuchteschutz nach DIN 1946-6). Bewusst unterhalb des normalen Nutzer-Minimums: Im Kühl-/Entfeuchtungsbetrieb entfeuchtet die Klimaanlage wesentlich effektiver als die Lüftung. |
+| **Feuchte-PID** | Aktiv (Entfeuchtung) | **Ignoriert** | Lüftungsbasierte Entfeuchtung würde feuchte Außenluft importieren. Der Schimmelschutz (unten) bleibt als Sicherheitsnetz. |
+| **Sommerkühlung (Bypass)** | Aktiv (Querlüftung) | **Unterdrückt** | Querlüftung importiert Luft, die die Klimaanlage anschließend erneut konditionieren muss. |
+| **Betriebsmodus innerhalb der Smart-Automatik** | Dynamisch (WRG / Durchlüften) | **Erzwungen: Wärmerückgewinnung** | Minimiert den thermischen Austausch mit der Außenluft, solange der Raum klimatisiert wird. |
+
+Alles andere bleibt unverändert: Der CO2-PID (`kp = 0.001`, `ki = 0.0000005`), die diskrete Stufenzuordnung mit ihrem ±25-%-Hystereseband und die sanfte Rampe von **±1 Stufe pro 10-Sekunden-Zyklus** sind dieselben Codepfade wie im normalen Automatikbetrieb — nur Sollwert und Stufenfenster werden ausgetauscht.
 
 ### CO2-Schwellenwert-Begründung
 
-| CO2-Wert (ppm) | DIN EN 13779 Kategorie | Gesundheitsbewertung | Empfehlung |
+| CO2-Wert (ppm) | DIN EN 13779 Kategorie | Gesundheitsbewertung | Rolle in VentoSync |
 | :---: | :---: | :--- | :--- |
-| ≤ 800 | IDA 1 (Hoch) | Ausgezeichnet | Normales Ziel — bei aktivem Klimabetrieb unnötig |
-| ≤ 1000 | IDA 2 (Mittel) | Gut — Pettenkofer-Grenzwert | Standard-Automatik-Zielwert |
-| ≤ 1200 | IDA 3 (Mäßig) | Akzeptabel für kurzzeitigen Aufenthalt | **Empfohlener HVAC-Zielwert** — noch gesund, erhebliche Energieeinsparung |
-| ≤ 1500 | IDA 4 (Niedrig) | Tolerierbar, nicht für Dauerbetrieb empfohlen | Absolute obere Sicherheitsgrenze |
-| > 1500 | — | Schlecht | Notfall-Override — Rückkehr zur normalen Lüftung unabhängig vom Klima-Status |
+| ≤ 800 | IDA 1 (Hoch) | Ausgezeichnet | Bei aktivem Klimabetrieb unnötig |
+| ≤ 1000 | IDA 2 (Mittel) | Gut — Pettenkofer-Grenzwert | Standard-Sollwert der Smart-Automatik |
+| ≤ 1200 | IDA 3 (Mäßig) | Akzeptabel | **Standard-HVAC-Sollwert** (`hvac_co2_threshold`) |
+| ≤ 1500 | IDA 4 (Niedrig) | Tolerierbar, nicht für Dauerbetrieb | Obere Sicherheitsgrenze |
+| > 1500 | — | Schlecht | **Notfall-Override** (`hvac_emergency_co2`) — normale Automatikregelung greift wieder |
 
-> [!IMPORTANT]
-> **Notfall-Override:** Wenn der CO2-Wert **1500 ppm** im HVAC-Koordinationsmodus überschreitet, hebt das System die Lüfterstufen-Begrenzung **vorübergehend auf** und kehrt zum normalen Automatik-Modus zurück, bis der CO2-Wert unter 1200 ppm sinkt. Gesundheit hat immer Vorrang vor Energieeffizienz.
+---
+
+## Gesundheitsschutz (Guards)
+
+Zwei Schutzmechanismen heben die Einschränkungen auf, während die Klimaanlage weiterläuft. Beide arbeiten mit Hysterese, damit der Lüfter nicht pendelt.
+
+### 1. CO2-Notfall-Override
+
+| Ereignis | Bedingung | Wirkung |
+| :--- | :--- | :--- |
+| **Eintritt** | CO2 ≥ `hvac_emergency_co2` (Standard 1500 ppm) | Stufenbegrenzung aufgehoben (normale `automatik_min/max`), CO2-Sollwert zurück auf `auto_co2_threshold`, Feuchte-PID wieder aktiv. Wärmerückgewinnung bleibt erzwungen (kein Sommer-Bypass bei laufender Klimaanlage). |
+| **Freigabe** | CO2 ≤ `hvac_co2_threshold` (Standard 1200 ppm) | Gedrosseltes Profil wird wieder aktiv. |
+
+Die Firmware hält die Notfallgrenze **mindestens 100 ppm oberhalb** des gelockerten Sollwerts, sodass ein falsch eingestellter Slider die Hysterese nie kollabieren lassen kann.
+
+### 2. Schimmelschutz (Feuchte)
+
+Das ursprüngliche Konzept hat die Feuchteregelung komplett deaktiviert. Das ist nur sicher, solange die Klimaanlage tatsächlich entfeuchtet (Kühl-/Entfeuchtungsmodus). Eine Wärmepumpe im **Heizbetrieb** entzieht keine Feuchte, und auch im Sommer kann ein Bad oder eine Küche die Schimmelschwelle überschreiten. Deshalb:
+
+| Ereignis | Bedingung | Wirkung |
+| :--- | :--- | :--- |
+| **Eintritt** | Raumfeuchte ≥ **70 % rH** **und** Lüften kann den Raum trocknen (absolute Außenfeuchte < Innenfeuchte, Magnus-Formel — derselbe Enthalpie-Guard wie beim Feuchte-PID) | Wie beim CO2-Notfall: Einschränkungen aufgehoben, Dual-PID aktiv, Wärmerückgewinnung erzwungen. |
+| **Freigabe** | Raumfeuchte ≤ **65 % rH** **oder** Außenluft wird feuchter als Innenluft | Gedrosseltes Profil wird wieder aktiv. |
+
+Ist die Außenluft schwüler als der Raum, würde Lüften Feuchte *eintragen* — der Schutz bleibt stumm und überlässt die Entfeuchtung der Klimaanlage.
+
+### 3. Fehlender CO2-Messwert
+
+Die Gesundheitsgarantie dieses Features beruht auf einer CO2-Messung (SCD43 oder BME680-eCO2-Fallback über `effective_co2`). Liegt kein CO2-Wert vor (Sensorausfall oder die Hardware-Varianten `radar_only` / `nosensor` / `NTConly`), meldet der Koordinator **„Ausgesetzt (kein CO2-Wert)"** und drosselt **nicht**. Die Wärmerückgewinnung bleibt bei aktiver Klimaanlage weiterhin erzwungen.
+
+---
+
+## Übergangsverhalten
+
+* **Klimaanlage schaltet ein:** Das eingeschränkte Profil greift beim nächsten 10-Sekunden-Zyklus (der importierte Binary-Sensor löst zusätzlich eine sofortige Auswertung aus). Der Lüfter fährt um höchstens 1 Stufe pro Zyklus herunter, z. B. Stufe 6 → 3 in ca. 30 s.
+* **Klimaanlage schaltet aus:** Die Firmware wartet auf **120 s durchgehendes „aus"**, bevor die Einschränkungen aufgehoben werden (`AC_RELEASE_DELAY_MS`). Das fängt kurze Home-Assistant-Reconnects und kurzzeitiges Umschalten ab. Bei Split-Geräten, deren Integration nur `hvac_action` liefert, zusätzlich ein `delay_off` im HA-Template-Sensor setzen (siehe unten), um Kompressor-Taktung weiter zu glätten.
+* **Freigabe:** Grenzen und Sollwert kehren zu den Nutzerwerten zurück; das CO2-PID-Integral wird bei jedem Sollwertwechsel und das Feuchte-PID-Integral bei Wiederaktivierung zurückgesetzt, sodass kein Windup aus der gedrosselten Phase übernommen wird. Der Lüfter fährt mit ±1 Stufe pro 10 s wieder hoch.
+* **Sollwert-Autorität:** Der HA-Slider `auto_co2_threshold` und der ESP-NOW-Konfigurationsabgleich schreiben beide das CO2-PID-Ziel. Der Koordinator setzt das korrekte Ziel in jedem Zyklus erneut, sodass eine Slider-Änderung während des Klimabetriebs den gelockerten Sollwert nicht unbemerkt überschreiben kann.
 
 ---
 
@@ -77,65 +132,117 @@ Die standardmäßige Dual-PID-Regelung (CO2 + Feuchte) wird durch eine **reine C
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Normal : Smart Climate Control AUS
-    [*] --> Ueberwachung : Smart Climate Control AN
+    [*] --> Deaktiviert : Schalter aus
+    [*] --> Bereit : Schalter an
 
-    state Ueberwachung {
-        [*] --> Klima_Inaktiv
-        Klima_Inaktiv --> Klima_Aktiv : Klima-Entität wird AN
-        Klima_Aktiv --> Klima_Inaktiv : Klima-Entität wird AUS
+    Deaktiviert --> Bereit : Schalter an
+    Bereit --> Deaktiviert : Schalter aus
+
+    Bereit --> Aktiv : Klima an
+    Aktiv --> Bereit : Klima 120 s aus
+
+    state Aktiv {
+        [*] --> Gedrosselt
+        Gedrosselt --> Notfall_CO2 : CO2 >= hvac_emergency_co2
+        Notfall_CO2 --> Gedrosselt : CO2 <= hvac_co2_threshold
+        Gedrosselt --> Notfall_Feuchte : rH >= 70 % und Aussenluft trockener
+        Notfall_Feuchte --> Gedrosselt : rH <= 65 % oder Aussenluft feuchter
+        Gedrosselt --> Ausgesetzt : CO2-Wert NaN
+        Ausgesetzt --> Gedrosselt : CO2-Wert gueltig
     }
 
-    Normal --> NormaleAutomatik : Standard Auto-Logik
-    Klima_Inaktiv --> NormaleAutomatik : Voller PID CO2 und Feuchte
-    Klima_Aktiv --> HVAC_Modus : Nur Luftqualität
-
-    state HVAC_Modus {
-        [*] --> CO2_Monitor
-        CO2_Monitor --> Gedrosselt : CO2 unter 1200 ppm
-        CO2_Monitor --> Hochfahrend : CO2 über 1200 ppm
-        Hochfahrend --> Gedrosselt : CO2 sinkt unter 1100 ppm Hysterese
-        CO2_Monitor --> Notfall : CO2 über 1500 ppm
-        Notfall --> CO2_Monitor : CO2 unter 1200 ppm
-    }
-
-    Gedrosselt --> MinStufe : Lüfterstufe 1 Min
-    Hochfahrend --> PID_Stufe : Lüfter via CO2 PID Max 3
-    Notfall --> VolleAutomatik : Zurück zur normalen Automatik
+    note right of Gedrosselt
+        Nur CO2-PID, Sollwert hvac_co2_threshold,
+        Stufen 1..hvac_max_fan_level, WRG erzwungen
+    end note
+    note right of Notfall_CO2
+        Normale Smart-Automatik-Grenzen und -Sollwert,
+        Dual-PID, WRG weiterhin erzwungen
+    end note
 ```
+
+Der Zustand wird als Diagnose-Textsensor **„Klima-Koordination Status"** (`hvac_status`) mit folgenden Werten veröffentlicht:
+
+| Wert | Bedeutung |
+| :--- | :--- |
+| `Deaktiviert` | Schalter ist aus. |
+| `Inaktiv (kein Smart-Automatik)` | Schalter an, aber ein manueller Betriebsmodus ist gewählt. |
+| `Bereit (Klima aus)` | Scharf, Klimaanlage inaktiv — normale Smart-Automatik. |
+| `Aktiv (gedrosselt)` | Klimaanlage aktiv — Nur-Luftqualitäts-Profil angewendet. |
+| `Notfall (CO2)` | Klimaanlage aktiv, CO2-Notfall-Override greift. |
+| `Notfall (Feuchte)` | Klimaanlage aktiv, Schimmelschutz greift. |
+| `Ausgesetzt (kein CO2-Wert)` | Klimaanlage aktiv, aber kein CO2-Wert — keine Drosselung. |
 
 ---
 
-## Konfigurations-Entitäten (Zukünftige HA-Integration)
+## Konfigurations-Entitäten
 
-| HA-Entität | YAML-ID | Typ | Standard | Zweck |
-| :--- | :--- | :---: | :---: | :--- |
-| `Smart Climate Control` | `smart_climate_control` | Switch | Aus | Aktivierung/Deaktivierung der HVAC-Koordination für dieses Gerät. |
-| `HVAC: CO2-Schwellenwert` | `hvac_co2_threshold` | Number (Slider) | 1200 ppm | Gelockerte CO2-Zielgröße bei aktiver Klimaanlage. Bereich: 800–1500 ppm. |
-| `HVAC: Max. Lüfterstufe` | `hvac_max_fan_level` | Number (Slider) | 3 | Maximale Lüfterstufe bei aktiver Klimaanlage. Bereich: 1–5. |
-| `HVAC: Notfall-CO2-Override` | `hvac_emergency_co2` | Number (Slider) | 1500 ppm | CO2-Schwellenwert, ab dem der normale Automatik-Modus unabhängig vom Klima-Status greift. Bereich: 1200–2000 ppm. |
-| `Klima Aktiv (Raum)` | `hvac_ac_active` | Binary Sensor (Import aus HA) | — | Spiegelt den Echtzeit-Status der Klimaanlage in diesem Raum wider. |
+| HA-Entität (deutscher UI-Name) | YAML-ID | Typ | Standard | Bereich | Zweck |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Klima-Koordination` | `smart_climate_control` | Switch | Aus | — | Aktivierung/Deaktivierung der HVAC-Koordination für dieses Gerät. |
+| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | Number (Slider) | 1200 ppm | 800–1500 ppm | Gelockerter CO2-Sollwert bei aktiver Klimaanlage. Zugleich Freigabeschwelle des CO2-Notfalls. |
+| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | Number (Slider) | 3 | 1–5 | Maximale Lüfterstufe bei aktiver Klimaanlage. |
+| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | Number (Slider) | 1500 ppm | 1200–2000 ppm | CO2-Wert, ab dem die normale Automatikregelung unabhängig vom Klima-Status greift (wird ≥ Sollwert + 100 ppm gehalten). |
+| `Klima-Koordination Status` | `hvac_status` | Textsensor (Diagnose) | — | — | Aktueller Koordinator-Zustand (siehe Tabelle oben). |
+| *(intern)* `Klima Aktiv (Raum)` | `hvac_ac_active` | Binary-Sensor (Import aus HA) | — | — | Echtzeit-Klima-Status; Entity-ID über die Substitution `hvac_ac_sensor_id`. |
+
+Alle Slider und der Schalter sind `entity_category: config`, werden im NVS gespeichert und greifen beim nächsten Auswertezyklus. Feste Konstanten (`MIN_FAN_LEVEL = 1`, Schimmelschutz 70 % / 65 %, Freigabeverzögerung 120 s, Notfallabstand 100 ppm) sind in `hvac_coordinator.h` definiert.
+
+---
+
+## 🛠️ Home-Assistant-Einrichtung
+
+Pro Raum einen Template-Binary-Sensor anlegen, der die Climate-Entität auf `on` / `off` abbildet. Die von der Firmware erwartete Standard-Entity-ID für **Raum 1** lautet `binary_sensor.ventosync_hvac_active_room_1` (überschreibbar über die Substitution `hvac_ac_sensor_id` in `ventosync_base.yaml` bzw. der Geräte-YAML).
+
+```yaml
+template:
+  - binary_sensor:
+      - name: "VentoSync HVAC Active Room 1"
+        unique_id: ventosync_hvac_active_room_1
+        device_class: running
+        # Den gewählten hvac_mode verwenden, NICHT hvac_action (Kompressor-Taktung würde flattern).
+        state: >
+          {{ states('climate.schlafzimmer_klima') in ['cool', 'heat', 'heat_cool', 'dry', 'auto'] }}
+        # Optional: zusätzliche Glättung bei kurzem Ausschalten der Klimaanlage.
+        delay_off:
+          minutes: 5
+```
+
+Für einen einfachen `input_boolean`-Helfer oder eine Schaltsteckdose, die ein mobiles Klimagerät versorgt, kann `hvac_ac_sensor_id` direkt auf diese Entität zeigen (jede `on`/`off`-Entität funktioniert).
+
+> [!TIP]
+> Mehrere Klimageräte in einem Raum: mit einem **Binary-Sensor-Gruppen**-Helfer („beliebige Entität an") zusammenfassen — genau wie bei der [Fenstersperre](de_window-guard-ha-setup.md) — und die Gruppe als `hvac_ac_sensor_id` verwenden.
+
+---
+
+## Räume mit mehreren Geräten (ESP-NOW)
+
+Es war keine Protokolländerung nötig. Zwei bestehende Mechanismen halten eine Raumgruppe konsistent:
+
+1. **Stufen-Autorität:** In der Smart-Automatik spiegeln Slaves die diskrete Lüfterstufe des Masters (Geräte-ID 1). Drosselt der Master auf Stufe 1–3, folgt jeder Slave innerhalb eines Auswertezyklus.
+2. **Modus-Abgleich:** Das periodische Sync-Paket des Masters trägt den erzwungenen WRG-Modus; Slaves übernehmen ihn.
+
+Jedes Gerät wertet den Koordinator dennoch lokal aus (standardmäßig dieselbe Klima-Entität über `${room_id}`), sodass ein Slave bei ausgefallenem Master selbstständig drosselt. Schalter und Slider gelten **pro Gerät** und werden nicht über ESP-NOW synchronisiert — das Feature auf jedem Gerät im Raum aktivieren.
 
 ---
 
 ## Energie-Auswirkungsabschätzung
 
-| Szenario | Ø Lüfterstufe | Geschätzte Leistung (Lüfter) | Thermische Last auf Klimaanlage |
+| Szenario | Ø Lüfterstufe | Geschätzte Lüfterleistung | Thermische Last auf Klimaanlage |
 | :--- | :---: | :---: | :--- |
-| **Normale Automatik** (Klima ignoriert) | 4–6 | 2–4 W | Hoch — ständige Warmluftzufuhr, Klima kompensiert |
-| **HVAC-Koordination** (Klima aktiv) | 1–3 | 0,5–1,5 W | **Minimal** — nahezu kein thermischer Austausch mit der Außenluft |
+| **Normale Smart-Automatik** (Klima ignoriert) | 4–6 | 2–4 W | Hoch — ständige Außenluftzufuhr, Klima kompensiert |
+| **HVAC-Koordination** (Klima aktiv) | 1–3 | 0,5–1,5 W | **Minimal** — Wärmerückgewinnung bei geringem Volumenstrom |
 | **Aus** (keine Lüftung) | 0 | 0 W | Keine — aber CO2 steigt, ungesund |
 
 > [!TIP]
-> In einem typischen 20 m² Schlafzimmer mit 2 Personen und einer 3,5 kW Split-Klimaanlage kann die Drosselung der Lüftung von Stufe 5 auf Stufe 1–2 während des Klimabetriebs die thermische Kompensationslast der Klimaanlage um geschätzte **50–150 W** kontinuierlicher Kühlleistung reduzieren — das entspricht einer Einsparung von ca. **10–20 % des Energieverbrauchs der Klimaanlage** während der Spitzenzeiten im Sommer.
+> Grobe Abschätzung für ein 20 m² Schlafzimmer mit 2 Personen und einer 3,5-kW-Split-Klimaanlage: Die Drosselung von Stufe 5 auf Stufe 1–2 während des Klimabetriebs nimmt der Klimaanlage in der Größenordnung von **50–150 W** kontinuierlicher thermischer Kompensationslast ab, also grob **10–20 %** ihres Energiebedarfs in sommerlichen Spitzenstunden. Die tatsächliche Einsparung hängt von Außenbedingungen, Wärmetauscher-Wirkungsgrad und der belegungsabhängigen CO2-Last ab.
 
 ---
 
 ## Implementierungshinweise
 
-1. **Sensor-Anforderungen:** Keine zusätzlichen Sensoren erforderlich. Das Feature nutzt den vorhandenen SCD43-CO2-Sensor und eine Home-Assistant-Entität für den Klima-Status.
-2. **ESP-NOW-Propagierung:** Wenn das Master-Gerät in den HVAC-Koordinationsmodus wechselt, überträgt es die eingeschränkte Stufen-Obergrenze an alle Slave-Geräte in der Raumgruppe und stellt so eine synchronisierte Drosselung sicher.
-3. **Modus-Persistenz:** Die HVAC-Koordination ist ein **Modifikator** des bestehenden Smart-Automatik-Modus, kein eigenständiger Betriebsmodus. Sie wirkt sich nur aus, wenn `smart_climate_control` AN ist **und** die Klima-Entität einen aktiven Zustand meldet. Der Lüftungsmodus-Selektor (`select.ventilation_mode`) bleibt unverändert.
-4. **Übergangsverhalten:** Wenn die Klimaanlage abschaltet, fährt das System sanft in den normalen Automatik-Betrieb zurück — mit der Standard-Rampe von ±1 Stufe pro 10-Sekunden-Zyklus, um plötzliche Lüftergeräusche zu vermeiden.
-5. **Heizbetrieb-Unterstützung:** Die gleiche Logik gilt, wenn die Klimaanlage im **Heizmodus** (Winter) arbeitet — intensive Lüftung würde warme Raumluft nach draußen abführen. Der HVAC-Koordinationsmodus ist agnostisch gegenüber Kühlen oder Heizen.
-6. **Integrationspunkt:** Die Klima-Status-Entität wird einmalig pro Raum in der VentoSync-YAML-Konfiguration oder über einen zukünftigen Home-Assistant-Konfigurationsflow eingerichtet, analog zum bestehenden Import von `sensor.outdoor_humidity`.
+1. **Sensor-Anforderungen:** Keine zusätzliche Hardware. Benötigt eine CO2-Quelle (`effective_co2`: SCD43 oder BME680-eCO2) und eine Home-Assistant-Entität für den Klima-Status. Der Schimmelschutz nutzt zusätzlich die Raumfeuchte und `sensor.outdoor_humidity`.
+2. **Dateien:** `components/ventilation_logic/hvac_coordinator.h` (reiner `ventosync::hvac::Coordinator`, Unit-Tests T-7a–T-7j in `tests/simple_test_runner.cpp`), `components/helpers/auto_mode.h` (`evaluate_hvac_coordination()`, `apply_co2_setpoint()`, Stufenfenster und WRG-Sperre in `evaluate_auto_mode()`), `components/helpers/globals.h` (Entitäts-Externs, `hvac_state`), `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml` (`hvac_ac_sensor_id`).
+3. **Heizbetrieb:** Dieselbe Logik gilt, wenn eine Wärmepumpe im Winter heizt — intensive Lüftung würde warme Raumluft hinausbefördern. Da Heizen nicht entfeuchtet, ist der Schimmelschutz in dieser Jahreszeit das Sicherheitsnetz.
+4. **Flash-Verschleiß:** Nur Schalter und die drei Slider werden (bei Änderung) persistiert. Der Laufzeitzustand liegt im RAM.
+5. **Hardware-Varianten:** Die Entitäten existieren in allen Varianten. Varianten ohne CO2-Quelle melden `Ausgesetzt (kein CO2-Wert)` und drosseln nie.

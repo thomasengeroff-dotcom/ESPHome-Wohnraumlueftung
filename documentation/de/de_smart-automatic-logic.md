@@ -104,6 +104,18 @@ Um zu verhindern, dass verschiedene Lüfter im selben Raum mit unterschiedlichen
 
 ---
 
+### 6. Klima-Koordination (Smart Climate Control)
+Ein optionaler Modifikator, der zu Beginn jedes 10-Sekunden-Zyklus ausgewertet wird (`auto_mode::evaluate_hvac_coordination()`). Solange der Schalter `Klima-Koordination` an ist **und** der importierte Klima-Status aktiv ist, läuft der Zyklus mit eingeschränktem Profil:
+- **Reine CO2-Regelung**: Die Feuchte-PID-Anforderung wird ignoriert, der CO2-PID-Sollwert wird auf `hvac_co2_threshold` (Standard 1200 ppm) umgeschaltet und in jedem Zyklus erneut gesetzt.
+- **Stufenfenster**: `[1, hvac_max_fan_level]` (Standard 1–3) ersetzt `automatik_min/max_fan_level`.
+- **Modus-Sperre**: `determine_auto_operating_mode()` liefert immer Wärmerückgewinnung — kein Sommer-Bypass bei laufender Klimaanlage.
+- **Gesundheitsschutz**: Ein CO2-Notfall (≥ `hvac_emergency_co2`, Freigabe ≤ `hvac_co2_threshold`) und ein Schimmelschutz (≥ 70 % rH bei trockenerer Außenluft, Freigabe ≤ 65 %) stellen die normalen Grenzen und den Dual-PID wieder her. Ohne CO2-Messwert wird nichts gedrosselt.
+- **Entprellung**: „Klima aus" muss 120 s anhalten, bevor die Einschränkungen aufgehoben werden; die Rückkehr erfolgt mit der Standardrampe von ±1 Stufe pro Zyklus.
+
+Details, Zustandsautomat und HA-Einrichtung: [📄 Intelligente Klimaanlagen-Koordination](de_smart-climate-control.md).
+
+---
+
 ## ⚙️ Konfigurations-Entitäten
 
 | HA-Entität | YAML-ID | Standard | Zweck |
@@ -113,6 +125,10 @@ Um zu verhindern, dass verschiedene Lüfter im selben Raum mit unterschiedlichen
 | `Automatik: CO2 Grenzwert` | `auto_co2_threshold` | 1000 | Sollwert für den CO2-PID. |
 | `Automatik: Feuchte Grenzwert`| `auto_humidity_threshold` | 60% | Sollwert für den Feuchte-PID. |
 | `Sommerbetrieb` | `sommerbetrieb` | (Binär) | Hauptschalter aus HA zur Aktivierung/Deaktivierung der Kühlung. |
+| `Klima-Koordination` | `smart_climate_control` | Aus | Aktiviert den HVAC-Koordinations-Modifikator (siehe Abschnitt 6). |
+| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | 1200 | Gelockerter CO2-Sollwert bei aktiver Klimaanlage. |
+| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | 3 | Lüfterstufen-Obergrenze bei aktiver Klimaanlage. |
+| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | 1500 | Schwelle des CO2-Notfall-Overrides. |
 
 ---
 

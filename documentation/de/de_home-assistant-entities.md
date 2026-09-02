@@ -48,6 +48,26 @@ Mit diesen Entitäten wird das Verhalten des "Smart-Automatik" Modus konfigurier
   * *Typ:* Number (Slider)
   * *Dokumentation:* Ermöglicht die Einstellung (von -5 bis +5), wie viele Stufen die Lüftung erhöht/gesenkt werden soll, wenn der Radar-Sensor eine Person im Raum erkennt.
 
+### Klima-Koordination (Smart Climate Control)
+
+Modifikator für die `Smart-Automatik`, solange die Raumklimaanlage / Wärmepumpe aktiv ist. Vollständige Beschreibung: [📄 Intelligente Klimaanlagen-Koordination](de_smart-climate-control.md).
+
+* **`switch.klima_koordination`** ("Klima-Koordination", YAML-ID `smart_climate_control`)
+  * *Typ:* Switch (Config, persistent)
+  * *Dokumentation:* Aktiviert die HVAC-Koordination auf diesem Gerät. Solange der importierte Klima-Status (`binary_sensor.ventosync_hvac_active_room_<room_id>`) `on` ist, wechselt die Automatik auf eine reine CO2-Regelung mit gelockertem Sollwert, Stufenbegrenzung und erzwungener Wärmerückgewinnung. Standard: aus.
+* **`number.klima_koordination_co2_grenzwert`** ("Klima-Koordination: CO2 Grenzwert", YAML-ID `hvac_co2_threshold`)
+  * *Typ:* Number (Slider, 800–1500 ppm)
+  * *Dokumentation:* Gelockerter CO2-Sollwert bei aktiver Klimaanlage (Standard 1200 ppm). Zugleich Freigabeschwelle des CO2-Notfalls.
+* **`number.klima_koordination_max_lufterstufe`** ("Klima-Koordination: Max Lüfterstufe", YAML-ID `hvac_max_fan_level`)
+  * *Typ:* Number (Slider, 1–5)
+  * *Dokumentation:* Harte Lüfterstufen-Obergrenze bei aktiver Klimaanlage (Standard 3). Das Minimum ist immer Stufe 1.
+* **`number.klima_koordination_co2_notfallgrenze`** ("Klima-Koordination: CO2 Notfallgrenze", YAML-ID `hvac_emergency_co2`)
+  * *Typ:* Number (Slider, 1200–2000 ppm)
+  * *Dokumentation:* CO2-Wert, ab dem die normale Automatikregelung unabhängig vom Klima-Status greift (Standard 1500 ppm, mindestens 100 ppm über dem gelockerten Sollwert).
+* **`text_sensor.klima_koordination_status`** ("Klima-Koordination Status", YAML-ID `hvac_status`)
+  * *Typ:* Textsensor (Diagnose)
+  * *Dokumentation:* Aktueller Koordinator-Zustand: `Deaktiviert`, `Inaktiv (kein Smart-Automatik)`, `Bereit (Klima aus)`, `Aktiv (gedrosselt)`, `Notfall (CO2)`, `Notfall (Feuchte)`, `Ausgesetzt (kein CO2-Wert)`.
+
 ## 3. Zeiten & Intervalle
 
 * **`number.vent_timer`** ("Durchlüften Dauer (min)")

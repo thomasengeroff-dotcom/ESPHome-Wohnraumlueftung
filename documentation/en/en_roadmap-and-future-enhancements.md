@@ -96,8 +96,11 @@ This document outlines planned features, architectural concepts, and upcoming ha
 
 ## ❄️🔥 Smart Climate Control — HVAC Coordination
 
-* **Intelligent AC Coordination**: When a room air conditioner is active, VentoSync automatically throttles ventilation to the minimum level required for healthy indoor air quality (CO2-based), preventing energy waste from importing hot outdoor air.
-* **Dedicated Enable/Disable Switch**: A `smart_climate_control` boolean entity allows per-device activation of the HVAC coordination feature.
-* **CO2-Only Air Quality Guard**: Switches from dual-PID (CO2 + Humidity) to a relaxed CO2-only control loop (target: 1200 ppm / DIN EN 13779 IDA 3) with a hard fan level cap (default: Level 3).
-* **Emergency Override**: If CO2 exceeds 1500 ppm, the system automatically reverts to full automatic mode to guarantee occupant health.
+> ✅ **Implemented in version 0.10.13.** Kept here for reference; the concept below was reviewed and refined during implementation.
+
+* **Intelligent AC Coordination**: When a room air conditioner or heat pump is active, VentoSync automatically throttles ventilation to the minimum level required for healthy indoor air quality (CO2-based), preventing energy waste from importing hot outdoor air. Acts as a modifier of `Smart-Automatik` only; manual modes are untouched.
+* **Dedicated Enable/Disable Switch**: The `smart_climate_control` switch ("Klima-Koordination") allows per-device activation of the HVAC coordination feature.
+* **CO2-Only Air Quality Guard**: Switches from dual-PID (CO2 + Humidity) to a relaxed CO2-only control loop (target: 1200 ppm / DIN EN 13779 IDA 3) with a hard fan level cap (default: Level 3) and enforced heat recovery (no summer bypass).
+* **Health Guards**: A CO2 emergency override (default 1500 ppm, hysteresis back to 1200 ppm) and a mold guard (≥ 70 % rH while outdoor air is drier) lift the restrictions automatically. Without a CO2 reading the feature never throttles.
+* **Robust AC Detection**: 120 s release debounce and a fail-safe "AC inactive" fallback when Home Assistant is offline; the HA mapping uses the selected `hvac_mode`, not the cycling compressor `hvac_action`.
 * *For the complete technical specification, state machine, and configuration entities, see [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).*

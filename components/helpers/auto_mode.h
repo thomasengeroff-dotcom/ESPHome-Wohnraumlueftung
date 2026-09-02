@@ -22,7 +22,7 @@
 //              Final refactored version addressing all safety and maintainability concerns.
 // Author:      Thomas Engeroff
 // Created:     2026-03-29
-// Modified:    2026-03-29
+// Modified:    2026-09-02
 // ==========================================================================
 #pragma once
 #include "globals.h"
@@ -177,7 +177,18 @@ inline void get_effective_temperatures(uint32_t now, float &eff_in, float &eff_o
  *          When HA is offline, sommerbetrieb defaults to false (safe: heat
  *          recovery stays active).
  */
-inline esphome::VentilationMode determine_auto_operating_mode(float eff_in, float eff_out, esphome::VentilationMode current_mode) {
+inline esphome::VentilationMode determine_auto_operating_mode(float eff_in, float eff_out, esphome::VentilationMode current_mode,
+                                                             bool lock_eco_mode = false) {
+  // Smart Climate Control: while the room AC is active, cross-ventilation /
+  // summer bypass is counter-productive (imports air the AC has to re-condition).
+  // Heat recovery is enforced regardless of the temperature comparison.
+  if (lock_eco_mode) {
+    if (current_mode == esphome::MODE_VENTILATION) {
+      ESP_LOGI("auto_mode", "Sommer-Kühlung DEAKTIVIERT (Klima-Koordination aktiv: WRG erzwungen)");
+    }
+    return esphome::MODE_ECO_RECOVERY;
+  }
+
   // Summer cooling requires the HA "Sommerbetrieb" sensor to confirm warm season.
   // Default false when HA is offline → heat recovery stays active (safe fallback).
   const bool is_summer = (sommerbetrieb != nullptr && sommerbetrieb->has_state() && sommerbetrieb->state);
@@ -222,8 +233,12 @@ inline esphome::VentilationMode determine_auto_operating_mode(float eff_in, floa
  * @param[in] now         Current millis() timestamp.
  * @param[in] eff_in_temp Effective indoor temperature (for absolute humidity).
  * @param[in] eff_out_temp Effective outdoor temperature (for absolute humidity).
+ * @param[in] suppress_humidity  Smart Climate Control: ignore the humidity PID
+ *                               (the AC dehumidifies; ventilation would import
+ *                               humid outdoor air). CO2-only regulation.
  */
-inline float calculate_combined_demand(uint32_t now, float eff_in_temp, float eff_out_temp) {
+inline float calculate_combined_demand(uint32_t now, float eff_in_temp, float eff_out_temp,
+                                       bool suppress_humidity = false) {
   auto *v = ventilation_ctrl;
   if (v == nullptr) return 0.0f;
 
@@ -245,9 +260,10 @@ inline float calculate_combined_demand(uint32_t now, float eff_in_temp, float ef
   }
 
   // 2. Humidity Demand (always evaluated, but only used when CO2 is satisfied)
+  //    Skipped entirely while Smart Climate Control throttles (CO2-only loop).
   float hum_demand = 0.0f;
   bool has_hum_data = false;
-  if (scd41_humidity != nullptr && outdoor_humidity != nullptr && humidity_pid_result != nullptr) {
+  if (!suppress_humidity && scd41_humidity != nullptr && outdoor_humidity != nullptr && humidity_pid_result != nullptr) {
     const float in_hum = scd41_humidity->state;
     const float out_hum = outdoor_humidity->state;
     const float hum_pid_val = humidity_pid_result->value();
@@ -332,6 +348,114 @@ inline float calculate_combined_demand(uint32_t now, float eff_in_temp, float ef
   return NAN;
 }
 
+// =========================================================
+// SECTION: Smart Climate Control (HVAC Coordination) glue
+// Decision logic lives in components/ventilation_logic/hvac_coordinator.h.
+// =========================================================
+
+/**
+ * @brief   Determines whether ventilation can physically dry the room.
+ *
+ * @details Compares absolute humidity (g/m³) indoors vs. outdoors using the
+ *          same Magnus-based conversion as the humidity PID path. Falls back
+ *          to a relative comparison when temperatures are unavailable.
+ *
+ * @param[in]  eff_in_temp   Effective indoor temperature.
+ * @param[in]  eff_out_temp  Effective outdoor temperature.
+ * @param[out] indoor_rh     Indoor relative humidity (NaN if unavailable).
+ *
+ * @return  true if outdoor air is drier than indoor air.
+ */
+inline bool ventilation_can_dry(float eff_in_temp, float eff_out_temp, float &indoor_rh) {
+  indoor_rh = NAN;
+  if (scd41_humidity == nullptr || outdoor_humidity == nullptr) return false;
+  const float in_hum = scd41_humidity->state;
+  const float out_hum = outdoor_humidity->state;
+  if (std::isnan(in_hum)) return false;
+  indoor_rh = in_hum;
+  if (std::isnan(out_hum)) return false;
+
+  const float abs_in = calculate_absolute_humidity(in_hum, eff_in_temp);
+  const float abs_out = calculate_absolute_humidity(out_hum, eff_out_temp);
+  if (!std::isnan(abs_in) && !std::isnan(abs_out)) return abs_out < abs_in;
+  return out_hum < in_hum; // Temperature unavailable — relative fallback
+}
+
+/**
+ * @brief   Reads a template number with NaN / null fallback.
+ */
+inline float read_number_or(esphome::template_::TemplateNumber *n, float fallback) {
+  if (n == nullptr || std::isnan(n->state)) return fallback;
+  return n->state;
+}
+
+/**
+ * @brief   Collects all HVAC coordination inputs and runs the coordinator.
+ *
+ * @param[in] now       Current millis().
+ * @param[in] eff_in    Effective indoor temperature (for the mold guard).
+ * @param[in] eff_out   Effective outdoor temperature (for the mold guard).
+ *
+ * @return  Decision to apply in evaluate_auto_mode().
+ */
+inline ventosync::hvac::Decision evaluate_hvac_coordination(uint32_t now, float eff_in, float eff_out) {
+  ventosync::hvac::Inputs in;
+  in.now_ms = now;
+  in.enabled = (smart_climate_control != nullptr) && smart_climate_control->state;
+
+#ifdef USE_API
+  in.ha_connected = (esphome::api::global_api_server != nullptr) &&
+                    esphome::api::global_api_server->is_connected();
+#else
+  in.ha_connected = false;
+#endif
+
+  in.ac_has_state = (hvac_ac_active != nullptr) && hvac_ac_active->has_state();
+  in.ac_reported_active = in.ac_has_state && hvac_ac_active->state;
+
+  in.co2_ppm = (effective_co2 != nullptr) ? effective_co2->state : NAN;
+
+  float indoor_rh = NAN;
+  in.ventilation_can_dry = ventilation_can_dry(eff_in, eff_out, indoor_rh);
+  in.indoor_rh_percent = indoor_rh;
+
+  in.co2_threshold_ppm = read_number_or(hvac_co2_threshold, ventosync::hvac::DEFAULT_CO2_THRESHOLD_PPM);
+  in.emergency_co2_ppm = read_number_or(hvac_emergency_co2, ventosync::hvac::DEFAULT_EMERGENCY_CO2_PPM);
+  in.max_fan_level = static_cast<int>(std::round(
+      read_number_or(hvac_max_fan_level, static_cast<float>(ventosync::hvac::DEFAULT_MAX_FAN_LEVEL))));
+
+  ventosync::hvac::Decision d = hvac_state::coordinator.evaluate(in);
+
+  if (d.state != hvac_state::last_decision.state) {
+    ESP_LOGI("hvac", "Klima-Koordination: %s -> %s (AC=%d, CO2=%.0f ppm, rH=%.0f%%)",
+             ventosync::hvac::state_label(hvac_state::last_decision.state),
+             ventosync::hvac::state_label(d.state),
+             d.ac_active ? 1 : 0, in.co2_ppm, in.indoor_rh_percent);
+  }
+  hvac_state::last_decision = d;
+  return d;
+}
+
+/**
+ * @brief   Re-asserts the CO2 PID setpoint (idempotent).
+ *
+ * @details The HA slider, ESP-NOW config sync and Smart Climate Control all
+ *          write the PID target. This helper makes the coordinator's choice
+ *          win on every evaluation cycle and resets the integral term on a
+ *          real setpoint change to avoid windup carry-over.
+ *
+ * @param[in] desired  Target CO2 concentration in ppm.
+ */
+inline void apply_co2_setpoint(float desired) {
+  if (pid_co2 == nullptr || std::isnan(desired)) return;
+  if (pid_co2->target_temperature == desired) return;
+  ESP_LOGI("hvac", "CO2 PID setpoint %.0f -> %.0f ppm", pid_co2->target_temperature, desired);
+  auto call = pid_co2->make_call();
+  call.set_target_temperature(desired);
+  call.perform();
+  pid_co2->reset_integral_term();
+}
+
 } // namespace auto_mode
 
 /**
@@ -365,8 +489,27 @@ inline void evaluate_auto_mode(bool force) {
   float eff_in = NAN, eff_out = NAN;
   auto_mode::get_effective_temperatures(now, eff_in, eff_out, current_mode);
 
-  // 3. Mode Management (Summer Cooling)
-  esphome::VentilationMode target_mode = auto_mode::determine_auto_operating_mode(eff_in, eff_out, current_mode);
+  // 2b. Smart Climate Control (HVAC Coordination) — modifier on the auto logic
+  const ventosync::hvac::Decision hvac = auto_mode::evaluate_hvac_coordination(now, eff_in, eff_out);
+
+  // Re-assert the CO2 PID setpoint: relaxed target while throttled, otherwise
+  // the user's normal threshold (also repairs slider / peer-sync overwrites).
+  {
+    const float normal_setpoint = (auto_co2_threshold_val != nullptr)
+        ? static_cast<float>(auto_co2_threshold_val->value()) : 1000.0f;
+    auto_mode::apply_co2_setpoint(hvac.relaxed_co2_setpoint ? hvac.co2_setpoint : normal_setpoint);
+  }
+
+  // Humidity PID kept running while suppressed — clear its integral on release
+  if (hvac_state::prev_suppress_humidity && !hvac.suppress_humidity && pid_humidity != nullptr) {
+    pid_humidity->reset_integral_term();
+    ESP_LOGD("hvac", "Humidity PID re-enabled (integral reset)");
+  }
+  hvac_state::prev_suppress_humidity = hvac.suppress_humidity;
+
+  // 3. Mode Management (Summer Cooling) — heat recovery enforced while AC active
+  esphome::VentilationMode target_mode = auto_mode::determine_auto_operating_mode(eff_in, eff_out, current_mode,
+                                                                                  hvac.lock_eco_mode);
   
   if (current_mode != target_mode) {
     v->set_mode(target_mode);
@@ -376,7 +519,7 @@ inline void evaluate_auto_mode(bool force) {
   // 4. Presence-based demand adjustment (if LD2450 data available)
   
   // 5. Air Quality Power Management
-  float demand = auto_mode::calculate_combined_demand(now, eff_in, eff_out);
+  float demand = auto_mode::calculate_combined_demand(now, eff_in, eff_out, hvac.suppress_humidity);
 
   // FIXED: If demand is NAN (e.g., all sensors offline/unstable), we abort to hold the last state
   if (std::isnan(demand)) {
@@ -387,6 +530,13 @@ inline void evaluate_auto_mode(bool force) {
   // 6. Calculate target level with hysteresis and ramping
   int min_l = static_cast<int>(automatik_min_fan_level->value());
   int max_l = static_cast<int>(automatik_max_fan_level->value());
+  if (hvac.restrict_levels) {
+    // Smart Climate Control: hard cap while the AC is active. The minimum is
+    // deliberately Level 1 (DIN 1946-6 base ventilation) — below the user's
+    // normal moisture-protection minimum, because the AC handles dehumidification.
+    min_l = hvac.min_level;
+    max_l = hvac.max_level;
+  }
   if (min_l > max_l) std::swap(min_l, max_l);
   
   int target_level = min_l;

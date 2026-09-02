@@ -40,6 +40,7 @@ Currently, the following scenarios are automatically verified:
 6.  **Sync Time (ESP-NOW)**: Verification of cycle synchronization between Master and Slaves.
 7.  **Boost Ventilation Cycle**: Testing rotation ramping (gentle spin-up) during an intensive cycle.
 8.  **Phase Logic**: Correct calculation of rotation direction based on Phase A/B assignment.
+9.  **Smart Climate Control (HVAC Coordinator)**: T-7a–T-7j — disabled transparency, standby, throttled profile (CO2-only, level cap, ECO lock), CO2 emergency hysteresis, emergency margin guard, AC release debounce, fail-safe unknown AC state, suspension without CO2, mold guard, latch reset.
 
 ## Adding New Tests
 
