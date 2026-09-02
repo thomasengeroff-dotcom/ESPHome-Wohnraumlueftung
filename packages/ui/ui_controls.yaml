@@ -210,9 +210,13 @@ number:
 
 
   # ---------------------------------------------------------
-  # SMART CLIMATE CONTROL (HVAC COORDINATION) - Thresholds
-  # Modifier for Smart-Automatik while the room AC / heat pump is active.
+  # SMART CLIMATE CONTROL (HVAC COORDINATION) - Room-wide thresholds
+  # Modifier for Smart-Automatik while the room air conditioner is active.
   # Decision logic: components/ventilation_logic/hvac_coordinator.h
+  # Values are ROOM-WIDE: a change on any device is pushed to all peers via
+  # ESP-NOW (sync_settings_to_peers) and re-asserted by the Master heartbeat,
+  # exactly like the Smart-Automatik min/max levels. Backed by the globals
+  # hvac_*_val (NVS persisted, initial values from ventosync_base.yaml).
   # ---------------------------------------------------------
 
   # HVAC: Relaxed CO2 setpoint while the AC is active (DIN EN 13779 IDA 3)
@@ -226,12 +230,13 @@ number:
     max_value: 1500
     step: 50
     mode: slider
-    optimistic: true
-    initial_value: 1200
-    restore_value: true
+    lambda: "return id(hvac_co2_threshold_val);"
     set_action:
       - lambda: |-
-          ESP_LOGI("hvac", "HVAC CO2 setpoint set to %d ppm", (int)x);
+          id(hvac_co2_threshold_val) = (int)x;
+          id(hvac_co2_threshold).publish_state(x);
+          ESP_LOGI("hvac", "HVAC CO2 setpoint set to %d ppm (room-wide)", (int)x);
+          sync_settings_to_peers();
           evaluate_auto_mode();
 
   # HVAC: Hard fan level cap while the AC is active
@@ -244,12 +249,13 @@ number:
     max_value: 5
     step: 1
     mode: slider
-    optimistic: true
-    initial_value: 3
-    restore_value: true
+    lambda: "return id(hvac_max_fan_level_val);"
     set_action:
       - lambda: |-
-          ESP_LOGI("hvac", "HVAC max fan level set to %d", (int)x);
+          id(hvac_max_fan_level_val) = (int)x;
+          id(hvac_max_fan_level).publish_state(x);
+          ESP_LOGI("hvac", "HVAC max fan level set to %d (room-wide)", (int)x);
+          sync_settings_to_peers();
           evaluate_auto_mode();
 
   # HVAC: CO2 level at which normal automatic regulation resumes (health guard).
@@ -264,12 +270,13 @@ number:
     max_value: 2000
     step: 50
     mode: slider
-    optimistic: true
-    initial_value: 1500
-    restore_value: true
+    lambda: "return id(hvac_emergency_co2_val);"
     set_action:
       - lambda: |-
-          ESP_LOGI("hvac", "HVAC emergency CO2 set to %d ppm", (int)x);
+          id(hvac_emergency_co2_val) = (int)x;
+          id(hvac_emergency_co2).publish_state(x);
+          ESP_LOGI("hvac", "HVAC emergency CO2 set to %d ppm (room-wide)", (int)x);
+          sync_settings_to_peers();
           evaluate_auto_mode();
 
   # Vacation Mode: Fan intensity level when vacation mode is active

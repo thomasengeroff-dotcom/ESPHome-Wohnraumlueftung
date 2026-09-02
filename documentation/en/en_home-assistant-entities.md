@@ -47,14 +47,14 @@ These entities configure the behavior of the "Automatic" mode.
 
 ### Smart Climate Control (HVAC Coordination)
 
-Modifier for `Smart-Automatik` while the room air conditioner / heat pump is active. Full description: [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).
+Modifier for `Smart-Automatik` while the room air conditioner is active. Full description: [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).
 
 * **`switch.klima_koordination`** ("Klima-Koordination", YAML ID `smart_climate_control`)
   * *Type:* Switch (Config, persisted)
   * *Documentation:* Enables the HVAC coordination on this device. While the imported AC state (`binary_sensor.ventosync_hvac_active_room_<room_id>`) is `on`, the automatic mode switches to a CO2-only loop with a relaxed setpoint, a fan level cap and enforced heat recovery. Default: off.
 * **`number.klima_koordination_co2_grenzwert`** ("Klima-Koordination: CO2 Grenzwert", YAML ID `hvac_co2_threshold`)
-  * *Type:* Number (Slider, 800–1500 ppm)
-  * *Documentation:* Relaxed CO2 setpoint while the AC is active (default 1200 ppm). Also the release threshold of the CO2 emergency.
+  * *Type:* Number (Slider, 800–1500 ppm), room-wide
+  * *Documentation:* Relaxed CO2 setpoint while the AC is active (default 1200 ppm). Also the release threshold of the CO2 emergency. Like the other two HVAC sliders this is a **room-wide** value: a change on any device is synchronized to all peers of the room over ESP-NOW.
 * **`number.klima_koordination_max_lufterstufe`** ("Klima-Koordination: Max Lüfterstufe", YAML ID `hvac_max_fan_level`)
   * *Type:* Number (Slider, 1–5)
   * *Documentation:* Hard fan level cap while the AC is active (default 3). The minimum is always Level 1.
@@ -63,7 +63,7 @@ Modifier for `Smart-Automatik` while the room air conditioner / heat pump is act
   * *Documentation:* CO2 level at which the normal automatic regulation resumes regardless of the AC state (default 1500 ppm, kept at least 100 ppm above the relaxed setpoint).
 * **`text_sensor.klima_koordination_status`** ("Klima-Koordination Status", YAML ID `hvac_status`)
   * *Type:* Text Sensor (Diagnostic)
-  * *Documentation:* Current coordinator state: `Deaktiviert`, `Inaktiv (kein Smart-Automatik)`, `Bereit (Klima aus)`, `Aktiv (gedrosselt)`, `Notfall (CO2)`, `Notfall (Feuchte)`, `Ausgesetzt (kein CO2-Wert)`.
+  * *Documentation:* Current coordinator state: `Deaktiviert`, `Inaktiv (kein Smart-Automatik)`, `Bereit (Klima aus)`, `Aktiv (gedrosselt)`, `Notfall (CO2)`, `Notfall (Feuchte)`, `Ausgesetzt (kein CO2-Wert im Raum)`. Devices without a CO2 sensor use the CO2 reading shared by a peer over ESP-NOW.
 
 ## 3. Times & Intervals
 

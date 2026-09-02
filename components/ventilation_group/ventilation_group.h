@@ -95,7 +95,7 @@ enum MessageType {
 
 /// Ensure breaking packet schema changes are detected across nodes.
 /// Bump this whenever the VentilationPacket layout or semantics change.
-static constexpr uint8_t PROTOCOL_VERSION = 7; // Bumped: added RPM, Board-T, Room-T
+static constexpr uint8_t PROTOCOL_VERSION = 8; // Bumped: added room CO2 + Smart Climate Control config
 /// @brief Binary packet exchanged between peer devices via ESP-NOW.
 /// Layout is packed and must be identical on all firmware builds.
 /// IMPORTANT: protocol_version is the second byte — increment PROTOCOL_VERSION
@@ -123,6 +123,7 @@ struct __attribute__((packed)) VentilationPacket {
   float fan_rpm;             ///< Sender's current fan RPM.
   float board_temp;          ///< Sender's board temperature (BMP390).
   float room_temp;           ///< Sender's room temperature (SCD41/BME680).
+  float room_co2;            ///< Sender's effective CO2 in ppm (or NAN) — shared for Smart Climate Control.
 
   // Control & Settings Synced States
   uint8_t fan_intensity; ///< Current 1-10 level
@@ -133,6 +134,11 @@ struct __attribute__((packed)) VentilationPacket {
   uint16_t auto_co2_threshold_val;     ///< Setpoint, e.g. 1000 ppm (16-bit)
   uint8_t auto_humidity_threshold_val; ///< Setpoint, e.g. 60 % (8-bit)
   int8_t auto_presence_val;            ///< Presence compensation (-5 to +5)
+
+  // Smart Climate Control (HVAC Coordination) config payload — room-wide values
+  uint16_t hvac_co2_threshold;  ///< Relaxed CO2 setpoint while the AC is active (ppm)
+  uint16_t hvac_emergency_co2;  ///< CO2 emergency override threshold (ppm)
+  uint8_t hvac_max_fan_level;   ///< Fan level cap while the AC is active (1-10)
 
   // Timer Settings payload
   uint16_t sync_interval_min; ///< ESP-NOW Broadcast Interval
@@ -156,6 +162,7 @@ struct PeerState {
   float fan_rpm;
   float board_temp;
   float room_temp;
+  float room_co2;
 };
 
 // ---------------------------------------------------------
@@ -229,6 +236,13 @@ public:
   bool co2_is_controlling =
       false; ///< Hysteresis state for CO2 priority (runtime only).
 
+  // --- CO2 SHARING (Smart Climate Control) ---
+  /// Last valid CO2 reading (ppm) received from a peer. Lets devices without a
+  /// CO2 sensor evaluate the HVAC coordination from the room's measurement.
+  float last_peer_co2 = NAN;
+  uint32_t last_peer_co2_time = 0; ///< millis() when peer CO2 was received.
+  bool has_peer_co2 = false;       ///< True once any peer CO2 has been received.
+
   // --- PEER TRACKING (For Dashboard) ---
   std::vector<PeerState> peers; ///< List of recently seen peers
   bool is_state_synced =
@@ -255,6 +269,7 @@ public:
   sensor::Sensor *board_temp_sensor_{nullptr}; ///< Local board temp (BMP390).
   sensor::Sensor *scd41_temp_sensor_{nullptr}; ///< Local room temp (SCD41).
   sensor::Sensor *bme680_temp_sensor_{nullptr}; ///< Fallback room temp (BME680).
+  sensor::Sensor *co2_sensor_{nullptr};         ///< Effective CO2 (SCD41 / BME680 eCO2 fallback).
   esphome::globals::RestoringGlobalsComponent<int> *mode_index_global_{nullptr}; ///< Global UI mode index.
   esphome::globals::RestoringGlobalsComponent<int> *automatik_min_fan_level_global_{nullptr}; 
   esphome::globals::RestoringGlobalsComponent<int> *automatik_max_fan_level_global_{nullptr};
@@ -262,6 +277,9 @@ public:
   esphome::globals::RestoringGlobalsComponent<int> *auto_humidity_threshold_global_{nullptr};
   esphome::globals::RestoringGlobalsComponent<int> *auto_presence_global_{nullptr};
   esphome::globals::RestoringGlobalsComponent<float> *max_led_brightness_global_{nullptr};
+  esphome::globals::RestoringGlobalsComponent<int> *hvac_co2_threshold_global_{nullptr};
+  esphome::globals::RestoringGlobalsComponent<int> *hvac_emergency_co2_global_{nullptr};
+  esphome::globals::RestoringGlobalsComponent<int> *hvac_max_fan_level_global_{nullptr};
   binary_sensor::BinarySensor *window_sensor_{nullptr}; ///< Injected window lock sensor.
 
   // --- SETTERS (called by ESPHome codegen from YAML config) ---
@@ -281,6 +299,14 @@ public:
   void set_auto_presence_global(esphome::globals::RestoringGlobalsComponent<int> *g) { auto_presence_global_ = g; }
   /** @brief Sets the global max LED brightness reference. */
   void set_max_led_brightness_global(esphome::globals::RestoringGlobalsComponent<float> *g) { max_led_brightness_global_ = g; }
+  /** @brief Sets the effective CO2 sensor shared with peers. */
+  void set_co2_sensor(sensor::Sensor *s) { co2_sensor_ = s; }
+  /** @brief Sets the global Smart Climate Control CO2 setpoint reference. */
+  void set_hvac_co2_threshold_global(esphome::globals::RestoringGlobalsComponent<int> *g) { hvac_co2_threshold_global_ = g; }
+  /** @brief Sets the global Smart Climate Control emergency CO2 reference. */
+  void set_hvac_emergency_co2_global(esphome::globals::RestoringGlobalsComponent<int> *g) { hvac_emergency_co2_global_ = g; }
+  /** @brief Sets the global Smart Climate Control fan level cap reference. */
+  void set_hvac_max_fan_level_global(esphome::globals::RestoringGlobalsComponent<int> *g) { hvac_max_fan_level_global_ = g; }
 
   /** @return true if the window guard safety lock is active. */
   bool is_window_guard_active() const { return window_guard_active_; }
@@ -587,6 +613,7 @@ public:
       peer.fan_rpm = pkt->fan_rpm;
       peer.board_temp = pkt->board_temp;
       peer.room_temp = pkt->room_temp;
+      peer.room_co2 = pkt->room_co2;
     };
 
     bool found_peer = false;
@@ -689,6 +716,13 @@ public:
       last_peer_pid_demand = pkt->pid_demand;
       last_peer_pid_demand_time = now;
       has_peer_pid_demand = true;
+    }
+
+    // 7. CO2 sync (room-wide reading for Smart Climate Control)
+    if (!std::isnan(pkt->room_co2) && pkt->room_co2 > 0.0f) {
+      last_peer_co2 = pkt->room_co2;
+      last_peer_co2_time = now;
+      has_peer_co2 = true;
     }
 
     return changed;
@@ -812,6 +846,11 @@ public:
     pkt.auto_humidity_threshold_val = auto_humidity_threshold_global_ != nullptr ? static_cast<uint8_t>(auto_humidity_threshold_global_->value()) : 60;
     pkt.auto_presence_val = auto_presence_global_ != nullptr ? static_cast<int8_t>(auto_presence_global_->value()) : 0;
     pkt.max_led_brightness = max_led_brightness_global_ != nullptr ? static_cast<float>(max_led_brightness_global_->value()) : 0.8f;
+
+    // Smart Climate Control config (room-wide, adopted by peers via handle_config_sync)
+    pkt.hvac_co2_threshold = hvac_co2_threshold_global_ != nullptr ? static_cast<uint16_t>(hvac_co2_threshold_global_->value()) : 1200;
+    pkt.hvac_emergency_co2 = hvac_emergency_co2_global_ != nullptr ? static_cast<uint16_t>(hvac_emergency_co2_global_->value()) : 1500;
+    pkt.hvac_max_fan_level = hvac_max_fan_level_global_ != nullptr ? static_cast<uint8_t>(hvac_max_fan_level_global_->value()) : 3;
     
     // Timers
     // FIXED H-4: Clamp before cast to prevent silent uint16_t truncation
@@ -838,6 +877,9 @@ public:
         r_temp = bme680_temp_sensor_->state;
     }
     pkt.room_temp = r_temp;
+
+    // Effective CO2 (NaN when no sensor or stale) — shared for Smart Climate Control
+    pkt.room_co2 = (co2_sensor_ && co2_sensor_->has_state()) ? co2_sensor_->state : static_cast<float>(NAN);
     
     // Sync PID demand and NTC values
     pkt.pid_demand = local_pid_demand;

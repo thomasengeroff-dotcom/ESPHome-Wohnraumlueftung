@@ -733,6 +733,10 @@ namespace espnow_handler {
       ESP_LOGW("vent_sync", "automatik_max_fan_level out of range: %d", pkt.automatik_max_fan_level);
       return std::nullopt;
     }
+    if (pkt.hvac_max_fan_level < 1 || pkt.hvac_max_fan_level > 10) {
+      ESP_LOGW("vent_sync", "hvac_max_fan_level out of range: %d", pkt.hvac_max_fan_level);
+      return std::nullopt;
+    }
     if (pkt.sync_interval_min < 1 || pkt.sync_interval_min > 1440) {
       ESP_LOGW("vent_sync", "sync_interval_min out of range: %d", pkt.sync_interval_min);
       return std::nullopt;
@@ -839,6 +843,29 @@ inline void handle_config_sync(const esphome::VentilationPacket *pkt) {
       pkt->auto_presence_val != auto_presence_val->value()) {
     auto_presence_val->value() = pkt->auto_presence_val;
     auto_presence_slider->publish_state(pkt->auto_presence_val);
+    dirty = true;
+  }
+
+  // 2b. Smart Climate Control thresholds (room-wide, same authority rule)
+  if (hvac_co2_threshold_val != nullptr && hvac_co2_threshold != nullptr &&
+      pkt->hvac_co2_threshold >= 400 && pkt->hvac_co2_threshold <= 5000 &&
+      pkt->hvac_co2_threshold != hvac_co2_threshold_val->value()) {
+    hvac_co2_threshold_val->value() = pkt->hvac_co2_threshold;
+    hvac_co2_threshold->publish_state(pkt->hvac_co2_threshold);
+    dirty = true;
+  }
+  if (hvac_emergency_co2_val != nullptr && hvac_emergency_co2 != nullptr &&
+      pkt->hvac_emergency_co2 >= 400 && pkt->hvac_emergency_co2 <= 5000 &&
+      pkt->hvac_emergency_co2 != hvac_emergency_co2_val->value()) {
+    hvac_emergency_co2_val->value() = pkt->hvac_emergency_co2;
+    hvac_emergency_co2->publish_state(pkt->hvac_emergency_co2);
+    dirty = true;
+  }
+  if (hvac_max_fan_level_val != nullptr && hvac_max_fan_level != nullptr &&
+      pkt->hvac_max_fan_level >= 1 && pkt->hvac_max_fan_level <= 10 &&
+      pkt->hvac_max_fan_level != hvac_max_fan_level_val->value()) {
+    hvac_max_fan_level_val->value() = pkt->hvac_max_fan_level;
+    hvac_max_fan_level->publish_state(pkt->hvac_max_fan_level);
     dirty = true;
   }
 

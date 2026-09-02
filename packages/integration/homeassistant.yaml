@@ -52,7 +52,7 @@ binary_sensor:
     internal: true
     
   # Smart Climate Control (Klima-Koordination) - AC active state from HA.
-  # Provided by a HA template binary sensor that maps the room AC / heat pump
+  # Provided by a HA template binary sensor that maps the room air conditioner
   # climate entity (see documentation/en/en_smart-climate-control.md).
   # When unavailable (HA offline), the coordinator treats the AC as inactive
   # so the ventilation is never throttled blindly (fail-safe for health).

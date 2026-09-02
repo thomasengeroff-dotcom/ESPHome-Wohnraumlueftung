@@ -1,5 +1,5 @@
 {
-    "project_version": "0.10.13",
+    "project_version": "0.10.14",
     "project_date": "2026-09-02",
-    "project_description": "Implement Smart Climate Control (HVAC coordination) with unit-tested coordinator, health guards, HA entities and documentation"
+    "project_description": "Smart Climate Control: room-wide thresholds and shared CO2 over ESP-NOW (protocol v8)"
 }

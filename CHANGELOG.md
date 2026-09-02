@@ -5,12 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.14] - 2026-09-02
+
+### Changed
+
+- **Smart Climate Control: room-wide thresholds & shared CO2 (ESP-NOW protocol v8)** (`components/ventilation_group/ventilation_group.h`, `components/ventilation_group/__init__.py`, `components/helpers/network_sync.h`, `components/helpers/auto_mode.h`, `components/ventilation_logic/hvac_coordinator.h`, `packages/globals/globals_automation.yaml`, `packages/ui/ui_controls.yaml`, `packages/base/ventosync_base.yaml`):
+  - `VentilationPacket` gains `room_co2` (float) plus `hvac_co2_threshold`, `hvac_emergency_co2` (uint16) and `hvac_max_fan_level` (uint8); `PROTOCOL_VERSION` bumped 7 → 8 (simultaneous OTA rollout of all room devices required).
+  - Devices without a CO2 sensor now evaluate the coordinator with the freshest peer CO2 reading (max age 5 min, `select_co2_source()`), fixing a Master without sensor that never throttled and the misleading "Ausgesetzt" status on sensor-less slaves. Status label is now `Ausgesetzt (kein CO2-Wert im Raum)` and only appears when no device in the room delivers CO2.
+  - The three HVAC sliders are now **room-wide**: backed by new persisted globals `hvac_co2_threshold_val`, `hvac_emergency_co2_val`, `hvac_max_fan_level_val`, pushed to peers on change via `sync_settings_to_peers()` and adopted in `handle_config_sync()` (same authority rule as the Smart-Automatik min/max levels). First-boot values via new substitutions `hvac_default_co2_threshold`, `hvac_default_emergency_co2`, `hvac_default_max_fan_level`.
+  - New `ventilation_group` config keys: `co2_sensor`, `hvac_co2_threshold_global`, `hvac_emergency_co2_global`, `hvac_max_fan_level_global`. Packet validation rejects `hvac_max_fan_level` outside 1–10.
+- **Unit tests** (`tests/simple_test_runner.cpp`): T-7k covers CO2 source selection (local first, fresh peer fallback, stale peer rejected, coordinator escalation from peer CO2).
+
+### Documentation
+
+- Updated `documentation/*/…smart-climate-control.md` (room-wide thresholds, shared CO2, protocol v8 multi-device section), `documentation/*/…home-assistant-entities.md`, `CLAUDE.md` and the component/package READMEs (protocol v8).
+
+
 ## [0.10.13] - 2026-09-02
 
 ### Added
 
 - **Smart Climate Control — HVAC Coordination** (`components/ventilation_logic/hvac_coordinator.h`, `components/helpers/auto_mode.h`, `components/helpers/globals.h`, `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml`):
-  - New pure, unit-tested state machine `ventosync::hvac::Coordinator` that restricts `Smart-Automatik` while the room air conditioner / heat pump is active: CO2-only regulation with relaxed setpoint (default 1200 ppm, DIN EN 13779 IDA 3), fan level window `[1, hvac_max_fan_level]` (default 1–3), humidity PID ignored, summer bypass suppressed and heat recovery enforced.
+  - New pure, unit-tested state machine `ventosync::hvac::Coordinator` that restricts `Smart-Automatik` while the room air conditioner is active: CO2-only regulation with relaxed setpoint (default 1200 ppm, DIN EN 13779 IDA 3), fan level window `[1, hvac_max_fan_level]` (default 1–3), humidity PID ignored, summer bypass suppressed and heat recovery enforced.
   - Health guards with hysteresis: CO2 emergency override (enter ≥ `hvac_emergency_co2` = 1500 ppm, release ≤ `hvac_co2_threshold`; emergency kept ≥ setpoint + 100 ppm) and a mold guard (enter ≥ 70 % rH while outdoor air is drier in absolute terms, release ≤ 65 %). Without a CO2 reading the coordinator never throttles (`Ausgesetzt (kein CO2-Wert)`).
   - AC-state robustness: 120 s release debounce (`AC_RELEASE_DELAY_MS`) against compressor cycling and HA reconnects; unknown / unavailable entity or disconnected HA API is treated as "AC inactive" (fail-safe for health).
   - CO2 PID setpoint authority: `apply_co2_setpoint()` re-asserts the correct target every cycle (relaxed vs. user threshold) and resets the integral on change; humidity PID integral is reset when re-enabled.
@@ -20,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- Rewrote `documentation/en/en_smart-climate-control.md` and `documentation/de/de_smart-climate-control.md` to reflect the implemented behavior. Concept corrections found during review: the `climate` entity `state` (hvac_mode) must be mapped instead of the cycling `hvac_action` (would oscillate); mixed hvac_mode/hvac_action values in the original mapping fixed; `select.ventilation_mode` corrected to `select.luefter_modus`; the invented 1100 ppm "ramping" hysteresis replaced by the real PID + level-hysteresis behavior; the "humidity PID disabled" rule is unsafe in heat-pump heating mode and was replaced by the mold guard; emergency now documented as also lifting the humidity suppression while keeping heat recovery enforced; HA setup example with template binary sensor added.
+- Rewrote `documentation/en/en_smart-climate-control.md` and `documentation/de/de_smart-climate-control.md` to reflect the implemented behavior. Concept corrections found during review: the `climate` entity `state` (hvac_mode) must be mapped instead of the cycling `hvac_action` (would oscillate); mixed hvac_mode/hvac_action values in the original mapping fixed; `select.ventilation_mode` corrected to `select.luefter_modus`; the invented 1100 ppm "ramping" hysteresis replaced by the real PID + level-hysteresis behavior; the "humidity PID disabled" rule is unsafe while the AC runs in heating mode and was replaced by the mold guard; emergency now documented as also lifting the humidity suppression while keeping heat recovery enforced; HA setup example with template binary sensor added.
 - Updated `Readme.md`, `Readme_de.md`, `documentation/*/…home-assistant-entities.md`, `documentation/*/…smart-automatic-logic.md`, `documentation/*/…roadmap-and-future-enhancements.md` (marked as implemented), `tests/README.md` and `CLAUDE.md`.
 
 

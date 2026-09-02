@@ -382,14 +382,6 @@ inline bool ventilation_can_dry(float eff_in_temp, float eff_out_temp, float &in
 }
 
 /**
- * @brief   Reads a template number with NaN / null fallback.
- */
-inline float read_number_or(esphome::template_::TemplateNumber *n, float fallback) {
-  if (n == nullptr || std::isnan(n->state)) return fallback;
-  return n->state;
-}
-
-/**
  * @brief   Collects all HVAC coordination inputs and runs the coordinator.
  *
  * @param[in] now       Current millis().
@@ -413,24 +405,34 @@ inline ventosync::hvac::Decision evaluate_hvac_coordination(uint32_t now, float 
   in.ac_has_state = (hvac_ac_active != nullptr) && hvac_ac_active->has_state();
   in.ac_reported_active = in.ac_has_state && hvac_ac_active->state;
 
-  in.co2_ppm = (effective_co2 != nullptr) ? effective_co2->state : NAN;
+  // CO2: local effective sensor first, otherwise the freshest peer reading
+  // (devices without a CO2 sensor use the room's measurement shared via ESP-NOW).
+  const float local_co2 = (effective_co2 != nullptr) ? effective_co2->state : NAN;
+  auto *v = ventilation_ctrl;
+  const float peer_co2 = (v != nullptr && v->has_peer_co2) ? v->last_peer_co2 : NAN;
+  const uint32_t peer_co2_age = (v != nullptr && v->has_peer_co2) ? (now - v->last_peer_co2_time) : UINT32_MAX;
+  in.co2_ppm = ventosync::hvac::select_co2_source(local_co2, peer_co2, peer_co2_age);
+  const bool co2_from_peer = std::isnan(local_co2) && !std::isnan(in.co2_ppm);
 
   float indoor_rh = NAN;
   in.ventilation_can_dry = ventilation_can_dry(eff_in, eff_out, indoor_rh);
   in.indoor_rh_percent = indoor_rh;
 
-  in.co2_threshold_ppm = read_number_or(hvac_co2_threshold, ventosync::hvac::DEFAULT_CO2_THRESHOLD_PPM);
-  in.emergency_co2_ppm = read_number_or(hvac_emergency_co2, ventosync::hvac::DEFAULT_EMERGENCY_CO2_PPM);
-  in.max_fan_level = static_cast<int>(std::round(
-      read_number_or(hvac_max_fan_level, static_cast<float>(ventosync::hvac::DEFAULT_MAX_FAN_LEVEL))));
+  // Room-wide thresholds (globals mirrored by the sliders and synced over ESP-NOW)
+  in.co2_threshold_ppm = (hvac_co2_threshold_val != nullptr)
+      ? static_cast<float>(hvac_co2_threshold_val->value()) : ventosync::hvac::DEFAULT_CO2_THRESHOLD_PPM;
+  in.emergency_co2_ppm = (hvac_emergency_co2_val != nullptr)
+      ? static_cast<float>(hvac_emergency_co2_val->value()) : ventosync::hvac::DEFAULT_EMERGENCY_CO2_PPM;
+  in.max_fan_level = (hvac_max_fan_level_val != nullptr)
+      ? hvac_max_fan_level_val->value() : ventosync::hvac::DEFAULT_MAX_FAN_LEVEL;
 
   ventosync::hvac::Decision d = hvac_state::coordinator.evaluate(in);
 
   if (d.state != hvac_state::last_decision.state) {
-    ESP_LOGI("hvac", "Klima-Koordination: %s -> %s (AC=%d, CO2=%.0f ppm, rH=%.0f%%)",
+    ESP_LOGI("hvac", "Klima-Koordination: %s -> %s (AC=%d, CO2=%.0f ppm%s, rH=%.0f%%)",
              ventosync::hvac::state_label(hvac_state::last_decision.state),
              ventosync::hvac::state_label(d.state),
-             d.ac_active ? 1 : 0, in.co2_ppm, in.indoor_rh_percent);
+             d.ac_active ? 1 : 0, in.co2_ppm, co2_from_peer ? " via Peer" : "", in.indoor_rh_percent);
   }
   hvac_state::last_decision = d;
   return d;

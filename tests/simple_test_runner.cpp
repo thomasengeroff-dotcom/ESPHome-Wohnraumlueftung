@@ -409,6 +409,30 @@ bool test_hvac_mold_guard() {
   return true;
 }
 
+// T-7k: CO2 source selection — local first, fresh peer fallback, stale peer rejected
+bool test_hvac_co2_source_selection() {
+  using namespace ventosync::hvac;
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  // Local reading wins even when a peer value exists
+  TEST_ASSERT(std::abs(select_co2_source(900.0f, 1400.0f, 0) - 900.0f) < 0.01f);
+  // No local reading → fresh peer reading is used
+  TEST_ASSERT(std::abs(select_co2_source(nan, 1400.0f, PEER_CO2_MAX_AGE_MS) - 1400.0f) < 0.01f);
+  // Stale peer reading is rejected
+  TEST_ASSERT(std::isnan(select_co2_source(nan, 1400.0f, PEER_CO2_MAX_AGE_MS + 1)));
+  // Zero / negative values are treated as invalid (mock sensors)
+  TEST_ASSERT(std::isnan(select_co2_source(0.0f, nan, 0)));
+  TEST_ASSERT(std::isnan(select_co2_source(nan, -1.0f, 0)));
+  // Peer CO2 feeds the coordinator: device without sensor still throttles / escalates
+  Coordinator c;
+  ventosync::hvac::Inputs in = hvac_inputs(true, true, select_co2_source(nan, 1000.0f, 1000), 0);
+  TEST_ASSERT(c.evaluate(in).state == State::THROTTLED);
+  in.co2_ppm = select_co2_source(nan, 1600.0f, 1000);
+  TEST_ASSERT(c.evaluate(in).state == State::EMERGENCY_CO2);
+  in.co2_ppm = select_co2_source(nan, 1600.0f, PEER_CO2_MAX_AGE_MS * 2);
+  TEST_ASSERT(c.evaluate(in).state == State::SUSPENDED_NO_CO2);
+  return true;
+}
+
 // T-7j: Disabling the switch clears all latches; AC off clears emergencies
 bool test_hvac_latch_reset() {
   using namespace ventosync::hvac;
@@ -1048,6 +1072,7 @@ int main() {
     {"T-7h: HVAC Coordinator suspended without CO2", test_hvac_suspended_without_co2},
     {"T-7i: HVAC Coordinator mold guard", test_hvac_mold_guard},
     {"T-7j: HVAC Coordinator latch reset", test_hvac_latch_reset},
+    {"T-7k: HVAC Coordinator CO2 source selection (local / peer)", test_hvac_co2_source_selection},
   };
   for (const auto &tc : hvac_cases) {
     if (tc.fn()) {
