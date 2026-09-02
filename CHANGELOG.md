@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.14] - 2026-09-02
+
+### Changed
+
+- **Smart Climate Control: room-wide thresholds & shared CO2 (ESP-NOW protocol v8)** (`components/ventilation_group/ventilation_group.h`, `components/ventilation_group/__init__.py`, `components/helpers/network_sync.h`, `components/helpers/auto_mode.h`, `components/ventilation_logic/hvac_coordinator.h`, `packages/globals/globals_automation.yaml`, `packages/ui/ui_controls.yaml`, `packages/base/ventosync_base.yaml`):
+  - `VentilationPacket` gains `room_co2` (float) plus `hvac_co2_threshold`, `hvac_emergency_co2` (uint16) and `hvac_max_fan_level` (uint8); `PROTOCOL_VERSION` bumped 7 → 8 (simultaneous OTA rollout of all room devices required).
+  - Devices without a CO2 sensor now evaluate the coordinator with the freshest peer CO2 reading (max age 5 min, `select_co2_source()`), fixing a Master without sensor that never throttled and the misleading "Ausgesetzt" status on sensor-less slaves. Status label is now `Ausgesetzt (kein CO2-Wert im Raum)` and only appears when no device in the room delivers CO2.
+  - The three HVAC sliders are now **room-wide**: backed by new persisted globals `hvac_co2_threshold_val`, `hvac_emergency_co2_val`, `hvac_max_fan_level_val`, pushed to peers on change via `sync_settings_to_peers()` and adopted in `handle_config_sync()` (same authority rule as the Smart-Automatik min/max levels). First-boot values via new substitutions `hvac_default_co2_threshold`, `hvac_default_emergency_co2`, `hvac_default_max_fan_level`.
+  - New `ventilation_group` config keys: `co2_sensor`, `hvac_co2_threshold_global`, `hvac_emergency_co2_global`, `hvac_max_fan_level_global`. Packet validation rejects `hvac_max_fan_level` outside 1–10.
+- **Unit tests** (`tests/simple_test_runner.cpp`): T-7k covers CO2 source selection (local first, fresh peer fallback, stale peer rejected, coordinator escalation from peer CO2).
+
+### Documentation
+
+- Updated `documentation/*/…smart-climate-control.md` (room-wide thresholds, shared CO2, protocol v8 multi-device section), `documentation/*/…home-assistant-entities.md`, `CLAUDE.md` and the component/package READMEs (protocol v8).
+
+
 ## [0.10.13] - 2026-09-02
 
 ### Added

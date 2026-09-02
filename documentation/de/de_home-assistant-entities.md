@@ -56,8 +56,8 @@ Modifikator für die `Smart-Automatik`, solange die Raumklimaanlage aktiv ist. V
   * *Typ:* Switch (Config, persistent)
   * *Dokumentation:* Aktiviert die HVAC-Koordination auf diesem Gerät. Solange der importierte Klima-Status (`binary_sensor.ventosync_hvac_active_room_<room_id>`) `on` ist, wechselt die Automatik auf eine reine CO2-Regelung mit gelockertem Sollwert, Stufenbegrenzung und erzwungener Wärmerückgewinnung. Standard: aus.
 * **`number.klima_koordination_co2_grenzwert`** ("Klima-Koordination: CO2 Grenzwert", YAML-ID `hvac_co2_threshold`)
-  * *Typ:* Number (Slider, 800–1500 ppm)
-  * *Dokumentation:* Gelockerter CO2-Sollwert bei aktiver Klimaanlage (Standard 1200 ppm). Zugleich Freigabeschwelle des CO2-Notfalls.
+  * *Typ:* Number (Slider, 800–1500 ppm), raumweit
+  * *Dokumentation:* Gelockerter CO2-Sollwert bei aktiver Klimaanlage (Standard 1200 ppm). Zugleich Freigabeschwelle des CO2-Notfalls. Wie die beiden anderen HVAC-Slider ein **raumweiter** Wert: Eine Änderung an einem Gerät wird per ESP-NOW an alle Peers des Raums synchronisiert.
 * **`number.klima_koordination_max_lufterstufe`** ("Klima-Koordination: Max Lüfterstufe", YAML-ID `hvac_max_fan_level`)
   * *Typ:* Number (Slider, 1–5)
   * *Dokumentation:* Harte Lüfterstufen-Obergrenze bei aktiver Klimaanlage (Standard 3). Das Minimum ist immer Stufe 1.
@@ -66,7 +66,7 @@ Modifikator für die `Smart-Automatik`, solange die Raumklimaanlage aktiv ist. V
   * *Dokumentation:* CO2-Wert, ab dem die normale Automatikregelung unabhängig vom Klima-Status greift (Standard 1500 ppm, mindestens 100 ppm über dem gelockerten Sollwert).
 * **`text_sensor.klima_koordination_status`** ("Klima-Koordination Status", YAML-ID `hvac_status`)
   * *Typ:* Textsensor (Diagnose)
-  * *Dokumentation:* Aktueller Koordinator-Zustand: `Deaktiviert`, `Inaktiv (kein Smart-Automatik)`, `Bereit (Klima aus)`, `Aktiv (gedrosselt)`, `Notfall (CO2)`, `Notfall (Feuchte)`, `Ausgesetzt (kein CO2-Wert)`.
+  * *Dokumentation:* Aktueller Koordinator-Zustand: `Deaktiviert`, `Inaktiv (kein Smart-Automatik)`, `Bereit (Klima aus)`, `Aktiv (gedrosselt)`, `Notfall (CO2)`, `Notfall (Feuchte)`, `Ausgesetzt (kein CO2-Wert im Raum)`. Geräte ohne CO2-Sensor nutzen den per ESP-NOW geteilten CO2-Wert eines Peers.
 
 ## 3. Zeiten & Intervalle
 

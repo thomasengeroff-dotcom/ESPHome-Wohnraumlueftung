@@ -106,6 +106,33 @@ globals:
     restore_value: true
 
   # ---------------------------------------------------------
+  # SMART CLIMATE CONTROL (HVAC COORDINATION) – ROOM-WIDE THRESHOLDS
+  # ---------------------------------------------------------
+  # Mirrors of the "Klima-Koordination" sliders. Carried in the ESP-NOW
+  # VentilationPacket so every device in the room adopts the same values
+  # (change on any device → immediate MSG_STATE sync; Master heartbeat
+  # re-asserts them). Initial values come from the substitutions in
+  # ventosync_base.yaml; runtime changes are persisted in NVS.
+
+  # Relaxed CO2 setpoint (ppm) while the AC is active.
+  - id: hvac_co2_threshold_val
+    type: int
+    initial_value: "${hvac_default_co2_threshold}"
+    restore_value: true
+
+  # CO2 emergency override threshold (ppm).
+  - id: hvac_emergency_co2_val
+    type: int
+    initial_value: "${hvac_default_emergency_co2}"
+    restore_value: true
+
+  # Fan level cap (1-10) while the AC is active.
+  - id: hvac_max_fan_level_val
+    type: int
+    initial_value: "${hvac_default_max_fan_level}"
+    restore_value: true
+
+  # ---------------------------------------------------------
   # PID CONTROLLER OUTPUTS
   # ---------------------------------------------------------
   # These hold the current PID controller output values (0.0–1.0).

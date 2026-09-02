@@ -2,7 +2,7 @@
 
 [![Language: EN](https://img.shields.io/badge/Language-EN-red.svg)](../en/en_smart-climate-control.md)
 
-> **Status:** Implementiert seit Version **0.10.13**. Die Entscheidungslogik liegt in
+> **Status:** Implementiert seit Version **0.10.13** (raumweite Grenzwerte und geteilter CO2-Wert seit **0.10.14**, ESP-NOW-Protokoll v8). Die Entscheidungslogik liegt in
 > [`components/ventilation_logic/hvac_coordinator.h`](../../components/ventilation_logic/hvac_coordinator.h)
 > (rein, unit-getestet), die Integration in die Smart-Automatik in
 > [`components/helpers/auto_mode.h`](../../components/helpers/auto_mode.h) und die Home-Assistant-Entitäten in
@@ -113,9 +113,11 @@ Das ursprüngliche Konzept hat die Feuchteregelung komplett deaktiviert. Das ist
 
 Ist die Außenluft schwüler als der Raum, würde Lüften Feuchte *eintragen* — der Schutz bleibt stumm und überlässt die Entfeuchtung der Klimaanlage.
 
-### 3. Fehlender CO2-Messwert
+### 3. Fehlender CO2-Messwert (raumweit)
 
-Die Gesundheitsgarantie dieses Features beruht auf einer CO2-Messung (SCD43 oder BME680-eCO2-Fallback über `effective_co2`). Liegt kein CO2-Wert vor (Sensorausfall oder die Hardware-Varianten `radar_only` / `nosensor` / `NTConly`), meldet der Koordinator **„Ausgesetzt (kein CO2-Wert)"** und drosselt **nicht**. Die Wärmerückgewinnung bleibt bei aktiver Klimaanlage weiterhin erzwungen.
+Die Gesundheitsgarantie dieses Features beruht auf einer CO2-Messung (SCD43 oder BME680-eCO2-Fallback über `effective_co2`). Die Messung gilt **raumweit**: Jedes Gerät teilt seinen effektiven CO2-Wert im ESP-NOW-Paket, und ein Gerät ohne eigenen Sensor (Varianten `radar_only` / `nosensor` / `NTConly`) nutzt den frischesten Peer-Wert, der maximal 5 Minuten alt sein darf (`PEER_CO2_MAX_AGE_MS`). Die Log-Zeile kennzeichnet solche Auswertungen mit „via Peer".
+
+Nur wenn **kein Gerät im Raum** einen CO2-Wert liefert, meldet der Koordinator **„Ausgesetzt (kein CO2-Wert im Raum)"** und drosselt **nicht**. Die Wärmerückgewinnung bleibt bei aktiver Klimaanlage weiterhin erzwungen.
 
 ---
 
@@ -147,7 +149,7 @@ stateDiagram-v2
         Notfall_CO2 --> Gedrosselt : CO2 <= hvac_co2_threshold
         Gedrosselt --> Notfall_Feuchte : rH >= 70 % und Aussenluft trockener
         Notfall_Feuchte --> Gedrosselt : rH <= 65 % oder Aussenluft feuchter
-        Gedrosselt --> Ausgesetzt : CO2-Wert NaN
+        Gedrosselt --> Ausgesetzt : kein CO2 im Raum (lokal + Peers)
         Ausgesetzt --> Gedrosselt : CO2-Wert gueltig
     }
 
@@ -171,7 +173,7 @@ Der Zustand wird als Diagnose-Textsensor **„Klima-Koordination Status"** (`hva
 | `Aktiv (gedrosselt)` | Klimaanlage aktiv — Nur-Luftqualitäts-Profil angewendet. |
 | `Notfall (CO2)` | Klimaanlage aktiv, CO2-Notfall-Override greift. |
 | `Notfall (Feuchte)` | Klimaanlage aktiv, Schimmelschutz greift. |
-| `Ausgesetzt (kein CO2-Wert)` | Klimaanlage aktiv, aber kein CO2-Wert — keine Drosselung. |
+| `Ausgesetzt (kein CO2-Wert im Raum)` | Klimaanlage aktiv, aber kein CO2-Wert von irgendeinem Gerät im Raum — keine Drosselung. |
 
 ---
 
@@ -180,13 +182,13 @@ Der Zustand wird als Diagnose-Textsensor **„Klima-Koordination Status"** (`hva
 | HA-Entität (deutscher UI-Name) | YAML-ID | Typ | Standard | Bereich | Zweck |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | `Klima-Koordination` | `smart_climate_control` | Switch | Aus | — | Aktivierung/Deaktivierung der HVAC-Koordination für dieses Gerät. |
-| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | Number (Slider) | 1200 ppm | 800–1500 ppm | Gelockerter CO2-Sollwert bei aktiver Klimaanlage. Zugleich Freigabeschwelle des CO2-Notfalls. |
-| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | Number (Slider) | 3 | 1–5 | Maximale Lüfterstufe bei aktiver Klimaanlage. |
-| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | Number (Slider) | 1500 ppm | 1200–2000 ppm | CO2-Wert, ab dem die normale Automatikregelung unabhängig vom Klima-Status greift (wird ≥ Sollwert + 100 ppm gehalten). |
+| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | Number (Slider), **raumweit** | 1200 ppm (`hvac_default_co2_threshold`) | 800–1500 ppm | Gelockerter CO2-Sollwert bei aktiver Klimaanlage. Zugleich Freigabeschwelle des CO2-Notfalls. |
+| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | Number (Slider), **raumweit** | 3 (`hvac_default_max_fan_level`) | 1–5 | Maximale Lüfterstufe bei aktiver Klimaanlage. |
+| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | Number (Slider), **raumweit** | 1500 ppm (`hvac_default_emergency_co2`) | 1200–2000 ppm | CO2-Wert, ab dem die normale Automatikregelung unabhängig vom Klima-Status greift (wird ≥ Sollwert + 100 ppm gehalten). |
 | `Klima-Koordination Status` | `hvac_status` | Textsensor (Diagnose) | — | — | Aktueller Koordinator-Zustand (siehe Tabelle oben). |
 | *(intern)* `Klima Aktiv (Raum)` | `hvac_ac_active` | Binary-Sensor (Import aus HA) | — | — | Echtzeit-Klima-Status; Entity-ID über die Substitution `hvac_ac_sensor_id`. |
 
-Alle Slider und der Schalter sind `entity_category: config`, werden im NVS gespeichert und greifen beim nächsten Auswertezyklus. Feste Konstanten (`MIN_FAN_LEVEL = 1`, Schimmelschutz 70 % / 65 %, Freigabeverzögerung 120 s, Notfallabstand 100 ppm) sind in `hvac_coordinator.h` definiert.
+Alle Slider und der Schalter sind `entity_category: config`, werden im NVS gespeichert und greifen beim nächsten Auswertezyklus. Die drei Slider sind **raumweite Einstellungen**: Eine Änderung an einem beliebigen Gerät wird sofort per ESP-NOW an alle Peers des Raums übertragen (`sync_settings_to_peers()`), und der Master-Heartbeat setzt sie erneut, genau wie die Smart-Automatik Min/Max-Stufen. Ihre Startwerte stammen aus den Substitutionen `hvac_default_co2_threshold`, `hvac_default_emergency_co2` und `hvac_default_max_fan_level` in `ventosync_base.yaml`. Der Schalter bleibt pro Gerät. Feste Konstanten (`MIN_FAN_LEVEL = 1`, Schimmelschutz 70 % / 65 %, Freigabeverzögerung 120 s, Notfallabstand 100 ppm) sind in `hvac_coordinator.h` definiert.
 
 ---
 
@@ -215,14 +217,16 @@ Für einen einfachen `input_boolean`-Helfer oder eine Schaltsteckdose, die ein m
 
 ---
 
-## Räume mit mehreren Geräten (ESP-NOW)
+## Räume mit mehreren Geräten (ESP-NOW, Protokoll v8)
 
-Es war keine Protokolländerung nötig. Zwei bestehende Mechanismen halten eine Raumgruppe konsistent:
+Das `VentilationPacket` trägt seit Protokoll **v8** vier zusätzliche Felder (`room_co2`, `hvac_co2_threshold`, `hvac_emergency_co2`, `hvac_max_fan_level`). Alle Geräte eines Raums müssen dieselbe Firmware-Version fahren (gleichzeitiges OTA-Rollout, wie bei jedem Protokollbump). Vier Mechanismen halten eine Raumgruppe konsistent:
 
-1. **Stufen-Autorität:** In der Smart-Automatik spiegeln Slaves die diskrete Lüfterstufe des Masters (Geräte-ID 1). Drosselt der Master auf Stufe 1–3, folgt jeder Slave innerhalb eines Auswertezyklus.
-2. **Modus-Abgleich:** Das periodische Sync-Paket des Masters trägt den erzwungenen WRG-Modus; Slaves übernehmen ihn.
+1. **Geteilter CO2-Wert:** Jedes Gerät sendet seinen effektiven CO2-Wert; Geräte ohne Sensor werten den Koordinator mit dem Raumwert aus (siehe [Fehlender CO2-Messwert](#3-fehlender-co2-messwert-raumweit)).
+2. **Raumweite Grenzwerte:** Die drei Slider werden über den bestehenden Config-Sync-Pfad (`handle_config_sync()`) abgeglichen: Eine Änderung an einem Gerät geht als `MSG_STATE` an alle Peers, der `MSG_SYNC`-Heartbeat des Masters setzt die Werte auf Slaves erneut.
+3. **Stufen-Autorität:** In der Smart-Automatik spiegeln Slaves die diskrete Lüfterstufe des Masters (Geräte-ID 1). Drosselt der Master auf Stufe 1–3, folgt jeder Slave innerhalb eines Auswertezyklus.
+4. **Modus-Abgleich:** Das periodische Sync-Paket des Masters trägt den erzwungenen WRG-Modus; Slaves übernehmen ihn.
 
-Jedes Gerät wertet den Koordinator dennoch lokal aus (standardmäßig dieselbe Klima-Entität über `${room_id}`), sodass ein Slave bei ausgefallenem Master selbstständig drosselt. Schalter und Slider gelten **pro Gerät** und werden nicht über ESP-NOW synchronisiert — das Feature auf jedem Gerät im Raum aktivieren.
+Jedes Gerät wertet den Koordinator dennoch lokal aus (standardmäßig dieselbe Klima-Entität über `${room_id}`), sodass ein Slave bei ausgefallenem Master selbstständig drosselt. Nur der Aktivierungsschalter gilt **pro Gerät** — das Feature auf jedem Gerät im Raum einschalten.
 
 ---
 
@@ -245,4 +249,4 @@ Jedes Gerät wertet den Koordinator dennoch lokal aus (standardmäßig dieselbe 
 2. **Dateien:** `components/ventilation_logic/hvac_coordinator.h` (reiner `ventosync::hvac::Coordinator`, Unit-Tests T-7a–T-7j in `tests/simple_test_runner.cpp`), `components/helpers/auto_mode.h` (`evaluate_hvac_coordination()`, `apply_co2_setpoint()`, Stufenfenster und WRG-Sperre in `evaluate_auto_mode()`), `components/helpers/globals.h` (Entitäts-Externs, `hvac_state`), `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml` (`hvac_ac_sensor_id`).
 3. **Heizbetrieb:** Dieselbe Logik gilt, wenn die Klimaanlage im Winter heizt — intensive Lüftung würde warme Raumluft hinausbefördern. Da Heizen nicht entfeuchtet, ist der Schimmelschutz in dieser Jahreszeit das Sicherheitsnetz.
 4. **Flash-Verschleiß:** Nur Schalter und die drei Slider werden (bei Änderung) persistiert. Der Laufzeitzustand liegt im RAM.
-5. **Hardware-Varianten:** Die Entitäten existieren in allen Varianten. Varianten ohne CO2-Quelle melden `Ausgesetzt (kein CO2-Wert)` und drosseln nie.
+5. **Hardware-Varianten:** Die Entitäten existieren in allen Varianten. Varianten ohne CO2-Quelle nutzen den von einem Peer geteilten CO2-Wert; nur ein Raum ganz ohne CO2-Quelle meldet `Ausgesetzt (kein CO2-Wert im Raum)` und drosselt nie.

@@ -2,7 +2,7 @@
 
 [![Language: DE](https://img.shields.io/badge/Language-DE-red.svg)](../de/de_smart-climate-control.md)
 
-> **Status:** Implemented since version **0.10.13**. The decision logic lives in
+> **Status:** Implemented since version **0.10.13** (room-wide thresholds and shared CO2 since **0.10.14**, ESP-NOW protocol v8). The decision logic lives in
 > [`components/ventilation_logic/hvac_coordinator.h`](../../components/ventilation_logic/hvac_coordinator.h)
 > (pure, unit-tested), the integration into Smart-Automatik in
 > [`components/helpers/auto_mode.h`](../../components/helpers/auto_mode.h), and the Home Assistant entities in
@@ -113,9 +113,11 @@ The original concept disabled humidity control completely. That is only safe whi
 
 If the outdoor air is muggier than the room, ventilating would *add* moisture — the guard stays silent and leaves dehumidification to the AC.
 
-### 3. Missing CO2 Reading
+### 3. Missing CO2 Reading (Room-Wide)
 
-The health guarantee of this feature rests on a CO2 measurement (SCD43, or the BME680 eCO2 fallback via `effective_co2`). If no CO2 value is available (sensor failure, or the `radar_only` / `nosensor` / `NTConly` hardware variants), the coordinator reports **"Ausgesetzt (kein CO2-Wert)"** and does **not** throttle. Heat recovery is still enforced while the AC is active.
+The health guarantee of this feature rests on a CO2 measurement (SCD43, or the BME680 eCO2 fallback via `effective_co2`). The measurement is **room-wide**: every device shares its effective CO2 in the ESP-NOW packet, and a device without its own sensor (`radar_only` / `nosensor` / `NTConly` variants) uses the freshest peer reading, trusted for at most 5 minutes (`PEER_CO2_MAX_AGE_MS`). The log line marks such evaluations with "via Peer".
+
+Only if **no device in the room** delivers a CO2 value does the coordinator report **"Ausgesetzt (kein CO2-Wert im Raum)"** and refrain from throttling. Heat recovery is still enforced while the AC is active.
 
 ---
 
@@ -147,7 +149,7 @@ stateDiagram-v2
         Notfall_CO2 --> Gedrosselt : CO2 <= hvac_co2_threshold
         Gedrosselt --> Notfall_Feuchte : rH >= 70 % and outdoor air drier
         Notfall_Feuchte --> Gedrosselt : rH <= 65 % or outdoor air more humid
-        Gedrosselt --> Ausgesetzt : CO2 reading NaN
+        Gedrosselt --> Ausgesetzt : no CO2 in room (local + peers)
         Ausgesetzt --> Gedrosselt : CO2 reading valid
     }
 
@@ -171,7 +173,7 @@ The state is published as the diagnostic text sensor **"Klima-Koordination Statu
 | `Aktiv (gedrosselt)` | AC active — air-quality-only profile applied. |
 | `Notfall (CO2)` | AC active, CO2 emergency override in effect. |
 | `Notfall (Feuchte)` | AC active, mold guard in effect. |
-| `Ausgesetzt (kein CO2-Wert)` | AC active but no CO2 reading — not throttling. |
+| `Ausgesetzt (kein CO2-Wert im Raum)` | AC active but no CO2 reading from any device in the room — not throttling. |
 
 ---
 
@@ -180,13 +182,13 @@ The state is published as the diagnostic text sensor **"Klima-Koordination Statu
 | HA Entity (German UI name) | YAML ID | Type | Default | Range | Purpose |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | `Klima-Koordination` | `smart_climate_control` | Switch | Off | — | Enable/disable HVAC coordination for this device. |
-| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | Number (Slider) | 1200 ppm | 800–1500 ppm | Relaxed CO2 setpoint while the AC is active. Also the release threshold of the CO2 emergency. |
-| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | Number (Slider) | 3 | 1–5 | Maximum fan level while the AC is active. |
-| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | Number (Slider) | 1500 ppm | 1200–2000 ppm | CO2 level at which normal automatic regulation resumes regardless of AC state (kept ≥ setpoint + 100 ppm). |
+| `Klima-Koordination: CO2 Grenzwert` | `hvac_co2_threshold` | Number (Slider), **room-wide** | 1200 ppm (`hvac_default_co2_threshold`) | 800–1500 ppm | Relaxed CO2 setpoint while the AC is active. Also the release threshold of the CO2 emergency. |
+| `Klima-Koordination: Max Lüfterstufe` | `hvac_max_fan_level` | Number (Slider), **room-wide** | 3 (`hvac_default_max_fan_level`) | 1–5 | Maximum fan level while the AC is active. |
+| `Klima-Koordination: CO2 Notfallgrenze` | `hvac_emergency_co2` | Number (Slider), **room-wide** | 1500 ppm (`hvac_default_emergency_co2`) | 1200–2000 ppm | CO2 level at which normal automatic regulation resumes regardless of AC state (kept ≥ setpoint + 100 ppm). |
 | `Klima-Koordination Status` | `hvac_status` | Text sensor (diagnostic) | — | — | Current coordinator state (see table above). |
 | *(internal)* `Klima Aktiv (Raum)` | `hvac_ac_active` | Binary sensor (imported from HA) | — | — | Real-time AC state; entity ID set by the substitution `hvac_ac_sensor_id`. |
 
-All sliders and the switch are `entity_category: config`, persisted in NVS and take effect at the next evaluation cycle. Fixed constants (`MIN_FAN_LEVEL = 1`, mold guard 70 % / 65 %, release delay 120 s, emergency margin 100 ppm) are defined in `hvac_coordinator.h`.
+All sliders and the switch are `entity_category: config`, persisted in NVS and take effect at the next evaluation cycle. The three sliders are **room-wide settings**: change them on any one device and the value is pushed to all peers of the room over ESP-NOW immediately (`sync_settings_to_peers()`), and the Master's heartbeat re-asserts it, exactly like the Smart-Automatik min/max levels. Their first-boot values come from the substitutions `hvac_default_co2_threshold`, `hvac_default_emergency_co2` and `hvac_default_max_fan_level` in `ventosync_base.yaml`. The switch remains per device. Fixed constants (`MIN_FAN_LEVEL = 1`, mold guard 70 % / 65 %, release delay 120 s, emergency margin 100 ppm) are defined in `hvac_coordinator.h`.
 
 ---
 
@@ -215,14 +217,16 @@ For a simple `input_boolean` helper or a smart plug that powers a portable AC, p
 
 ---
 
-## Multi-Device Rooms (ESP-NOW)
+## Multi-Device Rooms (ESP-NOW, Protocol v8)
 
-No protocol change was needed. Two existing mechanisms keep a room group consistent:
+The `VentilationPacket` carries four additional fields since protocol **v8** (`room_co2`, `hvac_co2_threshold`, `hvac_emergency_co2`, `hvac_max_fan_level`). All devices of a room must run the same firmware version (simultaneous OTA rollout, as with every protocol bump). Four mechanisms keep a room group consistent:
 
-1. **Level authority:** In Smart-Automatik, slaves mirror the discrete fan level of the Master (device ID 1). When the Master throttles to Level 1–3, every slave follows within one evaluation cycle.
-2. **Mode sync:** The Master's periodic sync packet carries the enforced heat-recovery mode; slaves adopt it.
+1. **Shared CO2:** Every device broadcasts its effective CO2; devices without a sensor evaluate the coordinator with the room's reading (see [Missing CO2 Reading](#3-missing-co2-reading-room-wide)).
+2. **Room-wide thresholds:** The three sliders are synchronized through the existing config-sync path (`handle_config_sync()`): a change on any device is sent as `MSG_STATE` to all peers, and the Master's `MSG_SYNC` heartbeat re-asserts the values on slaves.
+3. **Level authority:** In Smart-Automatik, slaves mirror the discrete fan level of the Master (device ID 1). When the Master throttles to Level 1–3, every slave follows within one evaluation cycle.
+4. **Mode sync:** The Master's periodic sync packet carries the enforced heat-recovery mode; slaves adopt it.
 
-Each device still evaluates the coordinator locally (same AC entity by default via `${room_id}`), so a slave whose Master is offline throttles on its own. The switch and the sliders are **per device** and are not synchronized over ESP-NOW — enable the feature on every unit in the room.
+Each device still evaluates the coordinator locally (same AC entity by default via `${room_id}`), so a slave whose Master is offline throttles on its own. Only the enable switch is **per device** — switch the feature on for every unit in the room.
 
 ---
 
@@ -245,4 +249,4 @@ Each device still evaluates the coordinator locally (same AC entity by default v
 2. **Files:** `components/ventilation_logic/hvac_coordinator.h` (pure `ventosync::hvac::Coordinator`, unit tests T-7a–T-7j in `tests/simple_test_runner.cpp`), `components/helpers/auto_mode.h` (`evaluate_hvac_coordination()`, `apply_co2_setpoint()`, level window and ECO lock in `evaluate_auto_mode()`), `components/helpers/globals.h` (entity externs, `hvac_state`), `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml` (`hvac_ac_sensor_id`).
 3. **Heating-mode support:** The same logic applies when the AC heats in winter — high ventilation would exhaust warm indoor air. Because heating does not dehumidify, the mold guard is the safety net in that season.
 4. **Flash wear:** Only the switch and the three sliders are persisted (on change). Runtime state lives in RAM.
-5. **Hardware variants:** The entities exist in all variants. Variants without a CO2 source report `Ausgesetzt (kein CO2-Wert)` and never throttle.
+5. **Hardware variants:** The entities exist in all variants. Variants without a CO2 source use the CO2 reading shared by a peer; only a room without any CO2 source reports `Ausgesetzt (kein CO2-Wert im Raum)` and never throttles.

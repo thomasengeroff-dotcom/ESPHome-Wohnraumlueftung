@@ -309,6 +309,12 @@ extern esphome::template_::TemplateNumber
     *const hvac_max_fan_level; ///< Fan level cap while the AC is active (1-10).
 extern esphome::template_::TemplateNumber
     *const hvac_emergency_co2; ///< CO2 level that lifts the restrictions (ppm).
+extern esphome::globals::RestoringGlobalsComponent<int>
+    *const hvac_co2_threshold_val; ///< Room-wide relaxed CO2 setpoint (ppm, ESP-NOW synced).
+extern esphome::globals::RestoringGlobalsComponent<int>
+    *const hvac_emergency_co2_val; ///< Room-wide CO2 emergency threshold (ppm, ESP-NOW synced).
+extern esphome::globals::RestoringGlobalsComponent<int>
+    *const hvac_max_fan_level_val; ///< Room-wide fan level cap (1-10, ESP-NOW synced).
 
 namespace hvac_state {
   /// Stateful coordinator (debounce timer + emergency latches).
