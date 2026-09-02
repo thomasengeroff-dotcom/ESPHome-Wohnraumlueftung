@@ -11,7 +11,7 @@
 
 ## Problem Statement
 
-Decentralized heat-recovery ventilation units exchange indoor air with outdoor air. When a **room air conditioner (split AC, portable AC, or air-to-air heat pump)** is actively conditioning a room, high-intensity ventilation is counter-productive: it imports hot, humid outdoor air (or exhausts expensively heated air in winter), forcing the compressor to work harder and wasting energy. Conversely, shutting ventilation off entirely degrades indoor air quality (CO2 build-up, VOC accumulation) and removes the base air exchange required for moisture protection.
+Decentralized heat-recovery ventilation units exchange indoor air with outdoor air. When a **room air conditioner (split AC or portable AC)** is actively conditioning a room, high-intensity ventilation is counter-productive: it imports hot, humid outdoor air (or exhausts expensively heated air in winter), forcing the compressor to work harder and wasting energy. Conversely, shutting ventilation off entirely degrades indoor air quality (CO2 build-up, VOC accumulation) and removes the base air exchange required for moisture protection.
 
 **Goal:** While the AC in a room is active, VentoSync throttles ventilation to the **minimum required for healthy indoor air quality** — and no more. Health always wins over energy efficiency.
 
@@ -36,7 +36,7 @@ The AC's operational state reaches the firmware through a **Home Assistant binar
 
 | ESPHome ID | Default HA Entity (substitution `hvac_ac_sensor_id`) | Meaning |
 | :--- | :--- | :--- |
-| `hvac_ac_active` | `binary_sensor.ventosync_hvac_active_room_<room_id>` | `on` = the AC / heat pump is switched on in a conditioning mode. |
+| `hvac_ac_active` | `binary_sensor.ventosync_hvac_active_room_<room_id>` | `on` = the AC is switched on in a conditioning mode. |
 
 The ESPHome `homeassistant` binary sensor platform only understands `on` / `off`. A `climate` entity therefore has to be mapped by a **template binary sensor** in Home Assistant (see [Home Assistant Setup](#️-home-assistant-setup)).
 
@@ -104,7 +104,7 @@ The firmware keeps the emergency threshold **at least 100 ppm above** the relaxe
 
 ### 2. Mold Guard (Humidity)
 
-The original concept disabled humidity control completely. That is only safe while the AC actually dehumidifies (cooling / dry mode). A heat pump in **heating mode** does not remove moisture, and even in summer a bathroom or kitchen can exceed the mold threshold. Therefore:
+The original concept disabled humidity control completely. That is only safe while the AC actually dehumidifies (cooling / dry mode). An AC running in **heating mode** does not remove moisture, and even in summer a bathroom or kitchen can exceed the mold threshold. Therefore:
 
 | Event | Condition | Effect |
 | :--- | :--- | :--- |
@@ -243,6 +243,6 @@ Each device still evaluates the coordinator locally (same AC entity by default v
 
 1. **Sensor requirements:** No additional hardware. Requires a CO2 source (`effective_co2`: SCD43 or BME680 eCO2) and one Home Assistant entity for the AC state. The mold guard additionally uses the indoor humidity and `sensor.outdoor_humidity`.
 2. **Files:** `components/ventilation_logic/hvac_coordinator.h` (pure `ventosync::hvac::Coordinator`, unit tests T-7a–T-7j in `tests/simple_test_runner.cpp`), `components/helpers/auto_mode.h` (`evaluate_hvac_coordination()`, `apply_co2_setpoint()`, level window and ECO lock in `evaluate_auto_mode()`), `components/helpers/globals.h` (entity externs, `hvac_state`), `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml` (`hvac_ac_sensor_id`).
-3. **Heating-mode support:** The same logic applies when a heat pump heats in winter — high ventilation would exhaust warm indoor air. Because heating does not dehumidify, the mold guard is the safety net in that season.
+3. **Heating-mode support:** The same logic applies when the AC heats in winter — high ventilation would exhaust warm indoor air. Because heating does not dehumidify, the mold guard is the safety net in that season.
 4. **Flash wear:** Only the switch and the three sliders are persisted (on change). Runtime state lives in RAM.
 5. **Hardware variants:** The entities exist in all variants. Variants without a CO2 source report `Ausgesetzt (kein CO2-Wert)` and never throttle.

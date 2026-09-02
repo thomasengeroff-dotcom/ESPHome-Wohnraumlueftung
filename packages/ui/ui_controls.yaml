@@ -211,7 +211,7 @@ number:
 
   # ---------------------------------------------------------
   # SMART CLIMATE CONTROL (HVAC COORDINATION) - Thresholds
-  # Modifier for Smart-Automatik while the room AC / heat pump is active.
+  # Modifier for Smart-Automatik while the room air conditioner is active.
   # Decision logic: components/ventilation_logic/hvac_coordinator.h
   # ---------------------------------------------------------
 

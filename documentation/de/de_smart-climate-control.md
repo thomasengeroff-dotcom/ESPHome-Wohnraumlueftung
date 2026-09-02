@@ -11,7 +11,7 @@
 
 ## Problemstellung
 
-Dezentrale Wohnraumlüftungen mit Wärmerückgewinnung tauschen ständig Innen- gegen Außenluft aus. Wenn eine **Raumklimaanlage (Split-Klimagerät, mobiles Klimagerät oder Luft-Luft-Wärmepumpe)** einen Raum aktiv konditioniert, ist intensive Lüftung kontraproduktiv: Sie importiert heiße, feuchte Außenluft (bzw. bläst im Winter teuer erwärmte Raumluft hinaus), belastet den Kompressor stärker und verschwendet Energie. Andererseits verschlechtert das vollständige Abschalten der Lüftung die Raumluftqualität (CO2-Anstieg, VOC-Anreicherung) und beseitigt den für den Feuchteschutz nötigen Grundluftwechsel.
+Dezentrale Wohnraumlüftungen mit Wärmerückgewinnung tauschen ständig Innen- gegen Außenluft aus. Wenn eine **Raumklimaanlage (Split-Klimagerät oder mobiles Klimagerät)** einen Raum aktiv konditioniert, ist intensive Lüftung kontraproduktiv: Sie importiert heiße, feuchte Außenluft (bzw. bläst im Winter teuer erwärmte Raumluft hinaus), belastet den Kompressor stärker und verschwendet Energie. Andererseits verschlechtert das vollständige Abschalten der Lüftung die Raumluftqualität (CO2-Anstieg, VOC-Anreicherung) und beseitigt den für den Feuchteschutz nötigen Grundluftwechsel.
 
 **Ziel:** Solange die Klimaanlage im Raum aktiv ist, drosselt VentoSync die Lüftung auf das **Minimum, das für gesunde Raumluft erforderlich ist** — und nicht mehr. Gesundheit hat immer Vorrang vor Energieeffizienz.
 
@@ -36,7 +36,7 @@ Der Betriebszustand der Klimaanlage erreicht die Firmware über einen **von ESPH
 
 | ESPHome-ID | Standard-HA-Entität (Substitution `hvac_ac_sensor_id`) | Bedeutung |
 | :--- | :--- | :--- |
-| `hvac_ac_active` | `binary_sensor.ventosync_hvac_active_room_<room_id>` | `on` = Klimaanlage / Wärmepumpe ist in einem konditionierenden Modus eingeschaltet. |
+| `hvac_ac_active` | `binary_sensor.ventosync_hvac_active_room_<room_id>` | `on` = Klimaanlage ist in einem konditionierenden Modus eingeschaltet. |
 
 Die ESPHome-Plattform `homeassistant` für Binary-Sensoren versteht nur `on` / `off`. Eine `climate`-Entität muss daher in Home Assistant über einen **Template-Binary-Sensor** abgebildet werden (siehe [Home-Assistant-Einrichtung](#️-home-assistant-einrichtung)).
 
@@ -104,7 +104,7 @@ Die Firmware hält die Notfallgrenze **mindestens 100 ppm oberhalb** des gelocke
 
 ### 2. Schimmelschutz (Feuchte)
 
-Das ursprüngliche Konzept hat die Feuchteregelung komplett deaktiviert. Das ist nur sicher, solange die Klimaanlage tatsächlich entfeuchtet (Kühl-/Entfeuchtungsmodus). Eine Wärmepumpe im **Heizbetrieb** entzieht keine Feuchte, und auch im Sommer kann ein Bad oder eine Küche die Schimmelschwelle überschreiten. Deshalb:
+Das ursprüngliche Konzept hat die Feuchteregelung komplett deaktiviert. Das ist nur sicher, solange die Klimaanlage tatsächlich entfeuchtet (Kühl-/Entfeuchtungsmodus). Läuft die Klimaanlage im **Heizbetrieb**, entzieht sie keine Feuchte, und auch im Sommer kann ein Bad oder eine Küche die Schimmelschwelle überschreiten. Deshalb:
 
 | Ereignis | Bedingung | Wirkung |
 | :--- | :--- | :--- |
@@ -243,6 +243,6 @@ Jedes Gerät wertet den Koordinator dennoch lokal aus (standardmäßig dieselbe 
 
 1. **Sensor-Anforderungen:** Keine zusätzliche Hardware. Benötigt eine CO2-Quelle (`effective_co2`: SCD43 oder BME680-eCO2) und eine Home-Assistant-Entität für den Klima-Status. Der Schimmelschutz nutzt zusätzlich die Raumfeuchte und `sensor.outdoor_humidity`.
 2. **Dateien:** `components/ventilation_logic/hvac_coordinator.h` (reiner `ventosync::hvac::Coordinator`, Unit-Tests T-7a–T-7j in `tests/simple_test_runner.cpp`), `components/helpers/auto_mode.h` (`evaluate_hvac_coordination()`, `apply_co2_setpoint()`, Stufenfenster und WRG-Sperre in `evaluate_auto_mode()`), `components/helpers/globals.h` (Entitäts-Externs, `hvac_state`), `packages/ui/ui_controls.yaml`, `packages/integration/homeassistant.yaml`, `packages/base/ventosync_base.yaml` (`hvac_ac_sensor_id`).
-3. **Heizbetrieb:** Dieselbe Logik gilt, wenn eine Wärmepumpe im Winter heizt — intensive Lüftung würde warme Raumluft hinausbefördern. Da Heizen nicht entfeuchtet, ist der Schimmelschutz in dieser Jahreszeit das Sicherheitsnetz.
+3. **Heizbetrieb:** Dieselbe Logik gilt, wenn die Klimaanlage im Winter heizt — intensive Lüftung würde warme Raumluft hinausbefördern. Da Heizen nicht entfeuchtet, ist der Schimmelschutz in dieser Jahreszeit das Sicherheitsnetz.
 4. **Flash-Verschleiß:** Nur Schalter und die drei Slider werden (bei Änderung) persistiert. Der Laufzeitzustand liegt im RAM.
 5. **Hardware-Varianten:** Die Entitäten existieren in allen Varianten. Varianten ohne CO2-Quelle melden `Ausgesetzt (kein CO2-Wert)` und drosseln nie.

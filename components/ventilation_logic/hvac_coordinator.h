@@ -21,7 +21,7 @@
 // Description: Smart Climate Control (HVAC coordination) decision logic.
 //              Pure, hardware-agnostic state machine that decides how the
 //              Smart-Automatik controller must be restricted while a room
-//              air conditioner / heat pump is active.
+//              air conditioner is active.
 // Author:      Thomas Engeroff
 // Created:     2026-09-02
 // Modified:    2026-09-02

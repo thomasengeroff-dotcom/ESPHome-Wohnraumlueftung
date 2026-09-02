@@ -50,7 +50,7 @@ Mit diesen Entitäten wird das Verhalten des "Smart-Automatik" Modus konfigurier
 
 ### Klima-Koordination (Smart Climate Control)
 
-Modifikator für die `Smart-Automatik`, solange die Raumklimaanlage / Wärmepumpe aktiv ist. Vollständige Beschreibung: [📄 Intelligente Klimaanlagen-Koordination](de_smart-climate-control.md).
+Modifikator für die `Smart-Automatik`, solange die Raumklimaanlage aktiv ist. Vollständige Beschreibung: [📄 Intelligente Klimaanlagen-Koordination](de_smart-climate-control.md).
 
 * **`switch.klima_koordination`** ("Klima-Koordination", YAML-ID `smart_climate_control`)
   * *Typ:* Switch (Config, persistent)

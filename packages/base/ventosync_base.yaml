@@ -45,7 +45,7 @@ substitutions:
 
   # SMART CLIMATE CONTROL (HVAC COORDINATION) CONFIG
   # Entity ID of the Home Assistant binary sensor that is "on" while the room
-  # air conditioner / heat pump is actively conditioning the room.
+  # air conditioner is actively conditioning the room.
   # Default convention: binary_sensor.ventosync_hvac_active_room_${room_id}
   hvac_ac_sensor_id: "binary_sensor.ventosync_hvac_active_room_${room_id}"
 

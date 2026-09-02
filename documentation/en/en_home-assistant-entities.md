@@ -47,7 +47,7 @@ These entities configure the behavior of the "Automatic" mode.
 
 ### Smart Climate Control (HVAC Coordination)
 
-Modifier for `Smart-Automatik` while the room air conditioner / heat pump is active. Full description: [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).
+Modifier for `Smart-Automatik` while the room air conditioner is active. Full description: [📄 Smart Climate Control — HVAC Coordination](en_smart-climate-control.md).
 
 * **`switch.klima_koordination`** ("Klima-Koordination", YAML ID `smart_climate_control`)
   * *Type:* Switch (Config, persisted)
