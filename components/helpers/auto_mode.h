@@ -523,6 +523,26 @@ inline void evaluate_auto_mode(bool force) {
   // 5. Air Quality Power Management
   float demand = auto_mode::calculate_combined_demand(now, eff_in, eff_out, hvac.suppress_humidity);
 
+  // Guard: After switching into Smart-Automatik the PID outputs are stale for
+  // a few cycles (the PID controller's proportional term immediately overwrites
+  // the reset-to-zero values set in system_lifecycle.h). Hold the fan at
+  // min_level until the first genuine sensor cycle has completed (~15 s = 1.5
+  // CO2 PID cycles at the SCD4x's ~5-30 s update rate).
+  static uint32_t mode_switch_holdoff_until_ms = 0;
+  if (force) {
+    // evaluate_auto_mode(true) is called from system_lifecycle on mode switch
+    mode_switch_holdoff_until_ms = now + 15000u;
+    ESP_LOGD("auto_mode", "Mode-switch holdoff active for 15 s (until %u ms)", mode_switch_holdoff_until_ms);
+  }
+  if (mode_switch_holdoff_until_ms > 0) {
+    if (now < mode_switch_holdoff_until_ms) {
+      demand = 0.0f;
+    } else {
+      mode_switch_holdoff_until_ms = 0;
+      ESP_LOGD("auto_mode", "Mode-switch holdoff expired, PID demand active");
+    }
+  }
+
   // FIXED: If demand is NAN (e.g., all sensors offline/unstable), we abort to hold the last state
   if (std::isnan(demand)) {
      ESP_LOGV("auto_mode", "Demand is NAN, skipping update to hold last state.");

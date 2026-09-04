@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.15] - 2026-09-04
+
+### Fixed
+
+- **Mode-Switch Holdoff Guard** (`components/helpers/auto_mode.h`):
+  - After switching from a manual mode (e.g. Wärmerückgewinnung) into Smart-Automatik, stale PID output values caused the fan to immediately ramp up to the HVAC coordination max cap (default Level 3) despite very low CO2 levels (~600 ppm). Root cause: the PID controller's internal proportional term overwrote the reset-to-zero outputs set in `system_lifecycle.h` before the first genuine sensor cycle completed.
+  - Added a 15-second holdoff (`mode_switch_holdoff_until_ms`) that forces `demand = 0.0f` after every mode switch into Smart-Automatik. This ensures the fan starts at `min_level` and only ramps up once the CO2/humidity PIDs have processed real sensor data. The holdoff duration covers ~1.5 SCD4x update cycles (~5–30 s each).
+  - Affects both normal Smart-Automatik and HVAC-coordinated operation. All 27 existing unit tests pass unchanged.
+
 ## [0.10.14] - 2026-09-02
 
 ### Changed

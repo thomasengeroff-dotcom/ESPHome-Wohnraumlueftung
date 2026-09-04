@@ -1,5 +1,5 @@
 {
-    "project_version": "0.10.14",
-    "project_date": "2026-09-02",
-    "project_description": "Smart Climate Control: room-wide thresholds and shared CO2 over ESP-NOW (protocol v8)"
+    "project_version": "0.10.16",
+    "project_date": "2026-09-04",
+    "project_description": "Fix: mode-switch holdoff prevents fan ramp-up from stale PID outputs"
 }
